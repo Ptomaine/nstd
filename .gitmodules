@@ -1,0 +1,27 @@
+[submodule "include/external/json"]
+	path = include/external/json
+	url = https://github.com/nlohmann/json.git
+[submodule "include/external/asio"]
+	path = include/external/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "include/external/date"]
+	path = include/external/date
+	url = https://github.com/HowardHinnant/date.git
+[submodule "include/external/giant"]
+	path = include/external/giant
+	url = https://github.com/r-lyeh/giant.git
+[submodule "include/external/ordered-map"]
+	path = include/external/ordered-map
+	url = https://github.com/Tessil/ordered-map.git
+[submodule "include/external/units"]
+	path = include/external/units
+	url = https://github.com/r-lyeh/units.git
+[submodule "include/external/sqlite_modern_cpp"]
+	path = include/external/sqlite_modern_cpp
+	url = https://github.com/aminroosta/sqlite_modern_cpp.git
+[submodule "include/external/freetype/freetype2"]
+	path = include/external/freetype/freetype2
+	url = http://git.savannah.nongnu.org/r/freetype/freetype2.git
+[submodule "resources/fonts"]
+	path = resources/fonts
+	url = https://github.com/google/fonts.git
