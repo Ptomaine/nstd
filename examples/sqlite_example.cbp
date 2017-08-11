@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="sqlite_example" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/sqlite_example/Debug/sqlite_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/sqlite_example/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/sqlite_example/Release/sqlite_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/sqlite_example/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++1z" />
+			<Add option="-m64" />
+			<Add option="-fexceptions" />
+			<Add option="-Wno-unused-but-set-variable" />
+			<Add directory="../include" />
+			<Add directory="../include/external/sqlite" />
+		</Compiler>
+		<Linker>
+			<Add option="-static" />
+			<Add option="-m64" />
+		</Linker>
+		<Unit filename="../include/external/sqlite/sqlite3.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="sqlite_example.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

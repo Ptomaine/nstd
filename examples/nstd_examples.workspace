@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Workspace">
+		<Project filename="sqlite_example.cbp" />
+		<Project filename="uuid_example.cbp" />
+		<Project filename="urdl_example.cbp" />
+		<Project filename="units_example.cbp" />
+		<Project filename="giant_example.cbp" />
+		<Project filename="relinx_generator_example.cbp" />
+		<Project filename="relinx_example.cbp" />
+		<Project filename="live_property_example.cbp" />
+		<Project filename="expiry_cache_example.cbp" />
+		<Project filename="base64_example.cbp" />
+		<Project filename="asio_example.cbp" />
+		<Project filename="strings_example.cbp" />
+		<Project filename="freetype_example.cbp" />
+		<Project filename="agg_example.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>

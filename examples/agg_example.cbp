@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="agg_example" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/agg_example/Debug/agg_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/agg_example/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/agg_example/Release/agg_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/agg_example/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++1z" />
+			<Add option="-m64" />
+			<Add option="-fexceptions" />
+			<Add directory="../include" />
+			<Add directory="../include/external/freetype/freetype2/include" />
+			<Add directory="../include/external/agg/agg/include" />
+			<Add directory="../include/external/agg/agg/font_freetype" />
+		</Compiler>
+		<Linker>
+			<Add option="-static" />
+			<Add option="-m64" />
+			<Add library="gdi32" />
+		</Linker>
+		<ExtraCommands>
+			<Add after="cmd /c copy ..\resources\example_resources\agg_example\fonts\*.ttf $(TARGET_OUTPUT_DIR)" />
+			<Mode after="always" />
+		</ExtraCommands>
+		<Unit filename="../include/external/agg/agg/font_freetype/agg_font_freetype.cpp">
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
+		<Unit filename="../include/external/agg/agg/font_freetype/agg_font_freetype1.cpp" />
+		<Unit filename="../include/external/agg/agg/src/agg_bezier_arc.cpp" />
+		<Unit filename="../include/external/agg/agg/src/agg_curves.cpp" />
+		<Unit filename="../include/external/agg/agg/src/agg_gsv_text.cpp" />
+		<Unit filename="../include/external/agg/agg/src/agg_trans_affine.cpp" />
+		<Unit filename="../include/external/agg/agg/src/agg_vcgen_contour.cpp" />
+		<Unit filename="../include/external/agg/agg/src/agg_vcgen_stroke.cpp" />
+		<Unit filename="../include/external/agg/agg/src/ctrl/agg_cbox_ctrl.cpp" />
+		<Unit filename="../include/external/agg/agg/src/ctrl/agg_rbox_ctrl.cpp" />
+		<Unit filename="../include/external/agg/agg/src/ctrl/agg_slider_ctrl.cpp" />
+		<Unit filename="../include/external/agg/agg/src/platform/win32/agg_platform_support.cpp" />
+		<Unit filename="../include/external/agg/agg/src/platform/win32/agg_win32_bmp.cpp" />
+		<Unit filename="../include/external/freetype/freetype.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="agg_example.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
