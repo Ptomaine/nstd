@@ -12,6 +12,7 @@
 		<Project filename="expiry_cache_example.cbp" />
 		<Project filename="base64_example.cbp" />
 		<Project filename="asio_example.cbp" />
+		<Project filename="pmr_example.cbp" />
 		<Project filename="strings_example.cbp" />
 		<Project filename="freetype_example.cbp" />
 		<Project filename="agg_example.cbp" />

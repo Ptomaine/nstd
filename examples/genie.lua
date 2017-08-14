@@ -119,6 +119,16 @@ solution "nstd_examples"
         configuration "linux"
             links { "pthread" }
 
+    project "pmr_example"
+        files { "pmr_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/pmr_example/Debug"
+            targetdir "bin/pmr_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/pmr_example/Release"
+            targetdir "bin/pmr_example/Release"
+
     project "strings_example"
         files { "strings_example.cpp" }
         configuration { "Debug" }
