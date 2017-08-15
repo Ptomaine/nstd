@@ -157,11 +157,11 @@ private:
     {
         if (from_end)
         {
-            reverse(current_event_sequence.begin(), current_event_sequence.end());
-            reverse(full_sequence.begin(), full_sequence.end());
+            std::reverse(std::begin(current_event_sequence), std::end(current_event_sequence));
+            std::reverse(std::begin(full_sequence), std::end(full_sequence));
         }
 
-        auto it = std::search(full_sequence.begin(), full_sequence.end(), current_event_sequence.begin(), current_event_sequence.end());
+        auto it = std::search(std::begin(full_sequence), std::end(full_sequence), std::begin(current_event_sequence), std::end(current_event_sequence));
 
         if (it == full_sequence.end()) return false;
         else if (strict && it != full_sequence.begin()) return false;
@@ -275,7 +275,7 @@ class remove_noise_filter
 {
 public:
     template<typename sequence_type>
-    sequence_type filter(sequence_type &&sequence, int min_length_limit = 2) const
+    sequence_type filter(const sequence_type &sequence, int min_length_limit = 2) const
     {
         if(sequence.empty()) return {};
 
@@ -306,9 +306,9 @@ public:
     }
 
     template<typename event_sequence_type>
-    event_sequence_type operator() (event_sequence_type &&sequence, int min_length_limit = 2) const
+    event_sequence_type operator() (const event_sequence_type &sequence, int min_length_limit = 2) const
     {
-        return filter(std::forward<event_sequence_type>(sequence), min_length_limit);
+        return filter(sequence, min_length_limit);
     }
 };
 

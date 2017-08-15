@@ -27,7 +27,7 @@ int main()
     using namespace std::string_literals;
     using namespace nstd::pmr;
 
-    enum commands : uint8_t
+    enum command : uint8_t
     {
         open_file = 100, close_file,
         go_back, go_forward,
@@ -37,54 +37,56 @@ int main()
     std::map<uint8_t, std::string> command_map
     {
         {0, "Unknown"s},
-        {commands::open_file, "Open file"s},
-        {commands::close_file, "Close file"s},
-        {commands::go_back, "Go back"s},
-        {commands::go_forward, "Go forward"s},
-        {commands::reload, "Reload"s}
+        {command::open_file, "Open file"s},
+        {command::close_file, "Close file"s},
+        {command::go_back, "Go back"s},
+        {command::go_forward, "Go forward"s},
+        {command::reload, "Reload"s}
     };
 
+    using event = planar_movements_event_provider::event;
+
     planar_movements_event_provider pmep;
-    command_recognizer<planar_movements_event_provider::event, commands> cr;
+    command_recognizer<event, command> cr;
     remove_noise_filter rnf;
 
-    cr. add_command(commands::open_file, { planar_movements_event_provider::up }).
-        add_command(commands::close_file, { planar_movements_event_provider::down }).
-        add_command(commands::go_back, { planar_movements_event_provider::left }).
-        add_command(commands::go_forward, { planar_movements_event_provider::right }).
-        add_command(commands::reload, { planar_movements_event_provider::down, planar_movements_event_provider::up })
+    cr. add_command(command::open_file,  { event::up }).
+        add_command(command::close_file, { event::down }).
+        add_command(command::go_back,    { event::left }).
+        add_command(command::go_forward, { event::right }).
+        add_command(command::reload,     { event::down, event::up })
     ;
 
     {
-        std::vector<planar_movements_event_provider::event> coords { pmep(100., 100.), pmep(150., 105.), pmep(200., 103.), pmep(250., 102.), pmep(300., 95.) }; // moving right
+        std::vector<event> coords { pmep(100., 100.), pmep(150., 105.), pmep(200., 103.), pmep(250., 102.), pmep(300., 95.) }; // moving right
 
         std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
     }
 
     {
-        event_filter<planar_movements_event_provider::event> ef(true);
-        ef.set(planar_movements_event_provider::event::right, planar_movements_event_provider::event::left);
+        event_filter<event> ef(true);
+        ef.set(event::right, event::left);
 
          // moving right, but mapping the right event to the left one using event_filter
-        std::vector<planar_movements_event_provider::event> coords { ef(pmep(100., 100.)), ef(pmep(150., 105.)), ef(pmep(200., 103.)), ef(pmep(250., 102.)), ef(pmep(300., 95.)) }; // moving right
+        std::vector<event> coords { ef(pmep(100., 100.)), ef(pmep(150., 105.)), ef(pmep(200., 103.)), ef(pmep(250., 102.)), ef(pmep(300., 95.)) }; // moving right
 
         std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
     }
 
     {
-        std::vector<planar_movements_event_provider::event> coords { pmep(295., 239.), pmep(310., 202.), pmep(300., 150.), pmep(300., 120.), pmep(300., 95.) }; // moving up
+        std::vector<event> coords { pmep(295., 239.), pmep(310., 202.), pmep(300., 150.), pmep(300., 120.), pmep(300., 95.) }; // moving up
 
         std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
     }
 
     {
-        std::vector<planar_movements_event_provider::event> coords { pmep(300., 95.), pmep(300., 120.), pmep(300., 150.), pmep(310., 202.), pmep(295., 239.) }; // moving down
+        std::vector<event> coords { pmep(300., 95.), pmep(300., 120.), pmep(300., 150.), pmep(310., 202.), pmep(295., 239.) }; // moving down
 
         std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
     }
 
     {
-        std::vector<planar_movements_event_provider::event> coords { pmep(300., 95.), pmep(300., 120.), pmep(300., 150.), pmep(310., 202.), pmep(295., 239.),
+        std::vector<event> coords { pmep(300., 95.), pmep(300., 120.), pmep(300., 150.), pmep(310., 202.), pmep(295., 239.),
                                                                      pmep(295., 239.), pmep(310., 202.), pmep(300., 150.), pmep(300., 120.), pmep(300., 95.) }; // moving down & up
 
         std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
