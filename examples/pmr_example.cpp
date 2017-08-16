@@ -21,9 +21,16 @@ SOFTWARE.
 #include <iostream>
 #include <string>
 #include "planar_movements_recognizer.hpp"
+#include "platform.hpp"
+#include "strings.hpp"
 
 int main()
 {
+    std::cout << "Is Little Endian: " << nstd::str::boolalpha[nstd::platform::is_little_endian] << std::endl;
+    std::cout << "Is 64 bit: " << nstd::str::boolalpha[nstd::platform::is_64bit] << std::endl;
+    std::cout << "Platform: " << nstd::platform::platform << std::endl;
+    std::cout << "Compiler: " << nstd::platform::compiler << std::endl << std::endl;
+
     using namespace std::string_literals;
     using namespace nstd::pmr;
 
