@@ -211,6 +211,7 @@ solution "nstd_examples"
 
     project "agg_example"
         files { "agg_example.cpp", "../include/external/freetype/freetype.c",
+		"../include/external/agg/agg/src/platform/agg_platform_support.cpp",
 		"../include/external/agg/agg/font_freetype/agg_font_freetype1.cpp",
 		"../include/external/agg/agg/src/ctrl/agg_cbox_ctrl.cpp",
 		"../include/external/agg/agg/src/ctrl/agg_rbox_ctrl.cpp",
@@ -224,11 +225,6 @@ solution "nstd_examples"
         includedirs { "../include/external/freetype/freetype2/include" }
         userincludedirs { "../include/external/agg/agg/include", "../include/external/agg/agg/font_freetype" }
         postbuildcmd = "copy ../resources/example_resources/agg_example/fonts/*.ttf ./bin/agg_example/"
-
-        configuration "windows"
-		files { "../include/external/agg/agg/src/platform/win32/agg_platform_support.cpp", "../include/external/agg/agg/src/platform/win32/agg_win32_bmp.cpp" }
-        configuration "linux"
-		files { "../include/external/agg/agg/src/platform/X11/agg_platform_support.cpp" }
 
         configuration { "Debug" }
             objdir "obj/agg_example/Debug"
