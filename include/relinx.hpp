@@ -1065,12 +1065,12 @@ public:
 
     ~relinx_object() = default;
 
-    auto begin() const noexcept -> decltype(auto)
+    auto begin() const noexcept
     {
         return _begin;
     }
 
-    auto end() const noexcept -> decltype(auto)
+    auto end() const noexcept
     {
         return _end;
     }
@@ -1096,7 +1096,7 @@ public:
         Example of usage: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->aggregate([](auto &&aggregated_value, auto &&current_value) { return aggregated_value + current_value; }); \endcode
     */
     template<typename AggregateFunctor>
-    auto aggregate(AggregateFunctor &&aggregateFunctor) const -> decltype(auto)
+    auto aggregate(AggregateFunctor &&aggregateFunctor) const
     {
         if (_begin == _end) throw no_elements("aggregate"s);
 
@@ -1124,7 +1124,7 @@ public:
         Example of usage: \code auto result = from({2, 3, 4, 5, 6, 7, 8, 9, 10})->aggregate(1, [](auto &&aggregated_value, auto &&current_value) { return aggregated_value + current_value; }); \endcode
     */
     template<typename SeedType, typename AggregateFunctor>
-    auto aggregate(SeedType &&seed, AggregateFunctor &&aggregateFunctor) const -> decltype(auto)
+    auto aggregate(SeedType &&seed, AggregateFunctor &&aggregateFunctor) const
     {
         if (_begin == _end) throw no_elements("aggregate"s);
 
@@ -1148,7 +1148,7 @@ public:
         Example: \code auto result = from({9, 8, 7, 6, 5, 4, 3, 2, 1})->aggregate(10, [](auto &&a, auto &&b) { return a + b; }, [](auto &&r) { return "("s + std::to_string(r * 2.5 + .5) + ")"; }); \endcode
     */
     template<typename SeedType, typename AggregateFunctor, typename ResultSelector>
-    auto aggregate(SeedType &&seed, AggregateFunctor &&aggregateFunctor, ResultSelector &&resultSelector) const -> decltype(auto)
+    auto aggregate(SeedType &&seed, AggregateFunctor &&aggregateFunctor, ResultSelector &&resultSelector) const
     {
         if (_begin == _end) throw no_elements("aggregate"s);
 
@@ -1209,7 +1209,7 @@ public:
         Example: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->avarage([](auto &&r){ return r * 1.5; }); \endcode the result is 8.25
     */
     template<typename AvgFunctor>
-    auto avarage(AvgFunctor &&avgFunctor) const noexcept -> decltype(auto)
+    auto avarage(AvgFunctor &&avgFunctor) const noexcept
     {
         return (sum(std::forward<AvgFunctor>(avgFunctor)) / std::distance(_begin, _end));
     }
@@ -1222,7 +1222,7 @@ public:
         \return Returns an avarage value.
 
     */
-    auto avarage() const noexcept -> decltype(auto)
+    auto avarage() const noexcept
     {
         return avarage([](auto &&v){ return v; });
     }
@@ -1264,7 +1264,7 @@ public:
         \endcode
     */
     template<typename CastType>
-    auto cast() noexcept -> decltype(auto)
+    auto cast() noexcept
     {
         using adapter_type = transform_iterator_adapter<iterator_type, std::function<CastType(const value_type&)>>;
         using next_relinx_object = relinx_object<self_type, adapter_type, ContainerType>;
@@ -1285,7 +1285,7 @@ public:
         \return returns concatenated relinc_object.
     */
     template<typename ConcatIterator>
-    auto concat(const ConcatIterator &begin, const ConcatIterator &end) noexcept -> decltype(auto)
+    auto concat(const ConcatIterator &begin, const ConcatIterator &end) noexcept
     {
         using adapter_type = concat_iterator_adapter<iterator_type, typename std::decay<ConcatIterator>::type>;
 
@@ -1295,19 +1295,19 @@ public:
     }
 
     template<typename Container>
-    auto concat(Container &&c) noexcept -> decltype(auto)
+    auto concat(Container &&c) noexcept
     {
         return concat(std::begin(c), std::end(c));
     }
 
     template<typename T>
-    auto concat(std::initializer_list<T> &&container) noexcept -> decltype(auto)
+    auto concat(std::initializer_list<T> &&container) noexcept
     {
         return concat<std::initializer_list<T>>(std::forward<std::initializer_list<T>>(container));
     }
 
     template<typename T>
-    auto concat(std::shared_ptr<T> &&relinx_object) noexcept -> decltype(auto)
+    auto concat(std::shared_ptr<T> &&relinx_object) noexcept
     {
         return concat(*relinx_object);
     }
@@ -1354,7 +1354,7 @@ public:
 
         Example: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->count(); \endcode return 10 as the result.
     */
-    auto count() const noexcept -> decltype(auto)
+    auto count() const noexcept
     {
         return std::distance(_begin, _end);
     }
@@ -1370,7 +1370,7 @@ public:
 
         Example: \code auto result = from({1, 2, 3, 1, 2, 3, 1, 2, 3})->count(1); \endcode counts number of 1 and returns 3 as the result.
     */
-    auto count(value_type &&value) const noexcept -> decltype(auto)
+    auto count(value_type &&value) const noexcept
     {
         return std::count(_begin, _end, std::forward<value_type>(value));
     }
@@ -1387,7 +1387,7 @@ public:
         Example: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->count([](auto &&i) { return i % 2 == 0; }); \endcode counts even numbers and returns 5 as the result.
     */
     template<typename ConditionFunctor>
-    auto count(ConditionFunctor &&conditionFunctor) const noexcept -> decltype(auto)
+    auto count(ConditionFunctor &&conditionFunctor) const noexcept
     {
         return std::count_if(_begin, _end, std::forward<ConditionFunctor>(conditionFunctor));
     }
@@ -1429,7 +1429,7 @@ public:
             auto res6 = from({1, 2, 3})->cycle()->skip(2)->take(5); //result: {3, 1, 2, 3, 1}
             \endcode
     */
-    auto cycle(std::ptrdiff_t times = -1) noexcept -> decltype(auto)
+    auto cycle(std::ptrdiff_t times = -1) noexcept
     {
         using adapter_type = cycle_iterator_adapter<decltype(_begin)>;
 
@@ -1447,7 +1447,7 @@ public:
 
         \return An relinx_object that contains default_value if source is empty; otherwise, source.
     */
-    auto default_if_empty(value_type default_value = value_type()) noexcept -> decltype(auto)
+    auto default_if_empty(value_type default_value = value_type()) noexcept
     {
         return concat(_begin == _end ? (_def_val_container = {default_value}) : _def_val_container);
     }
@@ -1465,7 +1465,7 @@ public:
         \return The relinx_object that contains distinct values.
     */
     template<typename KeyFunctor = std::function<value_type(const value_type &)>>
-    auto distinct(KeyFunctor &&keyFunctor = [](auto &&v) { return v; }) noexcept -> decltype(auto)
+    auto distinct(KeyFunctor &&keyFunctor = [](auto &&v) { return v; }) noexcept
     {
         using ret_type = typename std::decay<decltype(keyFunctor(value_type()))>::type;
         using adapter_type = distinct_iterator_adapter<iterator_type, std::function<ret_type(const value_type &)>>;
@@ -1524,7 +1524,7 @@ public:
         \return A relinx_object that contains the set difference of the elements of two sequences.
     */
     template<typename Container>
-    auto except(Container &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept -> decltype(auto)
+    auto except(Container &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept
     {
         using adapter_type = except_iterator_adapter<iterator_type, decltype(std::begin(container)), std::function<bool(const value_type&, const value_type&)>>;
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
@@ -1535,7 +1535,7 @@ public:
     }
 
     template<typename T>
-    auto except(std::initializer_list<T> &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept -> decltype(auto)
+    auto except(std::initializer_list<T> &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept
     {
         return except<std::initializer_list<T>>(std::forward<std::initializer_list<T>>(container), std::forward<std::function<bool(const value_type&, const value_type&)>>(compareFunctor));
     }
@@ -1551,7 +1551,7 @@ public:
         \exception Throws not_found exception if there is no element satisfies the condition in predicate.
     */
     template<typename ConditionFunctor>
-    auto first(ConditionFunctor &&conditionFunctor) const -> decltype(auto)
+    auto first(ConditionFunctor &&conditionFunctor) const
     {
         auto i = std::find_if(_begin, _end, std::forward<ConditionFunctor>(conditionFunctor));
 
@@ -1568,7 +1568,7 @@ public:
 
         \exception no_elements The source sequence is empty.
     */
-    auto first() const -> decltype(auto)
+    auto first() const
     {
         if (_begin == _end) throw no_elements("first"s);
 
@@ -1584,7 +1584,7 @@ public:
         \return Default value if source is empty or if no element passes the test specified by predicate; otherwise, the first element in source that passes the test specified by predicate.
     */
     template<typename ConditionFunctor>
-    auto first_or_default(ConditionFunctor &&conditionFunctor, value_type default_value = value_type()) const noexcept -> decltype(auto)
+    auto first_or_default(ConditionFunctor &&conditionFunctor, value_type default_value = value_type()) const noexcept
     {
         _default_value = default_value;
 
@@ -1600,7 +1600,7 @@ public:
         \param default_value A default value if the sequence contains no elements.
         \return Default value if source is empty; otherwise, the first element in source.
     */
-    auto first_or_default(value_type default_value = value_type()) const noexcept -> decltype(auto)
+    auto first_or_default(value_type default_value = value_type()) const noexcept
     {
         _default_value = default_value;
 
@@ -1662,7 +1662,7 @@ public:
         \return A relinx_object that contains grouped elements by a key in a std::map container where values of each key is a std::vector container.
     */
     template<typename KeyFunctor>
-    auto group_by(KeyFunctor &&keyFunctor) noexcept -> decltype(auto)
+    auto group_by(KeyFunctor &&keyFunctor) noexcept
     {
         using KeyType = typename std::decay<decltype(keyFunctor(value_type()))>::type;
 
@@ -1698,7 +1698,7 @@ public:
         \return A relinx_object that contains joined and grouped elements.
     */
     template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-    auto group_join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto group_join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept
     {
         using joinIteratorType = typename std::decay<decltype(std::begin(container))>::type;
         using joinType = typename std::decay<decltype(*joinIteratorType())>::type;
@@ -1743,7 +1743,7 @@ public:
     }
 
     template<typename T, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-    auto group_join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto group_join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept
     {
         return group_join<std::initializer_list<T>,
                             ThisKeyFunctor,
@@ -1773,7 +1773,7 @@ public:
         \return A relinx_object that contains joined and grouped elements.
     */
     template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor>
-    auto group_join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto group_join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept
     {
         return group_join(std::forward<Container>(container),
                     std::forward<ThisKeyFunctor>(thisKeyFunctor),
@@ -1784,7 +1784,7 @@ public:
     }
 
     template<typename T, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor>
-    auto group_join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto group_join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept
     {
         return group_join<std::initializer_list<T>,
                             ThisKeyFunctor,
@@ -1809,7 +1809,7 @@ public:
         \return A relinx_object that holds a set of intersected elements.
     */
     template<typename Container>
-    auto intersect_with(Container &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept -> decltype(auto)
+    auto intersect_with(Container &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept
     {
         using adapter_type = intersect_iterator_adapter<iterator_type, decltype(std::begin(container)), std::function<bool(const value_type&, const value_type&)>>;
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
@@ -1820,7 +1820,7 @@ public:
     }
 
     template<typename T>
-    auto intersect_with(std::initializer_list<T> &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept -> decltype(auto)
+    auto intersect_with(std::initializer_list<T> &&container, std::function<bool(const value_type&, const value_type&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; }) noexcept
     {
         return intersect_with<std::initializer_list<T>>(std::forward<std::initializer_list<T>>(container), std::forward<std::function<bool(const value_type&, const value_type&)>>(compareFunctor));
     }
@@ -1841,7 +1841,7 @@ public:
         \return A relinx_object that contains joined elements.
     */
     template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-    auto join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept
     {
         using joinIteratorType = typename std::decay<decltype(std::begin(container))>::type;
         using joinType = typename std::decay<decltype(*joinIteratorType())>::type;
@@ -1887,7 +1887,7 @@ public:
     }
 
     template<typename T, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-    auto join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false) noexcept
     {
         return join<std::initializer_list<T>,
                     ThisKeyFunctor,
@@ -1909,7 +1909,7 @@ public:
         \note See join.
     */
     template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor>
-    auto join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept
     {
         return join(std::forward<Container>(container),
                     std::forward<ThisKeyFunctor>(thisKeyFunctor),
@@ -1920,7 +1920,7 @@ public:
     }
 
     template<typename T, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor>
-    auto join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept -> decltype(auto)
+    auto join(std::initializer_list<T> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, bool leftJoin = false) noexcept
     {
         return join<std::initializer_list<T>,
                     ThisKeyFunctor,
@@ -2032,7 +2032,7 @@ public:
         \return The maximum value in the sequence.
     */
     template<typename TransformFunctor>
-    auto max(TransformFunctor &&transformFunctor) const -> decltype(auto)
+    auto max(TransformFunctor &&transformFunctor) const
     {
         if (_begin == _end) throw no_elements("max"s);
 
@@ -2050,7 +2050,7 @@ public:
 
         \return The maximum value in the sequence.
     */
-    auto max() const -> decltype(auto)
+    auto max() const
     {
         if (_begin == _end) throw no_elements("max"s);
 
@@ -2066,7 +2066,7 @@ public:
         \return The minimum value in the sequence.
     */
     template<typename TransformFunctor>
-    auto min(TransformFunctor &&transformFunctor) const -> decltype(auto)
+    auto min(TransformFunctor &&transformFunctor) const
     {
         if (_begin == _end) throw no_elements("min"s);
 
@@ -2084,7 +2084,7 @@ public:
 
         \return The minimum value in the sequence.
     */
-    auto min() const -> decltype(auto)
+    auto min() const
     {
         if (_begin == _end) throw no_elements("min"s);
 
@@ -2111,7 +2111,7 @@ public:
         \endcode
     */
     template<typename ConditionFunctor>
-    auto none(ConditionFunctor &&conditionFunctor) const noexcept -> decltype(auto)
+    auto none(ConditionFunctor &&conditionFunctor) const noexcept
     {
         return std::none_of(_begin, _end, std::forward<ConditionFunctor>(conditionFunctor));
     }
@@ -2128,13 +2128,13 @@ public:
         Any other casts can be emulated using \ref select and \ref where methods.
     */
     template<typename CastType, typename = typename std::enable_if<std::is_pointer<CastType>::value>::type>
-    auto of_type() noexcept -> decltype(auto)
+    auto of_type() noexcept
     {
         return select([](auto &&i) { return dynamic_cast<CastType>(i); })->where([](auto &&i) { return i != nullptr; });
     }
 
     template<typename SelectFunctor, typename SortFunctor>
-    auto order_by(SelectFunctor &&selectFunctor, SortFunctor &&sortFunctor) noexcept -> decltype(auto)
+    auto order_by(SelectFunctor &&selectFunctor, SortFunctor &&sortFunctor) noexcept
     {
         default_container<value_type> sorted(_begin, _end);
 
@@ -2154,7 +2154,7 @@ public:
         \return A relinx_object whose elements are sorted according to a key.
     */
     template<typename SelectFunctor = std::function<value_type(const value_type&)>>
-    auto order_by(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) noexcept -> decltype(auto)
+    auto order_by(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) noexcept
     {
         return order_by(std::forward<SelectFunctor>(selectFunctor), std::less<typename std::decay<decltype(selectFunctor(value_type()))>::type>());
     }
@@ -2168,7 +2168,7 @@ public:
         \return A relinx_object whose elements are sorted in descending order according to a key.
     */
     template<typename SelectFunctor = std::function<value_type(const value_type&)>>
-    auto order_by_descending(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) noexcept -> decltype(auto)
+    auto order_by_descending(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) noexcept
     {
         return order_by(std::forward<SelectFunctor>(selectFunctor), std::greater<typename std::decay<decltype(selectFunctor(value_type()))>::type>());
     }
@@ -2179,7 +2179,7 @@ public:
 
         \return A sequence whose elements correspond to those of the input sequence in reverse order.
     */
-    auto reverse() noexcept -> decltype(auto)
+    auto reverse() noexcept
     {
         if constexpr (std::is_same<typename iterator_type::iterator_category, std::bidirectional_iterator_tag>::value || std::is_same<typename iterator_type::iterator_category, std::random_access_iterator_tag>::value)
         {
@@ -2219,7 +2219,7 @@ public:
         \return An relinx_object whose elements are the result of invoking the transform functor on each element of source.
     */
     template<typename TransformFunctor>
-    auto select(TransformFunctor &&transformFunctor) noexcept -> decltype(auto)
+    auto select(TransformFunctor &&transformFunctor) noexcept
     {
         using ret_type = decltype(transformFunctor(value_type()));
         using adapter_type = transform_iterator_adapter<iterator_type, std::function<ret_type(const value_type&)>>;
@@ -2240,7 +2240,7 @@ public:
         \return An relinx_object whose elements are the result of invoking the transform functor on each element of source.
     */
     template<typename TransformFunctor>
-    auto select_i(TransformFunctor &&transformFunctor) noexcept -> decltype(auto)
+    auto select_i(TransformFunctor &&transformFunctor) noexcept
     {
         return _indexer = 0, select([this, &transformFunctor](auto &&v) { return transformFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
@@ -2283,7 +2283,7 @@ public:
         \return A \ref relinx_object whose elements are the result of invoking the one-to-many transform function on each element of the input sequence.
     */
     template<typename ContainerSelectorFunctor>
-    auto select_many(ContainerSelectorFunctor &&containerSelectorFunctor) noexcept -> decltype(auto)
+    auto select_many(ContainerSelectorFunctor &&containerSelectorFunctor) noexcept
     {
         using cont_type = decltype(containerSelectorFunctor(value_type()));
         using adapter_type = select_many_iterator_adapter<iterator_type, std::function<cont_type(const value_type&)>>;
@@ -2303,7 +2303,7 @@ public:
         \return An relinx_object whose elements are the result of invoking the one-to-many transform function on each element of the input sequence.
     */
     template<typename ContainerSelectorFunctor>
-    auto select_many_i(ContainerSelectorFunctor &&containerSelectorFunctor) noexcept -> decltype(auto)
+    auto select_many_i(ContainerSelectorFunctor &&containerSelectorFunctor) noexcept
     {
         return _indexer = 0, select_many([this, &containerSelectorFunctor](auto &&v) { return containerSelectorFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
@@ -2318,13 +2318,13 @@ public:
         \return true if the two source sequences are of equal length and their corresponding elements are equal according to the compare functor; otherwise, false.
     */
     template<typename Container, typename CompareFunctor>
-    auto sequence_equal(Container &&container, CompareFunctor &&compareFunctor) const noexcept -> decltype(auto)
+    auto sequence_equal(Container &&container, CompareFunctor &&compareFunctor) const noexcept
     {
         return std::equal(_begin, _end, std::begin(container), std::forward<CompareFunctor>(compareFunctor));
     }
 
     template<typename T, typename CompareFunctor>
-    auto sequence_equal(std::initializer_list<T> &&container, CompareFunctor &&compareFunctor) const noexcept -> decltype(auto)
+    auto sequence_equal(std::initializer_list<T> &&container, CompareFunctor &&compareFunctor) const noexcept
     {
         return sequence_equal<std::initializer_list<T>, CompareFunctor>(std::forward<std::initializer_list<T>>(container), std::forward<CompareFunctor>(compareFunctor));
     }
@@ -2338,13 +2338,13 @@ public:
         \return true if the two source sequences are of equal length and their corresponding elements are equal according to the default equality comparer for their type; otherwise, false.
     */
     template<typename Container>
-    auto sequence_equal(Container &&container) const noexcept -> decltype(auto)
+    auto sequence_equal(Container &&container) const noexcept
     {
         return std::equal(_begin, _end, std::begin(container));
     }
 
     template<typename T>
-    auto sequence_equal(std::initializer_list<T> &&container) const noexcept -> decltype(auto)
+    auto sequence_equal(std::initializer_list<T> &&container) const noexcept
     {
         return sequence_equal<std::initializer_list<T>>(std::forward<std::initializer_list<T>>(container));
     }
@@ -2358,7 +2358,7 @@ public:
         \return The single element of the input sequence that satisfies a condition.
     */
     template<typename ConditionFunctor>
-    auto single(ConditionFunctor &&conditionFunctor) const -> decltype(auto)
+    auto single(ConditionFunctor &&conditionFunctor) const
     {
         if (_begin == _end) throw no_elements("single"s);
 
@@ -2380,7 +2380,7 @@ public:
 
         \return The single element of the input sequence.
     */
-    auto single() const -> decltype(auto)
+    auto single() const
     {
         if (_begin == _end) throw no_elements("single"s);
 
@@ -2444,7 +2444,7 @@ public:
 
         \return A sequence that contains the elements that occur after the specified index in the input sequence.
     */
-    auto skip(std::size_t skip) -> decltype(auto)
+    auto skip(std::size_t skip)
     {
         while (_begin != _end && skip-- > 0) ++_begin;
 
@@ -2462,7 +2462,7 @@ public:
         \return A relinx_object that contains the elements from the input sequence starting at the first element in the linear series that does not pass the test specified by predicate.
     */
     template<typename SkipFunctor>
-    auto skip_while(SkipFunctor &&skipFunctor) -> decltype(auto)
+    auto skip_while(SkipFunctor &&skipFunctor)
     {
         while (_begin != _end && skipFunctor(*_begin)) ++_begin;
 
@@ -2480,7 +2480,7 @@ public:
         \return A relinx_object that contains the elements from the input sequence starting at the first element in the linear series that does not pass the test specified by predicate.
     */
     template<typename SkipFunctor>
-    auto skip_while_i(SkipFunctor &&skipFunctor) -> decltype(auto)
+    auto skip_while_i(SkipFunctor &&skipFunctor)
     {
         return _indexer = 0, skip_while([this, &skipFunctor](auto &&v) { return skipFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
@@ -2496,7 +2496,7 @@ public:
         \return The sum of the projected values.
     */
     template<typename SelectFunctor>
-    auto sum(SelectFunctor &&selectFunctor) const noexcept -> decltype(auto)
+    auto sum(SelectFunctor &&selectFunctor) const noexcept
     {
         return std::accumulate(_begin, _end, decltype(selectFunctor(value_type()))(), [&selectFunctor](auto &&sum, auto &&v) { return sum + selectFunctor(v); });
     }
@@ -2509,7 +2509,7 @@ public:
 
         \return The sum of the values in the sequence.
     */
-    auto sum() const noexcept -> decltype(auto)
+    auto sum() const noexcept
     {
         return sum([](auto &&v){ return v; });
     }
@@ -2524,7 +2524,7 @@ public:
 
         \return A relinx_object that contains the specified number of elements from the start of the input sequence.
     */
-    auto take(std::ptrdiff_t limit) noexcept -> decltype(auto)
+    auto take(std::ptrdiff_t limit) noexcept
     {
         using adapter_type = limit_iterator_adapter<iterator_type, std::function<bool(const value_type&)>>;
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
@@ -2543,7 +2543,7 @@ public:
         \return An relinx_object that contains the elements from the input sequence that occur before the element at which the test no longer passes.
     */
     template<typename LimitFunctor>
-    auto take_while(LimitFunctor &&limitFunctor) noexcept -> decltype(auto)
+    auto take_while(LimitFunctor &&limitFunctor) noexcept
     {
         using adapter_type = limit_iterator_adapter<iterator_type, std::function<bool(const value_type&)>>;
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
@@ -2562,7 +2562,7 @@ public:
         \return An relinx_object that contains the elements from the input sequence that occur before the element at which the test no longer passes.
     */
     template<typename LimitFunctor>
-    auto take_while_i(LimitFunctor &&limitFunctor) noexcept -> decltype(auto)
+    auto take_while_i(LimitFunctor &&limitFunctor) noexcept
     {
         return _indexer = 0, take_while([this, &limitFunctor](auto &&v){ return limitFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
@@ -2574,7 +2574,7 @@ public:
         \return A container that contains all elements from a current relinx_object.
     */
     template<typename AnyContainerType>
-    auto to_container() const noexcept -> decltype(auto)
+    auto to_container() const noexcept
     {
         return AnyContainerType(_begin, _end);
     }
@@ -2585,7 +2585,7 @@ public:
 
         \return A std::list conatainer that contains all elements from a current relinx_object.
     */
-    auto to_list() const noexcept -> decltype(auto)
+    auto to_list() const noexcept
     {
         return to_container<std::list<value_type>>();
     }
@@ -2604,7 +2604,7 @@ public:
     template<   typename KeySelectorFunctor,
                 typename ValueSelectorFunctor = std::function<value_type(const value_type&)>,
                 template <typename, typename> class MapType = default_map>
-    auto to_map(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const value_type &v) { return v; }) const noexcept -> decltype(auto)
+    auto to_map(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const value_type &v) { return v; }) const noexcept
     {
         using key_type = typename std::decay<decltype(keySelectorFunctor(value_type()))>::type;
         using new_value_type = typename std::decay<decltype(valueSelectorFunctor(value_type()))>::type;
@@ -2637,7 +2637,7 @@ public:
     template<   typename KeySelectorFunctor,
                 typename ValueSelectorFunctor = std::function<value_type(const value_type&)>,
                 template <typename, typename> class MultimapType = default_multimap>
-    auto to_multimap(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const value_type &v) { return v; }) const noexcept -> decltype(auto)
+    auto to_multimap(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const value_type &v) { return v; }) const noexcept
     {
         return to_map<  KeySelectorFunctor,
                         ValueSelectorFunctor,
@@ -2652,7 +2652,7 @@ public:
 
         \return A std::string object that contains stringified version of all elements a current relinx_object contains.
     */
-    auto to_string(const std::string &delimiter = std::string()) const noexcept -> decltype(auto)
+    auto to_string(const std::string &delimiter = std::string()) const noexcept
     {
         std::ostringstream oss;
         auto begin = _begin;
@@ -2669,7 +2669,7 @@ public:
 
         \return A std::vector conatainer that contains all elements from a current relinx_object.
     */
-    auto to_vector() const noexcept -> decltype(auto)
+    auto to_vector() const noexcept
     {
         return to_container<std::vector<value_type>>();
     }
@@ -2686,13 +2686,13 @@ public:
         \return A relinx_object that contains the elements from both input sequences, excluding duplicates.
     */
     template<typename Container, typename KeyFunctor = std::function<value_type(const value_type &)>>
-    auto union_with(Container &&container, KeyFunctor &&keyFunctor = [](auto &&v) { return v; }) noexcept -> decltype(auto)
+    auto union_with(Container &&container, KeyFunctor &&keyFunctor = [](auto &&v) { return v; }) noexcept
     {
         return concat(std::forward<Container>(container))->distinct(std::forward<KeyFunctor>(keyFunctor));
     }
 
     template<typename T>
-    auto union_with(std::initializer_list<T> &&container) noexcept -> decltype(auto)
+    auto union_with(std::initializer_list<T> &&container) noexcept
     {
         return union_with<std::initializer_list<T>>(std::forward<std::initializer_list<T>>(container));
     }
@@ -2708,7 +2708,7 @@ public:
         \return A relinx_object that contains elements from the input sequence that satisfy the condition.
     */
     template<typename FilterFunctor>
-    auto where(FilterFunctor &&filterFunctor) noexcept -> decltype(auto)
+    auto where(FilterFunctor &&filterFunctor) noexcept
     {
         using adapter_type = filter_iterator_adapter<iterator_type, std::function<bool(const value_type&)>>;
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
@@ -2727,7 +2727,7 @@ public:
         \return A relinx_object that contains elements from the input sequence that satisfy the condition.
     */
     template<typename FilterFunctor>
-    auto where_i(FilterFunctor &&filterFunctor) noexcept -> decltype(auto)
+    auto where_i(FilterFunctor &&filterFunctor) noexcept
     {
         return _indexer = 0, where([this, &filterFunctor](auto &&v) { return filterFunctor(v, _indexer++); });
     }
@@ -2743,7 +2743,7 @@ public:
         \return
     */
     template<typename Container, typename ResultFunctor>
-    auto zip(Container &&container, ResultFunctor &&resultFunctor) noexcept -> decltype(auto)
+    auto zip(Container &&container, ResultFunctor &&resultFunctor) noexcept
     {
         using container_iterator_type = decltype(std::begin(container));
         using container_type = typename std::decay<decltype(*std::begin(container))>::type;
@@ -2757,7 +2757,7 @@ public:
     }
 
     template<typename T, typename ResultFunctor>
-    auto zip(std::initializer_list<T> &&container, ResultFunctor &&resultFunctor) noexcept -> decltype(auto)
+    auto zip(std::initializer_list<T> &&container, ResultFunctor &&resultFunctor) noexcept
     {
         return zip<std::initializer_list<T>, ResultFunctor>(std::forward<std::initializer_list<T>>(container), std::forward<ResultFunctor>(resultFunctor));
     }
@@ -2773,7 +2773,7 @@ protected:
     std::shared_ptr<ParentRelinxType> _parent_relinx_object_ptr;
 
     template<typename ConditionFunctor>
-    auto _last(ConditionFunctor &&conditionFunctor) const noexcept -> decltype(auto)
+    auto _last(ConditionFunctor &&conditionFunctor) const noexcept
     {
         auto begin = _begin;
         auto end = _end;
@@ -2813,18 +2813,18 @@ public:
 
     ~relinx_object_ordered() = default;
 
-    auto begin() const noexcept -> decltype(auto)
+    auto begin() const noexcept
     {
         return std::begin(_ordered_values);
     }
 
-    auto end() const noexcept -> decltype(auto)
+    auto end() const noexcept
     {
         return std::end(_ordered_values);
     }
 
     template<typename SelectFunctor, typename SortFunctor>
-    auto order_by(SelectFunctor &&selectFunctor, SortFunctor &&sortFunctor) -> decltype(auto)
+    auto order_by(SelectFunctor &&selectFunctor, SortFunctor &&sortFunctor)
     {
         std::sort(std::begin(_ordered_values), std::end(_ordered_values), [&selectFunctor, &sortFunctor](auto &&a, auto &&b) { return sortFunctor(selectFunctor(a), selectFunctor(b)); });
 
@@ -2834,19 +2834,19 @@ public:
     }
 
     template<typename SelectFunctor = std::function<value_type(const value_type&)>>
-    auto order_by(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) -> decltype(auto)
+    auto order_by(SelectFunctor &&selectFunctor = [](auto &&v) { return v; })
     {
         return order_by(std::forward<SelectFunctor>(selectFunctor), std::less<typename std::decay<decltype(selectFunctor(value_type()))>::type>());
     }
 
     template<typename SelectFunctor = std::function<value_type(const value_type&)>>
-    auto order_by_descending(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) -> decltype(auto)
+    auto order_by_descending(SelectFunctor &&selectFunctor = [](auto &&v) { return v; })
     {
         return order_by(std::forward<SelectFunctor>(selectFunctor), std::greater<typename std::decay<decltype(selectFunctor(value_type()))>::type>());
     }
 
     template<typename SelectFunctor, typename SortFunctor>
-    auto then_by(SelectFunctor &&selectFunctor, SortFunctor &&sortFunctor) -> decltype(auto)
+    auto then_by(SelectFunctor &&selectFunctor, SortFunctor &&sortFunctor)
     {
         auto begin = std::begin(_ordered_values);
         auto end = std::end(_ordered_values);
@@ -2869,13 +2869,13 @@ public:
     }
 
     template<typename SelectFunctor = std::function<value_type(const value_type&)>>
-    auto then_by(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) -> decltype(auto)
+    auto then_by(SelectFunctor &&selectFunctor = [](auto &&v) { return v; })
     {
         return then_by(std::forward<SelectFunctor>(selectFunctor), std::less<typename std::decay<decltype(selectFunctor(value_type()))>::type>());
     }
 
     template<typename SelectFunctor = std::function<value_type(const value_type&)>>
-    auto then_by_descending(SelectFunctor &&selectFunctor = [](auto &&v) { return v; }) -> decltype(auto)
+    auto then_by_descending(SelectFunctor &&selectFunctor = [](auto &&v) { return v; })
     {
         return then_by(std::forward<SelectFunctor>(selectFunctor), std::greater<typename std::decay<decltype(selectFunctor(value_type()))>::type>());
     }
@@ -2886,7 +2886,7 @@ protected:
 };
 
 template<typename Container>
-auto from(const Container &c) -> decltype(auto)
+auto from(const Container &c)
 {
     using next_relinx_type = relinx_object<void, typename std::decay<decltype(std::begin(c))>::type>;
 
@@ -2894,7 +2894,7 @@ auto from(const Container &c) -> decltype(auto)
 }
 
 template<typename Container>
-auto from(Container &c) -> decltype(auto)
+auto from(Container &c)
 {
     const Container &const_alias { c };
 
@@ -2902,7 +2902,7 @@ auto from(Container &c) -> decltype(auto)
 }
 
 template<typename Container>
-auto from(Container &&c) -> decltype(auto)
+auto from(Container &&c)
 {
     using next_relinx_type = relinx_object<void, typename std::decay<decltype(std::begin(c))>::type, typename std::decay<decltype(c)>::type>;
 
@@ -2910,19 +2910,19 @@ auto from(Container &&c) -> decltype(auto)
 }
 
 template <typename T>
-auto from(const std::initializer_list<T> &i) -> decltype(auto)
+auto from(const std::initializer_list<T> &i)
 {
     return from<std::initializer_list<T>>(i);
 }
 
 template <typename T>
-auto from(std::initializer_list<T> &i) -> decltype(auto)
+auto from(std::initializer_list<T> &i)
 {
     return from<std::initializer_list<T>>(i);
 }
 
 template <typename T>
-auto from(std::initializer_list<T> &&i) -> decltype(auto)
+auto from(std::initializer_list<T> &&i)
 {
     default_container<T> result(std::size(i));
 
@@ -2932,7 +2932,7 @@ auto from(std::initializer_list<T> &&i) -> decltype(auto)
 }
 
 template <typename Iterator>
-auto from(Iterator &&begin, Iterator &&end) -> decltype(auto)
+auto from(Iterator &&begin, Iterator &&end)
 {
     using next_relinx_type = relinx_object<void, typename std::decay<decltype(begin)>::type>;
 
@@ -2940,7 +2940,7 @@ auto from(Iterator &&begin, Iterator &&end) -> decltype(auto)
 }
 
 template <typename T>
-auto from(T *a, std::size_t s) -> decltype(auto)
+auto from(T *a, std::size_t s)
 {
     using next_relinx_type = relinx_object<void, T*>;
 
@@ -2959,7 +2959,7 @@ auto from(T *a, std::size_t s) -> decltype(auto)
     \return A relinx_object that contains a generated range.
 */
 template<typename T>
-auto range(T start, std::size_t count) -> decltype(auto)
+auto range(T start, std::size_t count)
 {
     default_container<T> c(count);
 
@@ -2981,7 +2981,7 @@ auto range(T start, std::size_t count) -> decltype(auto)
     \return A relinx_object that contains a repeated value.
 */
 template<typename T>
-auto repeat(T e, std::size_t count) -> decltype(auto)
+auto repeat(T e, std::size_t count)
 {
     default_container<T> c(count);
 
