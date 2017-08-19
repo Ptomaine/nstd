@@ -1484,7 +1484,7 @@ public:
 
         \exception Throws std::out_of_range exception when index is less than 0 or greater than or equal to the number of elements in source.
     */
-    auto element_at(std::size_t index) const -> value_type
+    auto element_at(std::size_t index) const
     {
         auto begin = _begin;
         auto end = _end;
@@ -1504,7 +1504,7 @@ public:
         \param default_value The default value to return if the index is out of range.
         \return Default value if the index is outside the bounds of the source sequence; otherwise, the element at the specified position in the source sequence.
     */
-    auto element_at_or_default(std::size_t index, value_type default_value = value_type()) const noexcept -> value_type
+    auto element_at_or_default(std::size_t index, value_type default_value = value_type()) const noexcept
     {
         auto begin = _begin;
         auto end = _end;
@@ -1945,7 +1945,7 @@ public:
         \exception not_found No element satisfies the condition in predicate.
     */
     template<typename ConditionFunctor>
-    auto last(ConditionFunctor &&conditionFunctor) const -> value_type
+    auto last(ConditionFunctor &&conditionFunctor) const
     {
         if (_begin == _end) throw no_elements("last"s);
 
@@ -1976,7 +1976,7 @@ public:
 
         \exception no_elements The source sequence is empty.
     */
-    auto last() const -> value_type
+    auto last() const
     {
         return last([](auto &&) { return true; });
     }
@@ -1991,7 +1991,7 @@ public:
         \return default_value if the sequence is empty or if no elements pass the test in the predicate functor; otherwise, the last element that passes the test in the predicate functor.
     */
     template<typename ConditionFunctor>
-    auto last_or_default(ConditionFunctor &&conditionFunctor, value_type default_value = value_type()) const noexcept -> value_type
+    auto last_or_default(ConditionFunctor &&conditionFunctor, value_type default_value = value_type()) const noexcept
     {
         if constexpr (std::is_same<typename iterator_type::iterator_category, std::bidirectional_iterator_tag>::value || std::is_same<typename iterator_type::iterator_category, std::random_access_iterator_tag>::value)
         {
@@ -2018,7 +2018,7 @@ public:
 
         \return default_value if the source sequence is empty; otherwise, the last element in the sequence.
     */
-    auto last_or_default(value_type default_value = value_type()) const noexcept -> value_type
+    auto last_or_default(value_type default_value = value_type()) const noexcept
     {
         return last_or_default([](auto &&) { return true; }, default_value);
     }
@@ -2401,7 +2401,7 @@ public:
         \return The single element of the input sequence that satisfies the condition, or default value if no such element is found.
     */
     template<typename ConditionFunctor>
-    auto single_or_default(ConditionFunctor &&conditionFunctor, value_type defaultValue = value_type()) const -> value_type
+    auto single_or_default(ConditionFunctor &&conditionFunctor, value_type defaultValue = value_type()) const
     {
         auto i = std::find_if(_begin, _end, conditionFunctor);
 
@@ -2423,7 +2423,7 @@ public:
 
         \return The single element of the input sequence, or a default value if the sequence contains no elements.
     */
-    auto single_or_default(value_type defaultValue = value_type()) const -> value_type
+    auto single_or_default(value_type defaultValue = value_type()) const
     {
         if (_begin == _end) return defaultValue;
 
