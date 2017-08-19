@@ -69,13 +69,13 @@ public:
     {
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin1 == _end1 && s._begin1 == s._end1 && _begin2 == _end2 && s._begin2 == s._end2) ||
                 (_begin1 == s._begin1 && _end1 == s._end1 && _begin2 == s._begin2 && _end2 == s._end2));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -142,13 +142,13 @@ public:
         _begin = std::find_if(_begin, _end, _filterFunctor);
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -211,13 +211,13 @@ public:
     {
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -277,13 +277,13 @@ public:
         if (_begin != _end && !_limitFunctor(*_begin)) _begin = _end;
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -347,13 +347,13 @@ public:
         if (_begin != _end) _key_set.insert(_keyFunctor(*_begin));
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -432,13 +432,13 @@ public:
         }
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -513,13 +513,13 @@ public:
         if (_begin != _end) _processedValues.insert(*_begin);
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -584,13 +584,13 @@ public:
         if (_begin != _end) _processedValues.insert(*_begin);
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -692,13 +692,13 @@ public:
         }
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -820,13 +820,13 @@ public:
         }
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin == _end && s._begin == s._end) ||
                 (_begin == s._begin && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -917,13 +917,13 @@ public:
         }
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_begin1 == _end1 && s._begin1 == s._end1 && _begin2 == _end2 && s._begin2 == s._end2) ||
                 (_begin1 == s._begin1 && _end1 == s._end1 && _begin2 == s._begin2 && _end2 == s._end2));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -992,13 +992,13 @@ public:
         if (_numberOfTimes == 0 && _begin != _end) _current = _begin = _end;
     }
 
-    auto operator==(const self_type &s) const -> bool
+    auto operator==(const self_type &s) const
     {
         return ((_current == _end && s._current == s._end) ||
                 (_current == s._current && _end == s._end));
     }
 
-    auto operator!=(const self_type &s) const -> bool
+    auto operator!=(const self_type &s) const
     {
         return !(*this == s);
     }
@@ -1165,7 +1165,7 @@ public:
         \return true if every element of the source sequence passes the test in the specified predicate, or if the sequence is empty; otherwise, false.
     */
     template<typename ConditionFunctor>
-    auto all(ConditionFunctor &&conditionFunctor) const noexcept -> bool
+    auto all(ConditionFunctor &&conditionFunctor) const noexcept
     {
         return std::all_of(_begin, _end, std::forward<ConditionFunctor>(conditionFunctor));
     }
@@ -1180,7 +1180,7 @@ public:
         \return true if any elements in the source sequence pass the test in the specified predicate; otherwise, false.
     */
     template<typename ConditionFunctor>
-    auto any(ConditionFunctor &&conditionFunctor) const noexcept -> bool
+    auto any(ConditionFunctor &&conditionFunctor) const noexcept
     {
         return std::any_of(_begin, _end, std::forward<ConditionFunctor>(conditionFunctor));
     }
@@ -1192,7 +1192,7 @@ public:
 
         \return true if the source sequence contains any elements; otherwise, false.
     */
-    auto any() const noexcept -> bool
+    auto any() const noexcept
     {
         return !(_begin == _end);
     }
@@ -1323,7 +1323,7 @@ public:
 
         Example: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->contains(5); \endcode
     */
-    auto contains(value_type &&value) const noexcept -> bool
+    auto contains(value_type &&value) const noexcept
     {
         return std::find(_begin, _end, value) != _end;
     }
@@ -1340,7 +1340,7 @@ public:
         Example: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->contains([](auto &&i) { return i % 2 == 0; }); \endcode checks whether a sequence contains an even number
     */
     template<typename CompareFunctor>
-    auto contains(CompareFunctor &&compareFunctor) const noexcept -> bool
+    auto contains(CompareFunctor &&compareFunctor) const noexcept
     {
         return std::find_if(_begin, _end, std::forward<CompareFunctor>(compareFunctor)) != _end;
     }
