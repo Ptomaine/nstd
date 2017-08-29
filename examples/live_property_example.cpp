@@ -140,11 +140,12 @@ int main()
         sg1.emit("1"s); sg2.emit("2"s);
         sg1.emit("1"s); sg2.emit("2"s);
         sg1.emit("1"s); sg2.emit("2"s);
-        sg1.emit("1"s); sg2.emit("2"s);
-        sg1.emit("1"s); sg2.emit("2"s);
-        sg1.emit("1"s); sg2.emit("2"s);
 
         std::this_thread::sleep_for(0.5s);
+
+        sg1.emit("1"s); sg2.emit("2"s);
+        sg1.emit("1"s); sg2.emit("2"s);
+        sg1.emit("1"s); sg2.emit("2"s);
     }
 
 	std::this_thread::sleep_for(1s);

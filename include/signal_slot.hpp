@@ -24,7 +24,7 @@ SOFTWARE.
 #include <chrono>
 #include <functional>
 #include <mutex>
-#include <queue>
+#include <deque>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -405,7 +405,7 @@ public:
         while (!std::empty(_signal_queue))
         {
             auto args = std::move(_signal_queue.front());
-            _signal_queue.pop();
+            _signal_queue.pop_front();
 
             std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
         }
@@ -415,10 +415,12 @@ public:
     {
         std::scoped_lock lock(_emit_lock);
 
-        _signal_queue.push(std::make_tuple(args...));
+        _signal_queue.push_back(std::make_tuple(args...));
 
         if (!_thread_running.exchange(true))
         {
+            if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
+
             _dispatcher_thread = std::thread([this](){ queue_dispatcher(); });
         }
     }
@@ -436,7 +438,7 @@ public:
 
 protected:
     static inline std::chrono::milliseconds _default_throttle_ms { 10ms };
-    std::queue<std::tuple<Args...>> _signal_queue {};
+    std::deque<std::tuple<Args...>> _signal_queue {};
     std::mutex _emit_lock {};
     std::atomic<std::chrono::milliseconds> _throttle_ms { _default_throttle_ms };
     std::thread _dispatcher_thread {};
@@ -453,7 +455,7 @@ protected:
 
                 auto args = std::move(_signal_queue.front());
 
-                _signal_queue.pop();
+                _signal_queue.pop_front();
 
                 std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
 
@@ -519,10 +521,12 @@ public:
     {
         std::scoped_lock lock(_emit_lock);
 
-        _signal_queue.push({ this, std::make_tuple(args...) });
+        _signal_queue.push_back({ this, std::make_tuple(args...) });
 
         if (!_thread_running.exchange(true))
         {
+            if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
+
             _dispatcher_thread = std::thread(&queue_dispatcher);
         }
     }
@@ -540,7 +544,7 @@ public:
 
 protected:
     static inline std::chrono::milliseconds _default_throttle_ms { 10ms };
-    static inline std::queue<std::tuple<threaded_signal_base*, std::tuple<Args...>>> _signal_queue {};
+    static inline std::deque<std::tuple<threaded_signal_base*, std::tuple<Args...>>> _signal_queue {};
     static inline std::mutex _emit_lock {}, _destruct_lock {};
     static inline std::atomic<std::chrono::milliseconds> _throttle_ms { _default_throttle_ms };
     static inline std::thread _dispatcher_thread {};
@@ -558,7 +562,7 @@ protected:
                 auto value = std::move(_signal_queue.front());
                 auto &[this_, args] = value;
 
-                _signal_queue.pop();
+                _signal_queue.pop_front();
 
                 std::apply([&this_, &args](const Args&... a){ this_->base_class::emit(a...); }, args);
 
