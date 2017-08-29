@@ -716,6 +716,14 @@ template<typename... Args> using throttled_signal_set = signal_set_base<throttle
 template<typename... Args> using throttled_signal_ex_set = signal_set_base<throttled_signal_ex, Args...>;
 template<typename... Args> using queued_signal_set = signal_set_base<queued_signal, Args...>;
 template<typename... Args> using queued_signal_ex_set = signal_set_base<queued_signal_ex, Args...>;
+
+struct connection_bag
+{
+    std::deque<connection> connections;
+
+    void operator= (connection &&c) { connections.push_front(std::forward<connection>(c)); }
+};
+
 }
 
 namespace std
