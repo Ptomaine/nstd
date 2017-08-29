@@ -405,6 +405,7 @@ public:
         while (!std::empty(_signal_queue))
         {
             auto args = std::move(_signal_queue.front());
+
             _signal_queue.pop_front();
 
             std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
@@ -431,7 +432,7 @@ public:
         _throttle_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
     }
 
-    std::chrono::microseconds throttle_ms() const
+    std::chrono::milliseconds throttle_ms() const
     {
         return _throttle_ms;
     }
@@ -473,21 +474,21 @@ template<typename... Args> using throttled_signal = throttled_signal_base<signal
 template<typename... Args> using throttled_signal_ex = throttled_signal_base<signal_ex, Args...>;
 
 template<template <typename...> typename signal_type, typename... Args>
-class threaded_signal_base : public signal_type<Args...>
+class queued_signal_base : public signal_type<Args...>
 {
 public:
     using base_class = signal_type<Args...>;
 
-    threaded_signal_base() = default;
+    queued_signal_base() = default;
     template<typename Duration>
-    threaded_signal_base(const std::string &name, const Duration &throttle_ms = threaded_signal_base::_default_throttle_ms) : base_class{ name } { _throttle_ms = std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms); }
-    threaded_signal_base(const std::string &name) : base_class{ name } {}
-    threaded_signal_base(threaded_signal_base &&other) = default;
-    threaded_signal_base &operator=(threaded_signal_base &&other) = default;
-    threaded_signal_base(const threaded_signal_base &other) = delete;
-    threaded_signal_base &operator=(const threaded_signal_base &other) = delete;
+    queued_signal_base(const std::string &name, const Duration &throttle_ms = queued_signal_base::_default_throttle_ms) : base_class{ name } {}
+    queued_signal_base(const std::string &name) : base_class{ name } {}
+    queued_signal_base(queued_signal_base &&other) = default;
+    queued_signal_base &operator=(queued_signal_base &&other) = default;
+    queued_signal_base(const queued_signal_base &other) = delete;
+    queued_signal_base &operator=(const queued_signal_base &other) = delete;
 
-    virtual ~threaded_signal_base() override
+    virtual ~queued_signal_base() override
     {
         std::scoped_lock lock_(_destruct_lock);
 
@@ -532,23 +533,32 @@ public:
     }
 
     template<typename Duration>
-    void throttle_ms(const Duration &duration)
+    static void delay_ms(const Duration &duration)
     {
-        _throttle_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        _delay_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
     }
 
-    std::chrono::microseconds throttle_ms() const
+    static std::chrono::milliseconds delay_ms()
     {
-        return _throttle_ms;
+        return _delay_ms;
+    }
+
+    static void use_delay(bool use)
+    {
+        _use_delay = use;
+    }
+
+    static bool use_delay()
+    {
+        return _use_delay;
     }
 
 protected:
-    static inline std::chrono::milliseconds _default_throttle_ms { 10ms };
-    static inline std::deque<std::tuple<threaded_signal_base*, std::tuple<Args...>>> _signal_queue {};
+    static inline std::deque<std::tuple<queued_signal_base*, std::tuple<Args...>>> _signal_queue {};
     static inline std::mutex _emit_lock {}, _destruct_lock {};
-    static inline std::atomic<std::chrono::milliseconds> _throttle_ms { _default_throttle_ms };
+    static inline std::atomic<std::chrono::milliseconds> _delay_ms { 0ms };
     static inline std::thread _dispatcher_thread {};
-    static inline std::atomic_bool _cancelled { false }, _thread_running { false };
+    static inline std::atomic_bool _use_delay { false }, _cancelled { false }, _thread_running { false };
 
     static void queue_dispatcher()
     {
@@ -569,15 +579,15 @@ protected:
                 if (std::empty(_signal_queue)) break;
             }
 
-            std::this_thread::sleep_for(_throttle_ms.load());
+            if (_use_delay) std::this_thread::sleep_for(_delay_ms.load());
         }
 
         _thread_running = false;
     }
 };
 
-template<typename... Args> using threaded_signal = threaded_signal_base<signal, Args...>;
-template<typename... Args> using threaded_signal_ex = threaded_signal_base<signal_ex, Args...>;
+template<typename... Args> using queued_signal = queued_signal_base<signal, Args...>;
+template<typename... Args> using queued_signal_ex = queued_signal_base<signal_ex, Args...>;
 
 template<typename... Args>
 class timer_signal : public signal<timer_signal<Args...>*, Args...>
@@ -703,8 +713,8 @@ template<typename... Args> using signal_set = signal_set_base<signal, Args...>;
 template<typename... Args> using signal_ex_set = signal_set_base<signal_ex, Args...>;
 template<typename... Args> using throttled_signal_set = signal_set_base<throttled_signal, Args...>;
 template<typename... Args> using throttled_signal_ex_set = signal_set_base<throttled_signal_ex, Args...>;
-template<typename... Args> using threaded_signal_set = signal_set_base<threaded_signal, Args...>;
-template<typename... Args> using threaded_signal_ex_set = signal_set_base<threaded_signal_ex, Args...>;
+template<typename... Args> using queued_signal_set = signal_set_base<queued_signal, Args...>;
+template<typename... Args> using queued_signal_ex_set = signal_set_base<queued_signal_ex, Args...>;
 }
 
 namespace std

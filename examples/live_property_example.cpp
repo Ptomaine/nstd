@@ -133,7 +133,7 @@ int main()
             std::cout << "emitting the rest of queued signals..." << std::endl;
         }
 
-        ss::threaded_signal<std::string> sg1("THREADED 1"s), sg2("THREADED 2"s);
+        ss::queued_signal<std::string> sg1("THREADED 1"s), sg2("THREADED 2"s);
         conections.emplace_back(sg1.connect([](auto &&s) { std::cout << "threaded 1: " << s << std::endl; }));
         conections.emplace_back(sg2.connect([](auto &&s) { std::cout << "threaded 2: " << s << std::endl; }));
 
@@ -141,7 +141,7 @@ int main()
         sg1.emit("1"s); sg2.emit("2"s);
         sg1.emit("1"s); sg2.emit("2"s);
 
-        std::this_thread::sleep_for(0.5s);
+        std::this_thread::sleep_for(0.2s);
 
         sg1.emit("1"s); sg2.emit("2"s);
         sg1.emit("1"s); sg2.emit("2"s);
@@ -172,7 +172,7 @@ int main()
     }));
 	timer.start_timer(&str_prop);
 
-	std::this_thread::sleep_for(5s);
+	std::this_thread::sleep_for(2s);
 
 	ss::signal<std::string> jsig("JSON signal"s);
 
@@ -218,21 +218,21 @@ int main()
     auto xxx2 = sssx["key_up"s]->connect([](auto &&s, auto &&v){ std::cout << "signal name: " << s->name() << "; value: " << v << std::endl; });
     sssx.emit("smart signal..."s);
 
-    ss::threaded_signal_ex_set<std::string> super_signal_set;
+    ss::queued_signal_ex_set<std::string> super_signal_set;
     auto executor { [](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << s->name() << "; value: " << v << std::endl; } };
     conections.emplace_back(super_signal_set["super signal 1"s]->connect(executor));
     conections.emplace_back(super_signal_set["super signal 2"s]->connect(executor));
     conections.emplace_back(super_signal_set["super signal 3"s]->connect(executor));
     super_signal_set.emit("super signal value!"s);
 
-    std::this_thread::sleep_for(0.5s);
+    std::this_thread::sleep_for(0.1s);
 
     {
         struct mouse_event { int x, y; };
         struct keyboard_event { int key_code; std::string modifiers; };
         struct event_data { std::type_index event_data_type_index; std::any event_data; };
 
-        ss::threaded_signal_ex_set<event_data> ss2;
+        ss::queued_signal_ex_set<event_data> ss2;
 
         conections.emplace_back(ss2["mouse_move"]->connect([](auto &&s, auto &&ev)
         {
@@ -258,7 +258,7 @@ int main()
         ss2["mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
         ss2["key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
 
-        std::this_thread::sleep_for(0.5s);
+        std::this_thread::sleep_for(0.1s);
     }
 
 	std::cout << "exitting..." << std::endl;
