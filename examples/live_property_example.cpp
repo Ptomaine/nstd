@@ -18,7 +18,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <any>
 #include <iostream>
+#include <typeinfo>
+#include <typeindex>
 #include <vector>
 #include "live_property.hpp"
 #include "json.hpp"
@@ -225,6 +228,40 @@ int main()
     super_signal_set.emit("super signal value!"s);
 
     std::this_thread::sleep_for(0.5s);
+
+    {
+        using namespace nstd::signal_slot;
+
+        struct mouse_event { int x, y; };
+        struct keyboard_event { int key_code; std::string modifiers; };
+        struct event_data { std::type_index event_data_type_index; std::any event_data; };
+
+        signal_set<signal_ex<event_data>> ss2;
+
+        conections.emplace_back(ss2["mouse_move"]->connect([](auto &&s, auto &&ev)
+        {
+            if (ev.event_data_type_index == typeid(mouse_event))
+            {
+                auto data { std::any_cast<mouse_event>(ev.event_data) };
+
+                std::cout << "signal: " << s->name() << "; event: " << ev.event_data_type_index.hash_code() << "; x: " << data.x << "; y: " << data.y << std::endl;
+            }
+        }));
+        conections.emplace_back(ss2["key_down"]->connect([](auto &&s, auto &&ev)
+        {
+            if (ev.event_data_type_index == typeid(keyboard_event))
+            {
+                auto data { std::any_cast<keyboard_event>(ev.event_data) };
+
+                std::cout << "signal: " << s->name() << "; event: " << ev.event_data_type_index.name() << "; key code: " << data.key_code << "; mods: " << data.modifiers << std::endl;
+            }
+        }));
+
+        auto make_event = [](auto &&ed) { return event_data { typeid(ed), ed }; };
+
+        ss2["mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
+        ss2["key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
+    }
 
 	std::cout << "exitting..." << std::endl;
 
