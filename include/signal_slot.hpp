@@ -664,11 +664,12 @@ private:
     }
 };
 
-template<template <typename...> typename signal_type, typename... Args>
+template<template <typename...> typename SignalType, typename... Args>
 class signal_set_base
 {
 public:
-    using value_type = signal_type<Args...>;
+    using signal_type = SignalType<Args...>;
+
     signal_set_base() = default;
     ~signal_set_base() = default;
 
@@ -677,13 +678,13 @@ public:
         for (auto &&s : _signals) s.second->emit(args...);
     }
 
-    const std::unique_ptr<value_type> &get_signal(const std::string &signal_name)
+    const std::unique_ptr<signal_type> &get_signal(const std::string &signal_name)
     {
         auto signal { _signals.find(signal_name) };
 
         if (signal != _signals.end()) return signal->second;
 
-        return _signals.emplace(signal_name, std::make_unique<value_type>(signal_name)).first->second;
+        return _signals.emplace(signal_name, std::make_unique<signal_type>(signal_name)).first->second;
     }
 
     bool exists(const std::string &signal_name) const
@@ -700,13 +701,13 @@ public:
         return signal_names;
     }
 
-    const std::unique_ptr<value_type> &operator[](const std::string &signal_name)
+    const std::unique_ptr<signal_type> &operator[](const std::string &signal_name)
     {
         return get_signal(signal_name);
     }
 
 protected:
-    std::unordered_map<std::string, std::unique_ptr<value_type>> _signals {};
+    std::unordered_map<std::string, std::unique_ptr<signal_type>> _signals {};
 };
 
 template<typename... Args> using signal_set = signal_set_base<signal, Args...>;
