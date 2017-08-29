@@ -276,7 +276,7 @@ public:
 
             if (!std::empty(_pending_connections))
             {
-                std::move(_pending_connections.begin(), _pending_connections.end(), std::back_inserter(_slots));
+                std::move(std::begin(_pending_connections), std::end(_pending_connections), std::back_inserter(_slots));
 
                 _pending_connections.clear();
             }
@@ -286,7 +286,7 @@ public:
 
         if (!std::empty(_slots))
         {
-            _slots.erase(std::remove_if(_slots.begin(), end, [&args...](auto &callable)
+            _slots.erase(std::remove_if(std::begin(_slots), end, [&args...](auto &callable)
             {
                 if (callable.is_disconnected()) return true;
 
@@ -303,8 +303,9 @@ public:
         connection to_return(this, new_slot);
 
         std::scoped_lock lock(_connect_lock);
+        auto end { std::end(_pending_connections) };
 
-        _pending_connections.erase(std::remove_if(_pending_connections.begin(), _pending_connections.end(), std::mem_fn(&slot<Args...>::is_disconnected)), _pending_connections.end());
+        _pending_connections.erase(std::remove_if(std::begin(_pending_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
         _pending_connections.emplace_back(std::move(new_slot));
 
         return to_return;
@@ -381,19 +382,19 @@ public:
 };
 
 template<template <typename...> typename signal_type, typename... Args>
-class throttled_signal : public signal_type<Args...>
+class throttled_signal_base : public signal_type<Args...>
 {
 public:
     using base_class = signal_type<Args...>;
 
-    throttled_signal() = default;
+    throttled_signal_base() = default;
     template<typename Duration>
-    throttled_signal(const std::string &name, const Duration &throttle_ms = throttled_signal::_default_throttle_ms) : base_class{ name }, _throttle_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms) } {}
-    throttled_signal(const std::string &name) : base_class{ name } {}
-    throttled_signal(throttled_signal &&other) = default;
-    throttled_signal &operator=(throttled_signal &&other) = default;
+    throttled_signal_base(const std::string &name, const Duration &throttle_ms = throttled_signal_base::_default_throttle_ms) : base_class{ name }, _throttle_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms) } {}
+    throttled_signal_base(const std::string &name) : base_class{ name } {}
+    throttled_signal_base(throttled_signal_base &&other) = default;
+    throttled_signal_base &operator=(throttled_signal_base &&other) = default;
 
-    virtual ~throttled_signal() override
+    virtual ~throttled_signal_base() override
     {
         _cancelled = true;
 
@@ -466,44 +467,51 @@ protected:
     }
 };
 
+template<typename... Args> using throttled_signal = throttled_signal_base<signal, Args...>;
+template<typename... Args> using throttled_signal_ex = throttled_signal_base<signal_ex, Args...>;
+
 template<template <typename...> typename signal_type, typename... Args>
-class threaded_signal : public signal_type<Args...>
+class threaded_signal_base : public signal_type<Args...>
 {
 public:
     using base_class = signal_type<Args...>;
 
-    threaded_signal() { ++_nr_of_instances; };
+    threaded_signal_base() = default;
     template<typename Duration>
-    threaded_signal(const std::string &name, const Duration &throttle_ms = threaded_signal::_default_throttle_ms) : base_class{ name } { ++_nr_of_instances; _throttle_ms = std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms); }
-    threaded_signal(const std::string &name) : base_class{ name } { ++_nr_of_instances; }
-    threaded_signal(threaded_signal &&other) = default;
-    threaded_signal &operator=(threaded_signal &&other) = default;
-    threaded_signal(const threaded_signal &other) = delete;
-    threaded_signal &operator=(const threaded_signal &other) = delete;
+    threaded_signal_base(const std::string &name, const Duration &throttle_ms = threaded_signal_base::_default_throttle_ms) : base_class{ name } { _throttle_ms = std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms); }
+    threaded_signal_base(const std::string &name) : base_class{ name } {}
+    threaded_signal_base(threaded_signal_base &&other) = default;
+    threaded_signal_base &operator=(threaded_signal_base &&other) = default;
+    threaded_signal_base(const threaded_signal_base &other) = delete;
+    threaded_signal_base &operator=(const threaded_signal_base &other) = delete;
 
-    virtual ~threaded_signal() override
+    virtual ~threaded_signal_base() override
     {
-        std::scoped_lock lock(_destruct_lock);
+        std::scoped_lock lock_(_destruct_lock);
 
-        --_nr_of_instances;
+        _cancelled = true;
 
-        if (!_nr_of_instances)
+        if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
+
+        std::scoped_lock lock(_emit_lock);
+
+        auto end { std::end(_signal_queue) };
+
+        if (!std::empty(_signal_queue))
         {
-            _cancelled = true;
-
-            if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
-
-            std::scoped_lock lock(_emit_lock);
-
-            while (!std::empty(_signal_queue))
+            _signal_queue.erase(std::remove_if(std::begin(_signal_queue), end, [this](auto &value)
             {
-                auto value = std::move(_signal_queue.front());
-                auto &args = std::get<1>(value);
+                auto &[this_, args] = value;
 
-                _signal_queue.pop();
+                if (this_ == this)
+                {
+                    std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
 
-                std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
-            }
+                    return true;
+                }
+
+                return false;
+            }), end);
         }
     }
 
@@ -532,12 +540,11 @@ public:
 
 protected:
     static inline std::chrono::milliseconds _default_throttle_ms { 10ms };
-    static inline std::queue<std::tuple<threaded_signal*, std::tuple<Args...>>> _signal_queue {};
+    static inline std::queue<std::tuple<threaded_signal_base*, std::tuple<Args...>>> _signal_queue {};
     static inline std::mutex _emit_lock {}, _destruct_lock {};
     static inline std::atomic<std::chrono::milliseconds> _throttle_ms { _default_throttle_ms };
     static inline std::thread _dispatcher_thread {};
     static inline std::atomic_bool _cancelled { false }, _thread_running { false };
-    static inline std::atomic_int _nr_of_instances { 0 };
 
     static void queue_dispatcher()
     {
@@ -564,6 +571,9 @@ protected:
         _thread_running = false;
     }
 };
+
+template<typename... Args> using threaded_signal = threaded_signal_base<signal, Args...>;
+template<typename... Args> using threaded_signal_ex = threaded_signal_base<signal_ex, Args...>;
 
 template<typename... Args>
 class timer_signal : public signal<timer_signal<Args...>*, Args...>
@@ -641,25 +651,25 @@ private:
 };
 
 template<template <typename...> typename signal_type, typename... Args>
-class signal_set
+class signal_set_base
 {
 public:
-    using SignalType = signal_type<Args...>;
-    signal_set() = default;
-    ~signal_set() = default;
+    using value_type = signal_type<Args...>;
+    signal_set_base() = default;
+    ~signal_set_base() = default;
 
     void emit(const Args &... args) const
     {
         for (auto &&s : _signals) s.second->emit(args...);
     }
 
-    const std::unique_ptr<SignalType> &get_signal(const std::string &signal_name)
+    const std::unique_ptr<value_type> &get_signal(const std::string &signal_name)
     {
         auto signal { _signals.find(signal_name) };
 
         if (signal != _signals.end()) return signal->second;
 
-        return _signals.emplace(signal_name, std::make_unique<SignalType>(signal_name)).first->second;
+        return _signals.emplace(signal_name, std::make_unique<value_type>(signal_name)).first->second;
     }
 
     bool exists(const std::string &signal_name) const
@@ -676,15 +686,21 @@ public:
         return signal_names;
     }
 
-    const std::unique_ptr<SignalType> &operator[](const std::string &signal_name)
+    const std::unique_ptr<value_type> &operator[](const std::string &signal_name)
     {
         return get_signal(signal_name);
     }
 
 protected:
-    std::unordered_map<std::string, std::unique_ptr<SignalType>> _signals {};
+    std::unordered_map<std::string, std::unique_ptr<value_type>> _signals {};
 };
 
+template<typename... Args> using signal_set = signal_set_base<signal, Args...>;
+template<typename... Args> using signal_ex_set = signal_set_base<signal_ex, Args...>;
+template<typename... Args> using throttled_signal_set = signal_set_base<throttled_signal, Args...>;
+template<typename... Args> using throttled_signal_ex_set = signal_set_base<throttled_signal_ex, Args...>;
+template<typename... Args> using threaded_signal_set = signal_set_base<threaded_signal, Args...>;
+template<typename... Args> using threaded_signal_ex_set = signal_set_base<threaded_signal_ex, Args...>;
 }
 
 namespace std

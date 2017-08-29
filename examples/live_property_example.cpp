@@ -26,9 +26,6 @@ SOFTWARE.
 #include "live_property.hpp"
 #include "json.hpp"
 
-template<typename... Args>
-using threaded_signal_ex = nstd::signal_slot::threaded_signal<nstd::signal_slot::signal_ex, Args...>;
-
 int main()
 {
     using namespace std::literals;
@@ -120,7 +117,7 @@ int main()
     ss::connection ts; //should be out of a signal's scope to be destroyed after it's signal thus letting a signal to emit the rest of queued signals...
     {
         {
-            ss::throttled_signal<ss::signal, std::string> sg("THROTTLED"s, 50ms);
+            ss::throttled_signal<std::string> sg("THROTTLED"s, 50ms);
             ts = sg.connect([&sg](auto &&str){ std::cout << "throttle: " << str << "; " << sg.name() << std::endl; });
 
             constexpr int sg_count {10};
@@ -136,7 +133,7 @@ int main()
             std::cout << "emitting the rest of queued signals..." << std::endl;
         }
 
-        ss::threaded_signal<ss::signal, std::string> sg1("THREADED 1"s), sg2("THREADED 2"s);
+        ss::threaded_signal<std::string> sg1("THREADED 1"s), sg2("THREADED 2"s);
         conections.emplace_back(sg1.connect([](auto &&s) { std::cout << "threaded 1: " << s << std::endl; }));
         conections.emplace_back(sg2.connect([](auto &&s) { std::cout << "threaded 2: " << s << std::endl; }));
 
@@ -205,7 +202,7 @@ int main()
     } cs;
 
     //signal_set<throttled_signal<std::string>> ss;
-    ss::signal_set<ss::signal, const std::string&> sss;
+    ss::signal_set<const std::string&> sss;
     auto z = sss["/mainwindow/button/ok"s]->connect([](auto &&s){ std::cout << s << std::endl; });
     auto zz = sss["/new/channel"s]->connect([](auto &&s){ std::cout << s << std::endl; });
     auto zzz = sss["/other/channel"s]->connect([&cs](auto &&s) { cs.call_me(s); });
@@ -215,12 +212,12 @@ int main()
     if (sss.exists("/broadcast/channel"s)) std::cout << "/broadcast/channel is created..." << std::endl;
     sss.emit("hello..."s); //broadcasting a signal to all slots of the set
 
-    ss::signal_set<ss::signal_ex, const std::string&> sssx;
+    ss::signal_ex_set<const std::string&> sssx;
     auto xxx1 = sssx["key_down"s]->connect([](auto &&s, auto &&v){ std::cout << "signal name: " << s->name() << "; value: " << v << std::endl; });
     auto xxx2 = sssx["key_up"s]->connect([](auto &&s, auto &&v){ std::cout << "signal name: " << s->name() << "; value: " << v << std::endl; });
     sssx.emit("smart signal..."s);
 
-    ss::signal_set<threaded_signal_ex, std::string> super_signal_set;
+    ss::threaded_signal_ex_set<std::string> super_signal_set;
     auto executor { [](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << s->name() << "; value: " << v << std::endl; } };
     conections.emplace_back(super_signal_set["super signal 1"s]->connect(executor));
     conections.emplace_back(super_signal_set["super signal 2"s]->connect(executor));
@@ -234,7 +231,7 @@ int main()
         struct keyboard_event { int key_code; std::string modifiers; };
         struct event_data { std::type_index event_data_type_index; std::any event_data; };
 
-        ss::signal_set<ss::signal_ex, event_data> ss2;
+        ss::threaded_signal_ex_set<event_data> ss2;
 
         conections.emplace_back(ss2["mouse_move"]->connect([](auto &&s, auto &&ev)
         {
@@ -259,6 +256,8 @@ int main()
 
         ss2["mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
         ss2["key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
+
+        std::this_thread::sleep_for(0.5s);
     }
 
 	std::cout << "exitting..." << std::endl;
