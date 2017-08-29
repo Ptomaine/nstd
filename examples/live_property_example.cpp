@@ -23,15 +23,19 @@ SOFTWARE.
 #include "live_property.hpp"
 #include "json.hpp"
 
+template<typename... Args>
+using threaded_signal_ex = nstd::signal_slot::threaded_signal<nstd::signal_slot::signal_ex, Args...>;
+
 int main()
 {
     using namespace std::literals;
+    namespace ss = nstd::signal_slot;
 
     using live_int = nstd::live_property<int>;
     using live_string = nstd::live_property<std::string>;
 
 	live_int int_prop{ "integer property for tests"s }, dummy_int_prop{ "dummy"s };
-	std::vector<nstd::signal_slot::connection> conections;
+	std::vector<ss::connection> conections;
     auto changing_callback = [](auto &&ctx)
     {
         std::cout << "The property '" << ctx.property.name() << "' changing: from [" << ctx.property.value() << "] to [" << ctx.new_value << "]" << std::endl;
@@ -110,27 +114,42 @@ int main()
 
 	std::cout << "str_prop = " << str_prop.value() << std::endl;
 
-    nstd::signal_slot::connection ts; //should be out of a signal's scope to be destroyed after it's signal thus letting a signal to emit the rest of queued signals...
+    ss::connection ts; //should be out of a signal's scope to be destroyed after it's signal thus letting a signal to emit the rest of queued signals...
     {
-        nstd::signal_slot::throttled_signal<std::string> sg("THROTTLED"s, 50ms);
-        ts = sg.connect([&sg](auto &&str){ std::cout << "throttle: " << str << "; " << sg.name() << std::endl; });
+        {
+            ss::throttled_signal<ss::signal, std::string> sg("THROTTLED"s, 50ms);
+            ts = sg.connect([&sg](auto &&str){ std::cout << "throttle: " << str << "; " << sg.name() << std::endl; });
 
-        constexpr int sg_count {10};
-        for (auto idx{0}; idx < sg_count; ++idx)
-            sg.emit("throttled signal emitted..."s);
+            constexpr int sg_count {10};
+            for (auto idx{0}; idx < sg_count; ++idx)
+                sg.emit("throttled signal emitted..."s);
 
-        std::this_thread::sleep_for(300ms);
+            std::this_thread::sleep_for(300ms);
 
-        for (auto idx{0}; idx < sg_count; ++idx)
-            sg.emit("throttled signal emitted..."s);
+            for (auto idx{0}; idx < sg_count; ++idx)
+                sg.emit("throttled signal emitted..."s);
 
-        std::cout << "done..." << std::endl;
-        std::cout << "emitting the rest of queued signals..." << std::endl;
+            std::cout << "done..." << std::endl;
+            std::cout << "emitting the rest of queued signals..." << std::endl;
+        }
+
+        ss::threaded_signal<ss::signal, std::string> sg1("THREADED 1"s), sg2("THREADED 2"s);
+        conections.emplace_back(sg1.connect([](auto &&s) { std::cout << "threaded 1: " << s << std::endl; }));
+        conections.emplace_back(sg2.connect([](auto &&s) { std::cout << "threaded 2: " << s << std::endl; }));
+
+        sg1.emit("1"s); sg2.emit("2"s);
+        sg1.emit("1"s); sg2.emit("2"s);
+        sg1.emit("1"s); sg2.emit("2"s);
+        sg1.emit("1"s); sg2.emit("2"s);
+        sg1.emit("1"s); sg2.emit("2"s);
+        sg1.emit("1"s); sg2.emit("2"s);
+
+        std::this_thread::sleep_for(0.5s);
     }
 
 	std::this_thread::sleep_for(1s);
 
-	nstd::signal_slot::timer_signal<live_string*> timer("My timer"s, 500ms);
+	ss::timer_signal<live_string*> timer("My timer"s, 500ms);
 
 	int idx { 0 };
 	conections.emplace_back(timer.connect([&idx](auto &&s, auto &&p)
@@ -154,7 +173,7 @@ int main()
 
 	std::this_thread::sleep_for(5s);
 
-	nstd::signal_slot::signal<std::string> jsig("JSON signal"s);
+	ss::signal<std::string> jsig("JSON signal"s);
 
 	auto jcon = jsig.connect([](auto &&jstr)
     {
@@ -164,7 +183,7 @@ int main()
         std::cout << "JSON property: " << j["JSONObject"]["property"] <<std::endl;
     });
 
-    nstd::signal_slot::signal_ex sex { "Extended signal" };
+    ss::signal_ex sex { "Extended signal" };
     conections.emplace_back(sex.connect([](auto &&sg){ std::cout << sg->name() << " was emitted!" << std::endl; }));
     sex.emit();
 
@@ -182,16 +201,30 @@ int main()
         void call_me(const std::string &str) { std::cout << str << std::endl; }
     } cs;
 
-    //nstd::signal_slot::signal_set<nstd::signal_slot::throttled_signal<std::string>> ss;
-    nstd::signal_slot::signal_set<nstd::signal_slot::signal<const std::string&>> ss;
-    auto z = ss["/mainwindow/button/ok"s]->connect([](auto &&s){ std::cout << s << std::endl; });
-    auto zz = ss["/new/channel"s]->connect([](auto &&s){ std::cout << s << std::endl; });
-    auto zzz = ss["/other/channel"s]->connect([&cs](auto &&s) { cs.call_me(s); });
-    auto x = ss["/broadcast/channel"s]->connect(&cs, &CallableSet::call_me); // the same way to connect as in the previous line
-    auto xx = ss["/broadcast/channel"s]->connect([](auto &&) { std::cout << "/broadcast/channel..." << std::endl; });
-    for (auto &&sn : ss.get_signal_names()) std::cout << "signal name: " << sn << std::endl;
-    if (ss.exists("/broadcast/channel"s)) std::cout << "/broadcast/channel is created..." << std::endl;
-    ss.emit("hello..."s); //broadcasting a signal to all slots of the set
+    //signal_set<throttled_signal<std::string>> ss;
+    ss::signal_set<ss::signal, const std::string&> sss;
+    auto z = sss["/mainwindow/button/ok"s]->connect([](auto &&s){ std::cout << s << std::endl; });
+    auto zz = sss["/new/channel"s]->connect([](auto &&s){ std::cout << s << std::endl; });
+    auto zzz = sss["/other/channel"s]->connect([&cs](auto &&s) { cs.call_me(s); });
+    auto x = sss["/broadcast/channel"s]->connect(&cs, &CallableSet::call_me); // the same way to connect as in the previous line
+    auto xx = sss["/broadcast/channel"s]->connect([](auto &&) { std::cout << "/broadcast/channel..." << std::endl; });
+    for (auto &&sn : sss.get_signal_names()) std::cout << "signal name: " << sn << std::endl;
+    if (sss.exists("/broadcast/channel"s)) std::cout << "/broadcast/channel is created..." << std::endl;
+    sss.emit("hello..."s); //broadcasting a signal to all slots of the set
+
+    ss::signal_set<ss::signal_ex, const std::string&> sssx;
+    auto xxx1 = sssx["key_down"s]->connect([](auto &&s, auto &&v){ std::cout << "signal name: " << s->name() << "; value: " << v << std::endl; });
+    auto xxx2 = sssx["key_up"s]->connect([](auto &&s, auto &&v){ std::cout << "signal name: " << s->name() << "; value: " << v << std::endl; });
+    sssx.emit("smart signal..."s);
+
+    ss::signal_set<threaded_signal_ex, std::string> super_signal_set;
+    auto executor { [](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << s->name() << "; value: " << v << std::endl; } };
+    conections.emplace_back(super_signal_set["super signal 1"s]->connect(executor));
+    conections.emplace_back(super_signal_set["super signal 2"s]->connect(executor));
+    conections.emplace_back(super_signal_set["super signal 3"s]->connect(executor));
+    super_signal_set.emit("super signal value!"s);
+
+    std::this_thread::sleep_for(0.5s);
 
 	std::cout << "exitting..." << std::endl;
 
