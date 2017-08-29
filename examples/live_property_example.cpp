@@ -230,13 +230,11 @@ int main()
     std::this_thread::sleep_for(0.5s);
 
     {
-        using namespace nstd::signal_slot;
-
         struct mouse_event { int x, y; };
         struct keyboard_event { int key_code; std::string modifiers; };
         struct event_data { std::type_index event_data_type_index; std::any event_data; };
 
-        signal_set<signal_ex<event_data>> ss2;
+        ss::signal_set<ss::signal_ex, event_data> ss2;
 
         conections.emplace_back(ss2["mouse_move"]->connect([](auto &&s, auto &&ev)
         {
