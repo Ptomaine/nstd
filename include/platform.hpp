@@ -23,87 +23,111 @@ SOFTWARE.
 namespace nstd::platform
 {
 
-inline constexpr const char *const platform =
+enum class os_family : uint8_t
+{
+    Unknown = 0,
+    FreeBSD,
+    AIX,
+    HPUX,
+    Tru64,
+    NaCl,
+    Emscripten,
+    Linux,
+    macOS,
+    NetBSD,
+    OpenBSD,
+    IRIX,
+    Solaris,
+    QNX,
+    Cygwin,
+    VxWorks,
+    Unix,
+    WindowsCE,
+    WindowsNT,
+    VMS
+};
+
+inline constexpr const os_family current_os_family =
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_FREE_BSD
-	"FreeBSD"
+	os_family::FreeBSD
 #elif defined(_AIX) || defined(__TOS_AIX__)
 	#define OS_FAMILY_UNIX
 	#define OS_AIX
-	"AIX"
+	os_family::AIX
 #elif defined(hpux) || defined(_hpux) || defined(__hpux)
 	#define OS_FAMILY_UNIX
 	#define OS_HPUX
-	"HPUX"
+	os_family::HPUX
 #elif defined(__digital__) || defined(__osf__)
 	#define OS_FAMILY_UNIX
 	#define OS_TRU64
-	"Tru64"
+	os_family::Tru64
 #elif defined(__NACL__)
 	#define OS_FAMILY_UNIX
 	#define OS_NACL
-	"NaCl"
+	os_family::NaCl
 #elif defined(__EMSCRIPTEN__) || defined(EMSCRIPTEN)
 	#define OS_FAMILY_UNIX
 	#define OS_EMSCRIPTEN
-	"Emscripten"
+	os_family::Emscripten
 #elif defined(linux) || defined(__linux) || defined(__linux__) || defined(__TOS_LINUX__)
 	#define OS_FAMILY_UNIX
 	#define OS_LINUX
-	"Linux"
+	os_family::Linux
 #elif defined(__APPLE__) || defined(__TOS_MACOS__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_MAC_OS_X
-	"macOS X"
+	os_family::macOS
 #elif defined(__NetBSD__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_NET_BSD
-	"NetBSD"
+	os_family::NetBSD
 #elif defined(__OpenBSD__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_OPEN_BSD
-	"OpenBSD"
+	os_family::OpenBSD
 #elif defined(sgi) || defined(__sgi)
 	#define OS_FAMILY_UNIX
 	#define OS_IRIX
-	"IRIX"
+	os_family::IRIX
 #elif defined(sun) || defined(__sun)
 	#define OS_FAMILY_UNIX
 	#define OS_SOLARIS
-	"Solaris"
+	os_family::Solaris
 #elif defined(__QNX__)
 	#define OS_FAMILY_UNIX
 	#define OS_QNX
-	"QNX"
+	os_family::QNX
 #elif defined(__CYGWIN__)
 	#define OS_FAMILY_UNIX
 	#define OS_CYGWIN
-	"Cygwin"
+	os_family::Cygwin
 #elif defined(VXWORKS)
 	#define OS_FAMILY_UNIX
 	#define OS_VXWORKS
-	"VxWorks"
+	os_family::VxWorks
 #elif defined(unix) || defined(__unix) || defined(__unix__)
 	#define OS_FAMILY_UNIX
 	#define OS_UNKNOWN_UNIX
-	"Unix"
+	os_family::Unix
 #elif defined(_WIN32_WCE)
 	#define OS_FAMILY_WINDOWS
 	#define OS_WINDOWS_CE
-	"Windows CE"
+	os_family::WindowsCE
 #elif defined(_WIN32) || defined(_WIN64)
 	#define OS_FAMILY_WINDOWS
 	#define OS_WINDOWS_NT
-	"Windows NT"
+	os_family::WindowsNT
 #elif defined(__VMS)
 	#define OS_FAMILY_VMS
 	#define OS_VMS
-	"VMS"
+	os_family::VMS
 #else
 	#error "Unknown Platform!"
 #endif
@@ -198,49 +222,68 @@ inline constexpr const char *const platform =
 	#define ARCH_BIG_ENDIAN
 #endif
 
-inline constexpr const char *const compiler =
+enum class compiler : uint8_t
+{
+    Unknown = 0,
+    MSVC,
+    Clang,
+    MinGW,
+    GCC,
+    Intel,
+    Sun,
+    CodeWarrior,
+    SGI,
+    HPaCC,
+    Borland,
+    DigitalMars,
+    Compac,
+    IBMXL,
+    IBMzOS
+};
+
+inline constexpr const compiler current_compiler =
 #if defined(_MSC_VER)
 	#define COMPILER_MSVC
-	"MSVC"
+	compiler::MSVC
 #elif defined(__clang__)
 	#define COMPILER_CLANG
-	"Clang"
+	compiler::Clang
 #elif defined (__MINGW32__) || defined (__MINGW64__)
 	#define COMPILER_MINGW
-	"MinGW"
+	compiler::MinGW
 #elif defined (__GNUC__)
 	#define COMPILER_GCC
-	"GCC"
+	compiler::GCC
 #elif defined (__INTEL_COMPILER) || defined(__ICC) || defined(__ECC) || defined(__ICL)
 	#define COMPILER_INTEL
-	"Intel"
+	compiler::Intel
 #elif defined (__SUNPRO_CC)
 	#define COMPILER_SUN
-	"Sun"
+	compiler::Sun
 #elif defined (__MWERKS__) || defined(__CWCC__)
 	#define COMPILER_CODEWARRIOR
-	"CodeWarrior"
+	compiler::CodeWarrior
 #elif defined (__sgi) || defined(sgi)
 	#define COMPILER_SGI
-	"SGI"
+	compiler::SGI
 #elif defined (__HP_aCC)
 	#define COMPILER_HP_ACC
-	"HP aCC"
+	compiler::HPaCC
 #elif defined (__BORLANDC__) || defined(__CODEGEARC__)
 	#define COMPILER_CBUILDER
-	"Borland"
+	compiler::Borland
 #elif defined (__DMC__)
 	#define COMPILER_DMARS
-	"Digital Mars"
+	compiler::DigitalMars
 #elif defined (__DECCXX)
 	#define COMPILER_COMPAC
-	"Compac"
+	compiler::Compac
 #elif (defined (__xlc__) || defined (__xlC__)) && defined(__IBMCPP__)
 	#define COMPILER_IBM_XLC
-	"IBM XL"
+	compiler::IBMXL
 #elif defined (__IBMCPP__) && defined(__COMPILER_VER__)
 	#define COMPILER_IBM_XLC_ZOS
-	"IBM z/OS"
+	compiler::IBMzOS
 #else
 	#error "Unknown Hardware Architecture!"
 #endif
@@ -255,6 +298,85 @@ true
 false
 #endif
 ;
+
+inline constexpr const char *const get_current_os_family_name()
+{
+    if constexpr (current_os_family == os_family::FreeBSD)
+        return "FreeBSD";
+    else if constexpr (current_os_family == os_family::AIX)
+        return "AIX";
+    else if constexpr (current_os_family == os_family::HPUX)
+        return "HPUX";
+    else if constexpr (current_os_family == os_family::Tru64)
+        return "Tru64";
+    else if constexpr (current_os_family == os_family::NaCl)
+        return "NaCl";
+    else if constexpr (current_os_family == os_family::Emscripten)
+        return "Emscripten";
+    else if constexpr (current_os_family == os_family::Linux)
+        return "Linux";
+    else if constexpr (current_os_family == os_family::macOS)
+        return "macOS";
+    else if constexpr (current_os_family == os_family::NetBSD)
+        return "NetBSD";
+    else if constexpr (current_os_family == os_family::OpenBSD)
+        return "OpenBSD";
+    else if constexpr (current_os_family == os_family::IRIX)
+        return "IRIX";
+    else if constexpr (current_os_family == os_family::Solaris)
+        return "Solaris";
+    else if constexpr (current_os_family == os_family::QNX)
+        return "QNX";
+    else if constexpr (current_os_family == os_family::Cygwin)
+        return "Cygwin";
+    else if constexpr (current_os_family == os_family::VxWorks)
+        return "VxWorks";
+    else if constexpr (current_os_family == os_family::Unix)
+        return "Unix";
+    else if constexpr (current_os_family == os_family::WindowsCE)
+        return "Windows CE";
+    else if constexpr (current_os_family == os_family::WindowsNT)
+        return "Windows NT";
+    else if constexpr (current_os_family == os_family::VMS)
+        return "VMS";
+    else
+        return "Unknown";
+}
+
+
+inline constexpr const char *const get_current_compiler_name()
+{
+    if constexpr (current_compiler == compiler::MSVC)
+        return "MSVC";
+    else if constexpr (current_compiler == compiler::Clang)
+        return "Clang";
+    else if constexpr (current_compiler == compiler::MinGW)
+        return "MinGW";
+    else if constexpr (current_compiler == compiler::GCC)
+        return "GCC";
+    else if constexpr (current_compiler == compiler::Intel)
+        return "Intel";
+    else if constexpr (current_compiler == compiler::Sun)
+        return "Sun";
+    else if constexpr (current_compiler == compiler::CodeWarrior)
+        return "Code Warrior";
+    else if constexpr (current_compiler == compiler::SGI)
+        return "SGI";
+    else if constexpr (current_compiler == compiler::HPaCC)
+        return "HP aCC";
+    else if constexpr (current_compiler == compiler::Borland)
+        return "Borland";
+    else if constexpr (current_compiler == compiler::DigitalMars)
+        return "Digital Mars";
+    else if constexpr (current_compiler == compiler::Compac)
+        return "Compac";
+    else if constexpr (current_compiler == compiler::IBMXL)
+        return "IBM XL";
+    else if constexpr (current_compiler == compiler::IBMzOS)
+        return "IBM z/OS";
+    else
+        return "Unknown";
+}
 
 inline uint32_t change_endianness(uint32_t value)
 {
