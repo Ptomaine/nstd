@@ -23,7 +23,7 @@ SOFTWARE.
 namespace nstd::platform
 {
 
-enum class os_family : uint8_t
+enum class os_type : uint8_t
 {
     Unknown = 0,
     FreeBSD,
@@ -47,91 +47,117 @@ enum class os_family : uint8_t
     VMS
 };
 
-inline constexpr const os_family current_os_family =
+enum class os_family : uint8_t
+{
+    Unknown = 0,
+    Unix,
+    UnixBSD,
+    Windows,
+    VMS
+};
+
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_FREE_BSD
-	os_family::FreeBSD
+	inline constexpr const os_type current_os_type = os_type::FreeBSD;
+	inline constexpr const os_family current_os_family = os_family::UnixBSD;
 #elif defined(_AIX) || defined(__TOS_AIX__)
 	#define OS_FAMILY_UNIX
 	#define OS_AIX
-	os_family::AIX
+	inline constexpr const os_type current_os_type = os_type::AIX;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(hpux) || defined(_hpux) || defined(__hpux)
 	#define OS_FAMILY_UNIX
 	#define OS_HPUX
-	os_family::HPUX
+	inline constexpr const os_type current_os_type = os_type::HPUX;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(__digital__) || defined(__osf__)
 	#define OS_FAMILY_UNIX
 	#define OS_TRU64
-	os_family::Tru64
+	inline constexpr const os_type current_os_type = os_type::Tru64;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(__NACL__)
 	#define OS_FAMILY_UNIX
 	#define OS_NACL
-	os_family::NaCl
+	inline constexpr const os_type current_os_type = os_type::NaCl;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(__EMSCRIPTEN__) || defined(EMSCRIPTEN)
 	#define OS_FAMILY_UNIX
 	#define OS_EMSCRIPTEN
-	os_family::Emscripten
+	inline constexpr const os_type current_os_type = os_type::Emscripten;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(linux) || defined(__linux) || defined(__linux__) || defined(__TOS_LINUX__)
 	#define OS_FAMILY_UNIX
 	#define OS_LINUX
-	os_family::Linux
+	inline constexpr const os_type current_os_type = os_type::Linux;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(__APPLE__) || defined(__TOS_MACOS__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_MAC_OS_X
-	os_family::macOS
+	inline constexpr const os_type current_os_type = os_type::macOS;
+	inline constexpr const os_family current_os_family = os_family::UnixBSD;
 #elif defined(__NetBSD__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_NET_BSD
-	os_family::NetBSD
+	inline constexpr const os_type current_os_type = os_type::NetBSD;
+	inline constexpr const os_family current_os_family = os_family::UnixBSD;
 #elif defined(__OpenBSD__)
 	#define OS_FAMILY_UNIX
 	#define OS_FAMILY_BSD
 	#define OS_OPEN_BSD
-	os_family::OpenBSD
+	inline constexpr const os_type current_os_type = os_type::OpenBSD;
+	inline constexpr const os_family current_os_family = os_family::UnixBSD;
 #elif defined(sgi) || defined(__sgi)
 	#define OS_FAMILY_UNIX
 	#define OS_IRIX
-	os_family::IRIX
+	inline constexpr const os_type current_os_type = os_type::IRIX;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(sun) || defined(__sun)
 	#define OS_FAMILY_UNIX
 	#define OS_SOLARIS
-	os_family::Solaris
+	inline constexpr const os_type current_os_type = os_type::Solaris;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(__QNX__)
 	#define OS_FAMILY_UNIX
 	#define OS_QNX
-	os_family::QNX
+	inline constexpr const os_type current_os_type = os_type::QNX;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(__CYGWIN__)
 	#define OS_FAMILY_UNIX
 	#define OS_CYGWIN
-	os_family::Cygwin
+	inline constexpr const os_type current_os_type = os_type::Cygwin;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(VXWORKS)
 	#define OS_FAMILY_UNIX
 	#define OS_VXWORKS
-	os_family::VxWorks
+	inline constexpr const os_type current_os_type = os_type::VxWorks;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(unix) || defined(__unix) || defined(__unix__)
 	#define OS_FAMILY_UNIX
 	#define OS_UNKNOWN_UNIX
-	os_family::Unix
+	inline constexpr const os_type current_os_type = os_type::Unix;
+	inline constexpr const os_family current_os_family = os_family::Unix;
 #elif defined(_WIN32_WCE)
 	#define OS_FAMILY_WINDOWS
 	#define OS_WINDOWS_CE
-	os_family::WindowsCE
+	inline constexpr const os_type current_os_type = os_type::WindowsCE
+	inline constexpr const os_family current_os_family = os_family::Windows;
 #elif defined(_WIN32) || defined(_WIN64)
 	#define OS_FAMILY_WINDOWS
 	#define OS_WINDOWS_NT
-	os_family::WindowsNT
+	inline constexpr const os_type current_os_type = os_type::WindowsNT;
+	inline constexpr const os_family current_os_family = os_family::Windows;
 #elif defined(__VMS)
 	#define OS_FAMILY_VMS
 	#define OS_VMS
-	os_family::VMS
+	inline constexpr const os_type current_os_type = os_type::VMS;
+	inline constexpr const os_family current_os_family = os_family::VMS;
 #else
 	#error "Unknown Platform!"
 #endif
-;
 
 #if defined(__ALPHA) || defined(__alpha) || defined(__alpha__) || defined(_M_ALPHA)
 	#define ARCH_ALPHA
@@ -245,12 +271,12 @@ inline constexpr const compiler current_compiler =
 #if defined(_MSC_VER)
 	#define COMPILER_MSVC
 	compiler::MSVC
-#elif defined(__clang__)
-	#define COMPILER_CLANG
-	compiler::Clang
 #elif defined (__MINGW32__) || defined (__MINGW64__)
 	#define COMPILER_MINGW
 	compiler::MinGW
+#elif defined(__clang__)
+	#define COMPILER_CLANG
+	compiler::Clang
 #elif defined (__GNUC__)
 	#define COMPILER_GCC
 	compiler::GCC
@@ -299,83 +325,56 @@ false
 #endif
 ;
 
-inline constexpr const char *const get_current_os_family_name()
+inline constexpr const char *const get_current_os_type_name()
 {
-    if constexpr (current_os_family == os_family::FreeBSD)
-        return "FreeBSD";
-    else if constexpr (current_os_family == os_family::AIX)
-        return "AIX";
-    else if constexpr (current_os_family == os_family::HPUX)
-        return "HPUX";
-    else if constexpr (current_os_family == os_family::Tru64)
-        return "Tru64";
-    else if constexpr (current_os_family == os_family::NaCl)
-        return "NaCl";
-    else if constexpr (current_os_family == os_family::Emscripten)
-        return "Emscripten";
-    else if constexpr (current_os_family == os_family::Linux)
-        return "Linux";
-    else if constexpr (current_os_family == os_family::macOS)
-        return "macOS";
-    else if constexpr (current_os_family == os_family::NetBSD)
-        return "NetBSD";
-    else if constexpr (current_os_family == os_family::OpenBSD)
-        return "OpenBSD";
-    else if constexpr (current_os_family == os_family::IRIX)
-        return "IRIX";
-    else if constexpr (current_os_family == os_family::Solaris)
-        return "Solaris";
-    else if constexpr (current_os_family == os_family::QNX)
-        return "QNX";
-    else if constexpr (current_os_family == os_family::Cygwin)
-        return "Cygwin";
-    else if constexpr (current_os_family == os_family::VxWorks)
-        return "VxWorks";
-    else if constexpr (current_os_family == os_family::Unix)
-        return "Unix";
-    else if constexpr (current_os_family == os_family::WindowsCE)
-        return "Windows CE";
-    else if constexpr (current_os_family == os_family::WindowsNT)
-        return "Windows NT";
-    else if constexpr (current_os_family == os_family::VMS)
-        return "VMS";
-    else
-        return "Unknown";
+    if constexpr (current_os_type == os_type::FreeBSD)          return "FreeBSD";
+    else if constexpr (current_os_type == os_type::AIX)         return "AIX";
+    else if constexpr (current_os_type == os_type::HPUX)        return "HPUX";
+    else if constexpr (current_os_type == os_type::Tru64)       return "Tru64";
+    else if constexpr (current_os_type == os_type::NaCl)        return "NaCl";
+    else if constexpr (current_os_type == os_type::Emscripten)  return "Emscripten";
+    else if constexpr (current_os_type == os_type::Linux)       return "Linux";
+    else if constexpr (current_os_type == os_type::macOS)       return "macOS";
+    else if constexpr (current_os_type == os_type::NetBSD)      return "NetBSD";
+    else if constexpr (current_os_type == os_type::OpenBSD)     return "OpenBSD";
+    else if constexpr (current_os_type == os_type::IRIX)        return "IRIX";
+    else if constexpr (current_os_type == os_type::Solaris)     return "Solaris";
+    else if constexpr (current_os_type == os_type::QNX)         return "QNX";
+    else if constexpr (current_os_type == os_type::Cygwin)      return "Cygwin";
+    else if constexpr (current_os_type == os_type::VxWorks)     return "VxWorks";
+    else if constexpr (current_os_type == os_type::Unix)        return "Unix";
+    else if constexpr (current_os_type == os_type::WindowsCE)   return "Windows CE";
+    else if constexpr (current_os_type == os_type::WindowsNT)   return "Windows NT";
+    else if constexpr (current_os_type == os_type::VMS)         return "VMS";
+    else                                                        return "Unknown";
 }
 
+inline constexpr const char *const get_current_os_family_name()
+{
+    if constexpr (current_os_family == os_family::Unix)         return "Unix";
+    else if constexpr (current_os_family == os_family::UnixBSD) return "Unix,BSD";
+    else if constexpr (current_os_family == os_family::Windows) return "Windows";
+    else if constexpr (current_os_family == os_family::VMS)     return "VMS";
+    else                                                        return "Unknown";
+}
 
 inline constexpr const char *const get_current_compiler_name()
 {
-    if constexpr (current_compiler == compiler::MSVC)
-        return "MSVC";
-    else if constexpr (current_compiler == compiler::Clang)
-        return "Clang";
-    else if constexpr (current_compiler == compiler::MinGW)
-        return "MinGW";
-    else if constexpr (current_compiler == compiler::GCC)
-        return "GCC";
-    else if constexpr (current_compiler == compiler::Intel)
-        return "Intel";
-    else if constexpr (current_compiler == compiler::Sun)
-        return "Sun";
-    else if constexpr (current_compiler == compiler::CodeWarrior)
-        return "Code Warrior";
-    else if constexpr (current_compiler == compiler::SGI)
-        return "SGI";
-    else if constexpr (current_compiler == compiler::HPaCC)
-        return "HP aCC";
-    else if constexpr (current_compiler == compiler::Borland)
-        return "Borland";
-    else if constexpr (current_compiler == compiler::DigitalMars)
-        return "Digital Mars";
-    else if constexpr (current_compiler == compiler::Compac)
-        return "Compac";
-    else if constexpr (current_compiler == compiler::IBMXL)
-        return "IBM XL";
-    else if constexpr (current_compiler == compiler::IBMzOS)
-        return "IBM z/OS";
-    else
-        return "Unknown";
+    if constexpr (current_compiler == compiler::MSVC)               return "MSVC";
+    else if constexpr (current_compiler == compiler::Clang)         return "Clang";
+    else if constexpr (current_compiler == compiler::MinGW)         return "MinGW";
+    else if constexpr (current_compiler == compiler::GCC)           return "GCC";
+    else if constexpr (current_compiler == compiler::Intel)         return "Intel";
+    else if constexpr (current_compiler == compiler::Sun)           return "Sun";
+    else if constexpr (current_compiler == compiler::CodeWarrior)   return "Code Warrior";
+    else if constexpr (current_compiler == compiler::SGI)           return "SGI";
+    else if constexpr (current_compiler == compiler::HPaCC)         return "HP aCC";
+    else if constexpr (current_compiler == compiler::Borland)       return "Borland";
+    else if constexpr (current_compiler == compiler::DigitalMars)   return "Digital Mars";
+    else if constexpr (current_compiler == compiler::Compac)        return "Compac";
+    else if constexpr (current_compiler == compiler::IBMXL)         return "IBM XL";
+    else if constexpr (current_compiler == compiler::IBMzOS)        return "IBM z/OS";
+    else                                                            return "Unknown";
 }
 
 inline uint32_t change_endianness(uint32_t value)
