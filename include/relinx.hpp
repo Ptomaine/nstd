@@ -60,9 +60,9 @@ public:
 
     concat_iterator_adapter() = default;
     concat_iterator_adapter(const self_type &) = default;
-    concat_iterator_adapter(self_type &&) = default;
+    concat_iterator_adapter(self_type &&) noexcept = default;
     concat_iterator_adapter &operator=(const self_type &) = default;
-    concat_iterator_adapter &operator=(self_type &&) = default;
+    concat_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     concat_iterator_adapter(ParentIterator1 begin1, ParentIterator1 end1, ParentIterator2 begin2, ParentIterator2 end2)
     : _begin1(begin1), _end1(end1), _begin2(begin2), _end2(end2)
@@ -132,9 +132,9 @@ public:
 
     filter_iterator_adapter() = default;
     filter_iterator_adapter(const self_type &) = default;
-    filter_iterator_adapter(self_type &&) = default;
+    filter_iterator_adapter(self_type &&) noexcept = default;
     filter_iterator_adapter &operator=(const self_type &) = default;
-    filter_iterator_adapter &operator=(self_type &&) = default;
+    filter_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     filter_iterator_adapter(ParentIterator begin, ParentIterator end, FilterFunctor &&filterFunctor)
     : _begin(begin), _end(end), _filterFunctor(std::forward<FilterFunctor>(filterFunctor))
@@ -202,9 +202,9 @@ public:
 
     transform_iterator_adapter() = default;
     transform_iterator_adapter(const transform_iterator_adapter &) = default;
-    transform_iterator_adapter(transform_iterator_adapter &&) = default;
+    transform_iterator_adapter(transform_iterator_adapter &&) noexcept = default;
     transform_iterator_adapter &operator=(const transform_iterator_adapter &) = default;
-    transform_iterator_adapter &operator=(transform_iterator_adapter &&) = default;
+    transform_iterator_adapter &operator=(transform_iterator_adapter &&) noexcept = default;
 
     transform_iterator_adapter(ParentIterator begin, ParentIterator end, TransformFunctor &&transformFunctor)
     : _transformFunctor(std::forward<TransformFunctor>(transformFunctor)), _begin(begin), _end(end)
@@ -267,9 +267,9 @@ public:
 
     limit_iterator_adapter() = default;
     limit_iterator_adapter(const self_type &) = default;
-    limit_iterator_adapter(self_type &&) = default;
+    limit_iterator_adapter(self_type &&) noexcept = default;
     limit_iterator_adapter &operator=(const self_type &) = default;
-    limit_iterator_adapter &operator=(self_type &&) = default;
+    limit_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     limit_iterator_adapter(ParentIterator begin, ParentIterator end, LimitFunctor &&limitFunctor)
     : _begin(begin), _end(end), _limitFunctor(std::forward<LimitFunctor>(limitFunctor))
@@ -337,9 +337,9 @@ public:
 
     distinct_iterator_adapter() = default;
     distinct_iterator_adapter(const self_type &) = default;
-    distinct_iterator_adapter(self_type &&) = default;
+    distinct_iterator_adapter(self_type &&) noexcept = default;
     distinct_iterator_adapter &operator=(const self_type &) = default;
-    distinct_iterator_adapter &operator=(self_type &&) = default;
+    distinct_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     distinct_iterator_adapter(ParentIterator begin, ParentIterator end, KeyFunctor &&keyFunctor)
     : _keyFunctor(std::forward<KeyFunctor>(keyFunctor)), _begin(begin), _end(end)
@@ -413,9 +413,9 @@ public:
 
     select_many_iterator_adapter() = default;
     select_many_iterator_adapter(const select_many_iterator_adapter &) = default;
-    select_many_iterator_adapter(select_many_iterator_adapter &&) = default;
+    select_many_iterator_adapter(select_many_iterator_adapter &&) noexcept = default;
     select_many_iterator_adapter &operator=(const select_many_iterator_adapter &) = default;
-    select_many_iterator_adapter &operator=(select_many_iterator_adapter &&) = default;
+    select_many_iterator_adapter &operator=(select_many_iterator_adapter &&) noexcept = default;
 
     select_many_iterator_adapter(ParentIterator begin, ParentIterator end, ContainerSelectorFunctor &&containerSelectorFunctor)
     : _containerSelectorFunctor(std::forward<ContainerSelectorFunctor>(containerSelectorFunctor)), _begin(begin), _end(end)
@@ -502,9 +502,9 @@ public:
 
     except_iterator_adapter() = default;
     except_iterator_adapter(const self_type &) = default;
-    except_iterator_adapter(self_type &&) = default;
+    except_iterator_adapter(self_type &&) noexcept = default;
     except_iterator_adapter &operator=(const self_type &) = default;
-    except_iterator_adapter &operator=(self_type &&) = default;
+    except_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     except_iterator_adapter(ParentIterator begin, ParentIterator end, ExceptIterator exceptBegin, ExceptIterator exceptEnd, CompareFunctor &&compareFunctor)
     : _begin(begin), _end(end), _exceptBegin(exceptBegin), _exceptEnd(exceptEnd), _compareFunctor(std::forward<CompareFunctor>(compareFunctor))
@@ -573,9 +573,9 @@ public:
 
     intersect_iterator_adapter() = default;
     intersect_iterator_adapter(const self_type &) = default;
-    intersect_iterator_adapter(self_type &&) = default;
+    intersect_iterator_adapter(self_type &&) noexcept = default;
     intersect_iterator_adapter &operator=(const self_type &) = default;
-    intersect_iterator_adapter &operator=(self_type &&) = default;
+    intersect_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     intersect_iterator_adapter(ParentIterator begin, ParentIterator end, IntersectIterator intersectBegin, IntersectIterator intersectEnd, CompareFunctor &&compareFunctor)
     : _begin(begin), _end(end), _intersectBegin(intersectBegin), _intersectEnd(intersectEnd), _compareFunctor(std::forward<CompareFunctor>(compareFunctor))
@@ -651,9 +651,9 @@ public:
 
     join_iterator_adapter() = default;
     join_iterator_adapter(const self_type &) = default;
-    join_iterator_adapter(self_type &&) = default;
+    join_iterator_adapter(self_type &&) noexcept = default;
     join_iterator_adapter &operator=(const self_type &) = default;
-    join_iterator_adapter &operator=(self_type &&) = default;
+    join_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     join_iterator_adapter(ParentIterator begin,
                           ParentIterator end,
@@ -779,9 +779,9 @@ public:
 
     group_join_iterator_adapter() = default;
     group_join_iterator_adapter(const self_type &) = default;
-    group_join_iterator_adapter(self_type &&) = default;
+    group_join_iterator_adapter(self_type &&) noexcept = default;
     group_join_iterator_adapter &operator=(const self_type &) = default;
-    group_join_iterator_adapter &operator=(self_type &&) = default;
+    group_join_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     group_join_iterator_adapter(ParentIterator begin,
                           ParentIterator end,
@@ -903,9 +903,9 @@ public:
 
     zip_iterator_adapter() = default;
     zip_iterator_adapter(const self_type &) = default;
-    zip_iterator_adapter(self_type &&) = default;
+    zip_iterator_adapter(self_type &&) noexcept = default;
     zip_iterator_adapter &operator=(const self_type &) = default;
-    zip_iterator_adapter &operator=(self_type &&) = default;
+    zip_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     zip_iterator_adapter(ParentIterator1 begin1, ParentIterator1 end1, ParentIterator2 begin2, ParentIterator2 end2, ResultFunctor &&resultFunctor)
     : _resultFunctor(std::forward<ResultFunctor>(resultFunctor)), _begin1(begin1), _end1(end1), _begin2(begin2), _end2(end2)
@@ -982,9 +982,9 @@ public:
 
     cycle_iterator_adapter() = default;
     cycle_iterator_adapter(const self_type &) = default;
-    cycle_iterator_adapter(self_type &&) = default;
+    cycle_iterator_adapter(self_type &&) noexcept = default;
     cycle_iterator_adapter &operator=(const self_type &) = default;
-    cycle_iterator_adapter &operator=(self_type &&) = default;
+    cycle_iterator_adapter &operator=(self_type &&) noexcept = default;
 
     cycle_iterator_adapter(ParentIterator begin, ParentIterator end, std::ptrdiff_t times)
     : _begin(begin), _end(end), _current(begin), _numberOfTimes(times)
@@ -1057,13 +1057,13 @@ public:
     relinx_object() = delete;
     relinx_object(const relinx_object &) = delete;
     auto operator =(const relinx_object &) -> relinx_object & = delete;
-    relinx_object(relinx_object &&) = default;
+    relinx_object(relinx_object &&) noexcept = default;
 
     relinx_object(std::shared_ptr<ParentRelinxType> &&parent_relinx_object_ptr, const iterator_type &begin, const iterator_type &end) noexcept : _begin(begin), _end(end), _parent_relinx_object_ptr(std::forward<std::shared_ptr<ParentRelinxType>>(parent_relinx_object_ptr)) { }
     relinx_object(std::shared_ptr<ParentRelinxType> &&parent_relinx_object_ptr, iterator_type &&begin, iterator_type &&end) noexcept : _begin(std::forward<iterator_type>(begin)), _end(std::forward<iterator_type>(end)), _parent_relinx_object_ptr(std::forward<std::shared_ptr<ParentRelinxType>>(parent_relinx_object_ptr)) { }
     relinx_object(std::shared_ptr<ParentRelinxType> &&parent_relinx_object_ptr, ContainerType &&container) noexcept : _container(std::forward<ContainerType>(container)), _begin(std::begin(_container)), _end(std::end(_container)), _parent_relinx_object_ptr(std::forward<std::shared_ptr<ParentRelinxType>>(parent_relinx_object_ptr)) { }
 
-    ~relinx_object() = default;
+    ~relinx_object() noexcept = default;
 
     auto begin() const noexcept
     {
@@ -1103,9 +1103,7 @@ public:
         auto begin = _begin;
         auto front = *_begin;
 
-        ++begin;
-
-        return std::accumulate(begin, _end, front, std::forward<AggregateFunctor>(aggregateFunctor));
+        return std::accumulate(++begin, _end, front, std::forward<AggregateFunctor>(aggregateFunctor));
     }
 
     /**
@@ -1288,7 +1286,6 @@ public:
     auto concat(const ConcatIterator &begin, const ConcatIterator &end) noexcept
     {
         using adapter_type = concat_iterator_adapter<iterator_type, typename std::decay<ConcatIterator>::type>;
-
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
 
         return std::make_shared<next_relinx_type>(std::enable_shared_from_this<self_type>::shared_from_this(), adapter_type(_begin, _end, begin, end), adapter_type(_end, _end, end, end));
@@ -2802,16 +2799,16 @@ public:
     relinx_object_ordered() = delete;
     relinx_object_ordered(const relinx_object_ordered &) = delete;
     auto operator =(const relinx_object_ordered &) -> relinx_object_ordered & = delete;
-    relinx_object_ordered(relinx_object_ordered &&) = default;
+    relinx_object_ordered(relinx_object_ordered &&) noexcept = default;
 
-    relinx_object_ordered(std::shared_ptr<ParentRelinxType> &&parent_relinx_object_ptr, default_container<value_type> &&ordered, PreviousSelectFunctor &&previousSelectFunctor) :
+    relinx_object_ordered(std::shared_ptr<ParentRelinxType> &&parent_relinx_object_ptr, default_container<value_type> &&ordered, PreviousSelectFunctor &&previousSelectFunctor) noexcept :
         base(std::forward<std::shared_ptr<ParentRelinxType>>(parent_relinx_object_ptr), std::begin(ordered), std::end(ordered)),
         _ordered_values(std::forward<default_container<value_type>>(ordered)),
         _previousSelectFunctor(std::forward<PreviousSelectFunctor>(previousSelectFunctor))
         {
         }
 
-    ~relinx_object_ordered() = default;
+    ~relinx_object_ordered() noexcept = default;
 
     auto begin() const noexcept
     {

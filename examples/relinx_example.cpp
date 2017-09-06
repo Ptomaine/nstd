@@ -29,7 +29,7 @@ SOFTWARE.
 #include <deque>
 #include <forward_list>
 #include <iostream>
-#include <queue>
+#include <deque>
 #include <map>
 #include <set>
 
@@ -273,6 +273,13 @@ int main()
         auto t3_res = from({1, 2, 3, 4, 5})->concat(std::rbegin(t3_data), std::rend(t3_data))->to_vector();
         assert(t3_res.size() == 8);
         assert(t3_res[5] == 8);
+
+        std::list<int> t4_data { 1, 2, 3 };
+        std::deque<int> t5_data { 4, 5, 6};
+        auto t4_res = from(t4_data)->concat(t5_data);
+        auto t5_res = t4_res->to_string();
+
+        assert(t5_res == "123456"s);
 
         print_duration("concat(c):", start);
     }
