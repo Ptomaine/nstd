@@ -150,7 +150,8 @@ int main()
 	std::this_thread::sleep_for(1s);
 
 	ss::timer_signal<live_string*> timer("My timer"s, 500ms);
-
+	using payload_t = std::function<void(const int&)>;
+	timer.payload() = payload_t { [](auto &&data){ std::cout << "payload...: " << data << std::endl; } };
 	int idx { 0 };
 	cons = timer.connect([&idx](auto &&s, auto &&p)
     {
@@ -167,6 +168,15 @@ int main()
         {
             s->disable_timer_from_slot();
             *p = "...timer stoped... sleeping for some time..."s;
+        }
+
+        auto &payload { s->payload() };
+
+        if (payload.has_value() && payload.type() == typeid(payload_t))
+        {
+            auto f { std::any_cast<payload_t&>(payload) };
+
+            f(idx);
         }
     });
 	timer.start_timer(&str_prop);

@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <any>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -202,8 +203,9 @@ public:
     virtual ~signal_base() = default;
     virtual std::string_view name() const = 0;
     virtual bool enabled() const = 0;
-    virtual void enabled(bool enabled) const = 0;
+    virtual void enabled(bool) const = 0;
     virtual size_t size() const = 0;
+    virtual std::any &payload() = 0;
 };
 
 class connection
@@ -346,14 +348,19 @@ public:
         return _name;
     }
 
-    virtual bool enabled() const
+    virtual bool enabled() const override
     {
         return _enabled;
     }
 
-    virtual void enabled(bool enabled) const
+    virtual void enabled(bool enabled) const override
     {
         _enabled = enabled;
+    }
+
+    virtual std::any &payload() override
+    {
+        return _payload;
     }
 
 protected:
@@ -361,6 +368,7 @@ protected:
     std::vector<slot<Args...>> _slots {}, _pending_connections {};
     mutable std::mutex _connect_lock {}, _emit_lock {}, _name_lock {};
     mutable std::atomic_bool _enabled { true };
+    std::any _payload;
 };
 
 template<typename... Args>
