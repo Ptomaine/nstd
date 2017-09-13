@@ -48,6 +48,13 @@ int main()
 
 	std::wcout << "joined: '" << replace_all(join(splitted, L" "s), L"split"s, L"join"s) << "'" << std::endl;
 
+	std::cout << "Is empty or white space: " << boolalpha[is_empty_or_ws(""s)] << std::endl;
+	std::cout << "Is empty or white space: " << boolalpha[is_empty_or_ws(std::wstring{})] << std::endl;
+	std::cout << "Is empty or white space: " << boolalpha[is_empty_or_ws("   \n\t      "s)] << std::endl;
+	std::cout << "Is empty or white space: " << boolalpha[is_empty_or_ws(L"   \n\t      "s)] << std::endl;
+	std::cout << "Is empty or white space: " << boolalpha[is_empty_or_ws("   \n\t  ABC  "s)] << std::endl;
+	std::cout << "Is empty or white space: " << boolalpha[is_empty_or_ws(L"   \n\t ABC  "s)] << std::endl;
+
 	auto nr { 3 };
 	auto s { "'a const char array'" };
 	auto true_val { true };

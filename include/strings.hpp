@@ -186,9 +186,22 @@ inline any_string<T> replace_all(const any_string<T>& cstr, const any_string<T>&
 }
 
 template <typename T>
-inline any_string<T> replace_regex(const any_string<T>& cstr, const any_string<T>& from, const any_string<T>& to)
+inline any_string<T> replace_regex(const any_string<T>& cstr, const any_string<T>& from, const any_string<T>& to, std::regex_constants::syntax_option_type opts = std::regex_constants::ECMAScript)
 {
-    return std::regex_replace(cstr, std::basic_regex<T>(from), to);
+    return std::regex_replace(cstr, std::basic_regex<T>{ from, opts }, to);
+}
+
+inline static const std::regex is_empty_or_ws_regex { R"(^\s*$)", std::regex_constants::ECMAScript | std::regex_constants::optimize };
+inline static const std::wregex is_empty_or_ws_wregex { LR"(^\s*$)", std::regex_constants::ECMAScript | std::regex_constants::optimize };
+
+inline bool is_empty_or_ws(const std::string &str)
+{
+    return std::regex_match(str, is_empty_or_ws_regex);
+}
+
+inline bool is_empty_or_ws(const std::wstring &str)
+{
+    return std::regex_match(str, is_empty_or_ws_wregex);
 }
 
 template <typename C, typename T>
@@ -204,9 +217,9 @@ inline any_string<T> join(const C& container, const any_string<T>& delimiter)
 }
 
 template <typename T>
-inline std::vector<any_string<T>> split_regex(const any_string<T>& input, const any_string<T>& pattern)
+inline std::vector<any_string<T>> split_regex(const any_string<T>& input, const any_string<T>& pattern, std::regex_constants::syntax_option_type opts = std::regex_constants::ECMAScript)
 {
-    std::basic_regex<T> re { pattern };
+    std::basic_regex<T> re { pattern, opts };
 
     return { std::regex_token_iterator<typename any_string<T>::const_iterator> { std::begin(input), std::end(input), re, -1 },
              std::regex_token_iterator<typename any_string<T>::const_iterator> {} };
