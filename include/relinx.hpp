@@ -1615,15 +1615,7 @@ public:
     template<typename ForeachFunctor>
     auto for_each(ForeachFunctor &&foreachFunctor) const noexcept -> void
     {
-        auto begin = _begin;
-        auto end = _end;
-
-        while (begin != end)
-        {
-            foreachFunctor(*begin);
-
-            ++begin;
-        }
+        std::for_each(_begin, _end, std::forward<ForeachFunctor>(foreachFunctor));
     }
 
     /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
@@ -1636,18 +1628,9 @@ public:
     template<typename ForeachFunctor>
     auto for_each_i(ForeachFunctor &&foreachFunctor) const noexcept -> void
     {
-        auto begin = _begin;
-        auto end = _end;
-
         _indexer = 0;
 
-        while (begin != end)
-        {
-            foreachFunctor(*begin, _indexer);
-
-            ++_indexer;
-            ++begin;
-        }
+        std::for_each(_begin, _end, [this, &foreachFunctor](auto &&v) { foreachFunctor(v, _indexer); ++_indexer;});
     }
 
     /** \brief Groups the elements of a sequence according to a specified key selector functor.
