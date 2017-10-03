@@ -13,6 +13,7 @@ The library currently contains the following features:
    * base64 - base64 encoding/decoding
    * uuid - unique id generator
    * relinx - LINQ-like data transformations
+   * topological_sorter - the class to sort objects with dependencies (dependency solver)
    * sqlite3/sqlite c++ wrapper - sql database support [https://github.com/aminroosta/sqlite_modern_cpp]
    * quantum random number provider (using QRNG internet service: http://qrng.anu.edu.au)
    * strings - a library to do string manipulations like: trim, unicode convertions, replace, join, split, composing (aka format) etc.
