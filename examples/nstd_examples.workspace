@@ -16,5 +16,6 @@
 		<Project filename="strings_example.cbp" />
 		<Project filename="freetype_example.cbp" />
 		<Project filename="agg_example.cbp" />
+		<Project filename="topological_sorter_example.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

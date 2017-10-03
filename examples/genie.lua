@@ -139,6 +139,16 @@ solution "nstd_examples"
             objdir "obj/strings_example/Release"
             targetdir "bin/strings_example/Release"
 
+    project "topological_sorter_example"
+        files { "topological_sorter_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/topological_sorter_example/Debug"
+            targetdir "bin/topological_sorter_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/topological_sorter_example/Release"
+            targetdir "bin/topological_sorter_example/Release"
+
     project "sqlite_example"
         files { "sqlite_example.cpp", "../include/external/sqlite/sqlite3.c" }
         buildoptions { "-Wno-unused-but-set-variable" }
