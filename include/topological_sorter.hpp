@@ -65,8 +65,6 @@ public:
 	template <typename Container>
 	void add(const value_type &object, const Container &dependencies)
 	{
-	    static_assert(std::is_same<value_type, typename std::decay<typename Container::value_type>::type>::value, "The Container's value_type and object's type must be the same!");
-
 		for (auto const &dependency : dependencies) add(object, dependency);
 	}
 
