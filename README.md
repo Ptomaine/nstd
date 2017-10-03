@@ -13,6 +13,7 @@ The library currently contains the following features:
    * base64 - base64 encoding/decoding
    * uuid - unique id generator
    * relinx - LINQ-like data transformations
+   * planar_movements_recognizer - a set of classes to track and recognize planar movements and to execute corresponding commands
    * topological_sorter - the class to sort objects with dependencies (dependency solver)
    * sqlite3/sqlite c++ wrapper - sql database support [https://github.com/aminroosta/sqlite_modern_cpp]
    * quantum random number provider (using QRNG internet service: http://qrng.anu.edu.au)
