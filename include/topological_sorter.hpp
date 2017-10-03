@@ -82,7 +82,7 @@ public:
 
 		for(decltype(std::size(sorted)) idx = 0; idx < std::size(sorted); ++idx)
 			for(auto const& object : map[sorted[idx]].dependents)
-                if (--map[object].dependencies == 0) sorted.push_back(object);
+                if (!--map[object].dependencies) sorted.push_back(object);
 
 		for(const auto &[object, relations] : map) if(relations.dependencies) cycled.push_back(std::move(object));
 

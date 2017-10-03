@@ -61,6 +61,8 @@ int main()
     //resolver.add(tasks[6]); // no need for this since the task was already mentioned as a dependency
     //resolver.add(tasks[7]); // no need for this since the task was already mentioned as a dependency
 
+    //resolver.add(tasks[3], tasks[0]); // uncomment this line to test cycled dependency
+
     const auto &[sorted, cycled] = resolver.sort();
 
     if (std::empty(cycled))
@@ -73,7 +75,7 @@ int main()
         std::cout << "Cycled dependencies detected: ";
 
         for(auto const& d: cycled)
-            std::cout << d->message << " ";
+            std::cout << d->message[0] << " ";
 
         std::cout << std::endl;
     }
