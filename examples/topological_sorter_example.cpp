@@ -56,7 +56,7 @@ int main()
     //resolver.add(tasks[1]); // no need for this since the task was already mentioned as a dependency
     resolver.add(tasks[2], { tasks[3], tasks[4] });
     //resolver.add(tasks[3]); // no need for this since the task was already mentioned as a dependency
-    resolver.add(tasks[4], { tasks[5], tasks[6], tasks[7] });
+    resolver.add(tasks[4], tasks[5], tasks[6], tasks[7]); // using templated add with fold expression
     resolver.add(tasks[5], tasks[8]);
     //resolver.add(tasks[6]); // no need for this since the task was already mentioned as a dependency
     //resolver.add(tasks[7]); // no need for this since the task was already mentioned as a dependency

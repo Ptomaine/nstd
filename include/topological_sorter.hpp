@@ -34,65 +34,71 @@ public:
     using value_type = ValueType;
 
 protected:
-	struct relations
-	{
-		std::size_t dependencies { 0 };
-		std::unordered_set<value_type> dependents {};
-	};
+    struct relations
+    {
+        std::size_t dependencies { 0 };
+        std::unordered_set<value_type> dependents {};
+    };
 
-	std::unordered_map<value_type, relations> _map {};
+    std::unordered_map<value_type, relations> _map {};
 
 public:
-	void add(const value_type &object)
-	{
-		_map.try_emplace(object, relations {});
-	}
+    void add(const value_type &object)
+    {
+        _map.try_emplace(object, relations {});
+    }
 
-	void add(const value_type &object, const value_type &dependency)
-	{
-		if (dependency == object) return;
+    void add(const value_type &object, const value_type &dependency)
+    {
+        if (dependency == object) return;
 
-		auto &dependents = _map[dependency].dependents;
+        auto &dependents = _map[dependency].dependents;
 
-		if (dependents.find(object) == dependents.end())
-		{
-			dependents.insert(object);
+        if (dependents.find(object) == dependents.end())
+        {
+            dependents.insert(object);
 
-			++_map[object].dependencies;
-		}
-	}
+            ++_map[object].dependencies;
+        }
+    }
 
-	template <typename Container>
-	void add(const value_type &object, const Container &dependencies)
-	{
-		for (auto const &dependency : dependencies) add(object, dependency);
-	}
+    template <typename Container>
+    void add(const value_type &object, const Container &dependencies)
+    {
+        for (auto const &dependency : dependencies) add(object, dependency);
+    }
 
-	void add(const value_type &object, const std::initializer_list<value_type> &dependencies)
-	{
-		add<std::initializer_list<value_type>>(object, dependencies);
-	}
+    void add(const value_type &object, const std::initializer_list<value_type> &dependencies)
+    {
+        add<std::initializer_list<value_type>>(object, dependencies);
+    }
 
-	auto sort()
-	{
-	    std::vector<value_type> sorted, cycled;
-	    auto map { _map };
+    template<typename... Args>
+    void add(const value_type &object, Args... args)
+    {
+        (add(object, args), ...);
+    }
 
-		for(const auto &[object, relations] : map) if (!relations.dependencies) sorted.push_back(object);
+    auto sort()
+    {
+        std::vector<value_type> sorted, cycled;
+        auto map { _map };
 
-		for(decltype(std::size(sorted)) idx = 0; idx < std::size(sorted); ++idx)
-			for(auto const& object : map[sorted[idx]].dependents)
+        for(const auto &[object, relations] : map) if (!relations.dependencies) sorted.push_back(object);
+
+        for(decltype(std::size(sorted)) idx = 0; idx < std::size(sorted); ++idx)
+            for(auto const& object : map[sorted[idx]].dependents)
                 if (!--map[object].dependencies) sorted.push_back(object);
 
-		for(const auto &[object, relations] : map) if(relations.dependencies) cycled.push_back(std::move(object));
+        for(const auto &[object, relations] : map) if(relations.dependencies) cycled.push_back(std::move(object));
 
-		return std::pair(std::move(sorted), std::move(cycled));
-	}
+        return std::pair(std::move(sorted), std::move(cycled));
+    }
 
-	void clear()
-	{
-		_map.clear();
-	}
+    void clear()
+    {
+        _map.clear();
+    }
 };
 
 }
