@@ -74,9 +74,9 @@ public:
     }
 
     template<typename... Args>
-    void add(const value_type &object, Args... args)
+    void add(const value_type &object, Args... dependencies)
     {
-        (add(object, args), ...);
+        (add(object, dependencies), ...);
     }
 
     auto sort()
