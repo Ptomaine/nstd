@@ -19,7 +19,6 @@ SOFTWARE.
 */
 
 #include "topological_sorter.hpp"
-#include <algorithm>
 #include <iostream>
 #include <memory>
 
