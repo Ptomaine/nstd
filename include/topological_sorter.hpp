@@ -74,7 +74,7 @@ public:
     }
 
     template<typename... Args>
-    void add(const value_type &object, Args... dependencies)
+    void add(const value_type &object, const Args&... dependencies)
     {
         (add(object, dependencies), ...);
     }
