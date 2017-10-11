@@ -34,7 +34,9 @@ int main()
         ~task() { std::cout << message[0] << " - destroyed" << std::endl; }
     };
 
-    std::vector<std::shared_ptr<task>> tasks
+    using task_ptr = std::shared_ptr<task>;
+
+    std::vector<task_ptr> tasks
     {
         // defining simple tasks
         std::make_shared<task>("A - depends on B and C"s),    //0
@@ -48,7 +50,7 @@ int main()
         std::make_shared<task>("I - depends on none"s),       //8
     };
 
-    nstd::topological_sorter<std::shared_ptr<task>> resolver;
+    nstd::topological_sorter<task_ptr> resolver;
 
     // now setting relations between them as described above
     resolver.add(tasks[0], { tasks[1], tasks[2] });
@@ -66,14 +68,14 @@ int main()
 
     if (std::empty(cycled))
     {
-        for(auto const& d: sorted)
+        for (auto const& d: sorted)
             std::cout << d->message << std::endl;
     }
     else
     {
         std::cout << "Cycled dependencies detected: ";
 
-        for(auto const& d: cycled)
+        for (auto const& d: cycled)
             std::cout << d->message[0] << " ";
 
         std::cout << std::endl;

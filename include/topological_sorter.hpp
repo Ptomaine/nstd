@@ -54,7 +54,7 @@ public:
 
         auto &dependents = _map[dependency].dependents;
 
-        if (dependents.find(object) == dependents.end())
+        if (dependents.find(object) == std::end(dependents))
         {
             dependents.insert(object);
 
@@ -84,13 +84,13 @@ public:
         std::vector<value_type> sorted, cycled;
         auto map { _map };
 
-        for(const auto &[object, relations] : map) if (!relations.dependencies) sorted.emplace_back(object);
+        for (const auto &[object, relations] : map) if (!relations.dependencies) sorted.emplace_back(object);
 
-        for(decltype(std::size(sorted)) idx = 0; idx < std::size(sorted); ++idx)
-            for(auto const& object : map[sorted[idx]].dependents)
+        for (decltype(std::size(sorted)) idx = 0; idx < std::size(sorted); ++idx)
+            for (auto const& object : map[sorted[idx]].dependents)
                 if (!--map[object].dependencies) sorted.emplace_back(object);
 
-        for(const auto &[object, relations] : map) if(relations.dependencies) cycled.emplace_back(std::move(object));
+        for (const auto &[object, relations] : map) if(relations.dependencies) cycled.emplace_back(std::move(object));
 
         return std::pair(std::move(sorted), std::move(cycled));
     }
