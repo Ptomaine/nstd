@@ -232,6 +232,9 @@ int main()
     cons = super_signal_set["super signal 1"s]->connect(executor);
     cons = super_signal_set["super signal 2"s]->connect(executor);
     cons = super_signal_set["super signal 3"s]->connect(executor);
+
+    std::cout << "broadcasting event to all signals in the set..." << std::endl;
+
     super_signal_set.emit("super signal value!"s);
 
     std::this_thread::sleep_for(0.1s);
@@ -239,33 +242,42 @@ int main()
     {
         struct mouse_event { int x, y; };
         struct keyboard_event { int key_code; std::string modifiers; };
-        struct event_data { std::type_index event_data_type_index; std::any event_data; };
+        struct event_data { size_t hash_tag; std::any event_data; };
 
         ss::queued_signal_ex_set<event_data> ss2;
 
         cons = ss2["mouse_move"]->connect([](auto &&s, auto &&ev)
         {
-            if (ev.event_data_type_index == typeid(mouse_event))
+            if (ev.event_data.type() == typeid(mouse_event))
             {
                 auto data { std::any_cast<mouse_event>(ev.event_data) };
 
-                std::cout << "signal: " << s->name() << "; event: " << ev.event_data_type_index.hash_code() << "; x: " << data.x << "; y: " << data.y << std::endl;
+                std::cout << "signal: " << s->name() << "; event hash: " << ev.hash_tag << "; x: " << data.x << "; y: " << data.y << std::endl;
+            }
+            else
+            {
+                std::cout << "unsupported event type: " << ev.hash_tag << std::endl;
             }
         });
         cons = ss2["key_down"]->connect([](auto &&s, auto &&ev)
         {
-            if (ev.event_data_type_index == typeid(keyboard_event))
+            if (ev.event_data.type() == typeid(keyboard_event))
             {
                 auto data { std::any_cast<keyboard_event>(ev.event_data) };
 
-                std::cout << "signal: " << s->name() << "; event: " << ev.event_data_type_index.name() << "; key code: " << data.key_code << "; mods: " << data.modifiers << std::endl;
+                std::cout << "signal: " << s->name() << "; event hash: " << ev.hash_tag << "; key code: " << data.key_code << "; mods: " << data.modifiers << std::endl;
+            }
+            else
+            {
+                std::cout << "unsupported event type: " << ev.hash_tag << std::endl;
             }
         });
 
-        auto make_event = [](auto &&ed) { return event_data { typeid(ed), ed }; };
+        auto make_event = [](auto &&ed) { return event_data { std::hash<std::string>()(typeid(ed).name()), ed }; };
 
         ss2["mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
         ss2["key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
+        ss2["key_down"]->emit(make_event(mouse_event { 200, 200 })); // this event is supposed to be ignored
 
         std::this_thread::sleep_for(0.1s);
     }
