@@ -242,7 +242,7 @@ int main()
     {
         struct mouse_event { int x, y; };
         struct keyboard_event { int key_code; std::string modifiers; };
-        struct event_data { size_t hash_tag; std::any event_data; };
+        struct event_data { std::type_index event_data_type_index; std::any event_data; };
 
         ss::queued_signal_ex_set<event_data> ss2;
 
@@ -252,11 +252,11 @@ int main()
             {
                 auto data { std::any_cast<mouse_event>(ev.event_data) };
 
-                std::cout << "signal: " << s->name() << "; event hash: " << ev.hash_tag << "; x: " << data.x << "; y: " << data.y << std::endl;
+                std::cout << "signal: " << s->name() << "; event hash index: " << ev.event_data_type_index.hash_code() << "; x: " << data.x << "; y: " << data.y << std::endl;
             }
             else
             {
-                std::cout << "unsupported event type: " << ev.hash_tag << std::endl;
+                std::cout << "unsupported event type. expected 'mouse_event [" << std::type_index(typeid(mouse_event)).hash_code() << "]' but got " << ev.event_data_type_index.hash_code() << std::endl;
             }
         });
         cons = ss2["key_down"]->connect([](auto &&s, auto &&ev)
@@ -265,15 +265,15 @@ int main()
             {
                 auto data { std::any_cast<keyboard_event>(ev.event_data) };
 
-                std::cout << "signal: " << s->name() << "; event hash: " << ev.hash_tag << "; key code: " << data.key_code << "; mods: " << data.modifiers << std::endl;
+                std::cout << "signal: " << s->name() << "; event hash index: " << ev.event_data_type_index.hash_code() << "; key code: " << data.key_code << "; mods: " << data.modifiers << std::endl;
             }
             else
             {
-                std::cout << "unsupported event type: " << ev.hash_tag << std::endl;
+                std::cout << "unsupported event type. expected 'keyboard_event ['" << std::type_index(typeid(keyboard_event)).hash_code() << "]' but got " << ev.event_data_type_index.hash_code() << std::endl;
             }
         });
 
-        auto make_event = [](auto &&ed) { return event_data { std::hash<std::string>()(typeid(ed).name()), ed }; };
+        auto make_event = [](auto &&ed) { return event_data { typeid(ed), std::forward<decltype(ed)>(ed) }; };
 
         ss2["mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
         ss2["key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
