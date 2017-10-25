@@ -20,6 +20,7 @@ SOFTWARE.
 
 #include <iostream>
 #include "base64.hpp"
+#include "crc32.hpp"
 
 int main()
 {
@@ -40,6 +41,9 @@ int main()
     std::cout << "Binary data: ";
     for (auto &&i : data_restored) std::cout << static_cast<int>(i);
     std::cout << std::endl << std::endl;
+
+    std::cout << "  crc32 :" << nstd::crc32::crc32("1234567890", 10) << std::endl;
+    std::cout << "c_crc32 :" << nstd::crc32::c_crc32<10>("1234567890") << std::endl;
 
 	std::cout << "exitting..." << std::endl;
 
