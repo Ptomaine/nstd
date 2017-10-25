@@ -229,18 +229,20 @@ template<typename ... Args>
 inline std::string compose_string(const Args& ... args)
 {
     std::ostringstream oss;
-    auto _ = {0, (static_cast<void>(oss << args), 0) ... };
 
-    return static_cast<void>(_), oss.str();
+    ((oss << args), ... );
+
+    return oss.str();
 }
 
 template<typename ... Args>
 inline std::wstring compose_wstring(const Args& ... args)
 {
     std::wostringstream oss;
-    auto _ = {0, (static_cast<void>(oss << args), 0) ... };
 
-    return static_cast<void>(_), oss.str();
+    ((oss << args), ... );
+
+    return oss.str();
 }
 
 template<typename NumericType>
