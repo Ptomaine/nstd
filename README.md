@@ -10,7 +10,7 @@ The library currently contains the following features:
    * urdl - the library to download web content (depends on asio) [https://github.com/chriskohlhoff/urdl]
    * date - the date and time manipulations library created by Howard Hinnant [https://github.com/HowardHinnant/date]
    * units - r-lyeh's library to provide numerical quantities with units [https://github.com/r-lyeh/units]
-   * base64 - base64 encoding/decoding
+   * base64, crc32 - base64 encoding/decoding, CRC32/constexpr CRC32
    * uuid - unique id generator
    * relinx - LINQ-like data transformations
    * planar_movements_recognizer - a set of classes to track and recognize planar movements and to execute corresponding commands
