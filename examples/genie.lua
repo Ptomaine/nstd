@@ -4,17 +4,21 @@ solution "nstd_examples"
     flags { "StaticRuntime" }
     configuration "vs*"
         buildoptions { "/std:c++17", "/EHsc", "/Wall" }
+
     configuration "not vs*"
         buildoptions_cpp { "-std=c++1z", "-fexceptions" }
         buildoptions "-Wall"
-    kind "ConsoleApp"
+
     language "C++"
     configuration { "windows", "not vs*" }
         linkoptions { "-static" }
+
     configuration { "Debug" }
+        kind "ConsoleApp"
         flags { "Symbols" }
 
     configuration { "Release" }
+        kind "ConsoleApp"
         defines { "NDEBUG" }
         flags { "OptimizeSpeed" }
 
@@ -22,14 +26,10 @@ solution "nstd_examples"
         files { "asio_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/asio_example/Debug"
             targetdir "bin/asio_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/asio_example/Release"
             targetdir "bin/asio_example/Release"
 
@@ -42,28 +42,20 @@ solution "nstd_examples"
     project "base64_example"
         files { "base64_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/base64_example/Debug"
             targetdir "bin/base64_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/base64_example/Release"
             targetdir "bin/base64_example/Release"
 
     project "date_example"
         files { "date_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/date_example/Debug"
             targetdir "bin/date_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/date_example/Release"
             targetdir "bin/date_example/Release"
 
@@ -71,30 +63,23 @@ solution "nstd_examples"
         files { "giant_example.cpp" }
         configuration "not vs*"
             buildoptions { "-Wno-unused-variable" }
+
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/giant_example/Debug"
             targetdir "bin/giant_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/giant_example/Release"
             targetdir "bin/giant_example/Release"
 
     project "expiry_cache_example"
         files { "expiry_cache_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             flags { "Symbols" }
             objdir "obj/expiry_cache_example/Debug"
             targetdir "bin/expiry_cache_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/expiry_cache_example/Release"
             targetdir "bin/expiry_cache_example/Release"
 
@@ -104,14 +89,10 @@ solution "nstd_examples"
     project "live_property_example"
         files { "live_property_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/live_property_example/Debug"
             targetdir "bin/live_property_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/live_property_example/Release"
             targetdir "bin/live_property_example/Release"
 
@@ -121,16 +102,13 @@ solution "nstd_examples"
     project "relinx_example"
         files { "relinx_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/relinx_example/Debug"
             targetdir "bin/relinx_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             configuration "not vs*"
                 buildoptions { "-Wno-unused-variable", "-Wno-unused-but-set-variable" }
+
             objdir "obj/relinx_example/Release"
             targetdir "bin/relinx_example/Release"
 
@@ -138,14 +116,10 @@ solution "nstd_examples"
         files { "relinx_generator_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/relinx_generator_example/Debug"
             targetdir "bin/relinx_generator_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/relinx_generator_example/Release"
             targetdir "bin/relinx_generator_example/Release"
 
@@ -158,59 +132,44 @@ solution "nstd_examples"
     project "pmr_example"
         files { "pmr_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/pmr_example/Debug"
             targetdir "bin/pmr_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/pmr_example/Release"
             targetdir "bin/pmr_example/Release"
 
     project "strings_example"
         files { "strings_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/strings_example/Debug"
             targetdir "bin/strings_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/strings_example/Release"
             targetdir "bin/strings_example/Release"
 
     project "topological_sorter_example"
         files { "topological_sorter_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/topological_sorter_example/Debug"
             targetdir "bin/topological_sorter_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/topological_sorter_example/Release"
             targetdir "bin/topological_sorter_example/Release"
 
     project "sqlite_example"
         files { "sqlite_example.cpp", "../include/external/sqlite/sqlite3.c" }
+        includedirs { "../include/external/sqlite" }
         configuration "not vs*"
             buildoptions { "-Wno-unused-but-set-variable" }
-        includedirs { "../include/external/sqlite" }
+
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/sqlite_example/Debug"
             targetdir "bin/sqlite_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/sqlite_example/Release"
             targetdir "bin/sqlite_example/Release"
 
@@ -220,14 +179,10 @@ solution "nstd_examples"
     project "units_example"
         files { "units_example.cpp" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/units_example/Debug"
             targetdir "bin/units_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/units_example/Release"
             targetdir "bin/units_example/Release"
 
@@ -235,14 +190,10 @@ solution "nstd_examples"
         files { "urdl_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/urdl_example/Debug"
             targetdir "bin/urdl_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/urdl_example/Release"
             targetdir "bin/urdl_example/Release"
 
@@ -256,14 +207,10 @@ solution "nstd_examples"
         files { "uuid_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/uuid_example/Debug"
             targetdir "bin/uuid_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/uuid_example/Release"
             targetdir "bin/uuid_example/Release"
 
@@ -276,15 +223,14 @@ solution "nstd_examples"
     project "freetype_example"
         files { "freetype_example.cpp", "../include/external/freetype/freetype.c" }
         includedirs { "../include/external/freetype/freetype2/include" }
+        configuration "not vs*"
+            buildoptions { "-Wno-maybe-uninitialized" }
+
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/freetype_example/Debug"
             targetdir "bin/freetype_example/Debug"
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/freetype_example/Release"
             targetdir "bin/freetype_example/Release"
 
@@ -303,19 +249,18 @@ solution "nstd_examples"
 		"../include/external/agg/agg/src/agg_vcgen_stroke.cpp" }
         includedirs { "../include/external/freetype/freetype2/include" }
         userincludedirs { "../include/external/agg/agg/include", "../include/external/agg/agg/font_freetype" }
+        configuration "not vs*"
+            buildoptions { "-Wno-maybe-uninitialized", "-Wno-multichar" }
+
         postbuildcmd = "copy ../resources/example_resources/agg_example/fonts/*.ttf ./bin/agg_example/"
 
         configuration { "Debug" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/agg_example/Debug"
             targetdir "bin/agg_example/Debug"
 	    cmd = postbuildcmd .. "Debug"
    	    postbuildcommands { iif(os.is("windows"), string.gsub(cmd, "/", "\\"), string.gsub(cmd, "copy ", "cp "))  }
 
         configuration { "Release" }
-            configuration "vs*"
-                kind "ConsoleApp"
             objdir "obj/agg_example/Release"
             targetdir "bin/agg_example/Release"
 	    cmd = postbuildcmd .. "Release"
