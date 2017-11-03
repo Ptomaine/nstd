@@ -224,7 +224,7 @@ solution "nstd_examples"
         files { "freetype_example.cpp", "../include/external/freetype/freetype.c" }
         includedirs { "../include/external/freetype/freetype2/include" }
         configuration "not vs*"
-            buildoptions { "-Wno-maybe-uninitialized" }
+            buildoptions { "-Wno-maybe-uninitialized", "-Wno-multichar" }
 
         configuration { "Debug" }
             objdir "obj/freetype_example/Debug"
@@ -250,7 +250,7 @@ solution "nstd_examples"
         includedirs { "../include/external/freetype/freetype2/include" }
         userincludedirs { "../include/external/agg/agg/include", "../include/external/agg/agg/font_freetype" }
         configuration "not vs*"
-            buildoptions { "-Wno-maybe-uninitialized", "-Wno-multichar" }
+            buildoptions { "-Wno-maybe-uninitialized", "-Wno-unused-result" }
 
         postbuildcmd = "copy ../resources/example_resources/agg_example/fonts/*.ttf ./bin/agg_example/"
 
