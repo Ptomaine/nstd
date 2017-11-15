@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="sharp_tcp_client_example" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/sharp_tcp_client_example/Debug/sharp_tcp_client_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/sharp_tcp_client_example/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/sharp_tcp_client_example/Release/sharp_tcp_client_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/sharp_tcp_client_example/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+					<Add option="-DNDEBUG" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++1z" />
+			<Add option="-m64" />
+			<Add option="-fexceptions" />
+			<Add directory="../include" />
+		</Compiler>
+		<Linker>
+			<Add option="-static" />
+			<Add option="-m64" />
+			<Add library="ws2_32" />
+			<Add library="wsock32" />
+		</Linker>
+		<Unit filename="sharp_tcp_client_example.cpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

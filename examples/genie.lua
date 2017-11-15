@@ -271,3 +271,35 @@ solution "nstd_examples"
 
         configuration "linux"
             links { "X11" }
+
+    project "sharp_tcp_server_example"
+        files { "sharp_tcp_server_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/sharp_tcp_server_example/Debug"
+            targetdir "bin/sharp_tcp_server_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/sharp_tcp_server_example/Release"
+            targetdir "bin/sharp_tcp_server_example/Release"
+
+        configuration { "windows" }
+            links { "ws2_32", "wsock32" }
+
+        configuration "linux"
+            links { "pthread" }
+
+    project "sharp_tcp_client_example"
+        files { "sharp_tcp_client_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/sharp_tcp_client_example/Debug"
+            targetdir "bin/sharp_tcp_client_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/sharp_tcp_client_example/Release"
+            targetdir "bin/sharp_tcp_client_example/Release"
+
+        configuration { "windows" }
+            links { "ws2_32", "wsock32" }
+
+        configuration "linux"
+            links { "pthread" }

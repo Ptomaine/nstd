@@ -17,5 +17,7 @@
 		<Project filename="freetype_example.cbp" />
 		<Project filename="agg_example.cbp" />
 		<Project filename="topological_sorter_example.cbp" />
+		<Project filename="sharp_tcp_client_example.cbp" />
+		<Project filename="sharp_tcp_server_example.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>
