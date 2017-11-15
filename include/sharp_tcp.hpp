@@ -207,6 +207,10 @@ private:
     std::condition_variable m_tasks_condvar {};
 };
 
+#ifndef SOCKET_ERROR
+#define SOCKET_ERROR -1
+#endif
+
 class self_pipe
 {
 public:
