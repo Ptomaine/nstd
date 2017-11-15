@@ -282,9 +282,11 @@ public:
     void notify(void)
     {
 #ifdef _WIN32
-        static_cast<void>(sendto(m_fd, "a", 1, 0, &m_addr, m_addr_len));
+        auto unused = sendto(m_fd, "a", 1, 0, &m_addr, m_addr_len);
+        static_cast<void>(unused);
 #else
-        static_cast<void>(write(m_fds[1], "a", 1));
+        auto unused = write(m_fds[1], "a", 1);
+        static_cast<void>(unused);
 #endif
     }
 
@@ -292,10 +294,12 @@ public:
     {
 #ifdef _WIN32
         char buf[1024];
-        static_cast<void>(recvfrom(m_fd, buf, 1024, 0, &m_addr, &m_addr_len));
+        auto unused = recvfrom(m_fd, buf, 1024, 0, &m_addr, &m_addr_len);
+        static_cast<void>(unused);
 #else
         char buf[1024];
-        static_cast<void>(read(m_fds[0], buf, 1024));
+        auto unused = read(m_fds[0], buf, 1024);
+        static_cast<void>(unused);
 #endif
     }
 
