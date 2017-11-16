@@ -303,3 +303,19 @@ solution "nstd_examples"
 
         configuration "linux"
             links { "pthread" }
+
+    project "remote_signal_slot_example"
+        files { "remote_signal_slot_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/remote_signal_slot_example/Debug"
+            targetdir "bin/remote_signal_slot_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/remote_signal_slot_example/Release"
+            targetdir "bin/remote_signal_slot_example/Release"
+
+        configuration { "windows" }
+            links { "ws2_32", "wsock32" }
+
+        configuration "linux"
+            links { "pthread" }

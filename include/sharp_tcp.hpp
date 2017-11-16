@@ -822,7 +822,7 @@ private:
                 timeout_ptr     = &timeout;
             }
 
-            if (select(ndfs, &_rd_set, &_wr_set, nullptr, timeout_ptr) > 0) process_events();
+            if (::select(ndfs, &_rd_set, &_wr_set, nullptr, timeout_ptr) > 0) process_events();
         }
     }
 
@@ -1329,13 +1329,13 @@ private:
     {
         try
         {
-            auto client = std::make_shared<tcp_client>(_socket.accept());
+            auto client { std::make_shared<tcp_client>(_socket.accept()) };
 
             if (!_on_new_connection_callback || !_on_new_connection_callback(client))
             {
-              client->set_on_disconnection_handler([this, client]() { on_client_disconnected(client); });
+                client->set_on_disconnection_handler([this, client]() { on_client_disconnected(client); });
 
-              _clients.push_back(client);
+                _clients.push_back(client);
             }
             else {}
         }

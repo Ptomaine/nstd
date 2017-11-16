@@ -19,5 +19,6 @@
 		<Project filename="topological_sorter_example.cbp" />
 		<Project filename="sharp_tcp_client_example.cbp" />
 		<Project filename="sharp_tcp_server_example.cbp" />
+		<Project filename="remote_signal_slot_example.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>
