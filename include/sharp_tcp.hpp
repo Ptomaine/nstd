@@ -29,6 +29,7 @@ SOFTWARE.
 #include <optional>
 #include <queue>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #include <vector>
 #include <unordered_map>
@@ -70,8 +71,8 @@ class sharp_tcp_error : public std::runtime_error
 public:
     sharp_tcp_error(const std::string& what, const std::string& file = {}, size_t line = {}) :
         std::runtime_error(what),
-        m_file(file),
-        m_line(line) {}
+        _file(file),
+        _line(line) {}
 
     ~sharp_tcp_error() = default;
 
@@ -80,27 +81,27 @@ public:
 
     const std::string& get_file() const
     {
-        return m_file;
+        return _file;
     }
 
     std::size_t get_line() const
     {
-        return m_line;
+        return _line;
     }
 
 private:
-    std::string m_file {};
-    std::size_t m_line {};
+    std::string _file {};
+    std::size_t _line {};
 };
 
 class thread_pool
 {
 public:
-    explicit thread_pool(std::size_t nb_threads) : m_nb_threads(nb_threads)
+    explicit thread_pool(std::size_t nb_threads) : _nb_threads(nb_threads)
     {
         for (std::size_t i { 0 }; i < nb_threads; ++i)
         {
-            m_workers.push_back(std::thread([this](){ run(); }));
+            _workers.push_back(std::thread([this](){ run(); }));
         }
     }
 
@@ -117,10 +118,10 @@ public:
 
     void add_task(const task_t& task)
     {
-        std::scoped_lock lock { m_tasks_mtx };
+        std::scoped_lock lock { _tasks_mtx };
 
-        m_tasks.push(task);
-        m_tasks_condvar.notify_all();
+        _tasks.push(task);
+        _tasks_condvar.notify_all();
     }
 
     thread_pool& operator<<(const task_t& task)
@@ -132,30 +133,30 @@ public:
     {
         if (!is_running()) return;
 
-        m_should_stop = true;
-        m_tasks_condvar.notify_all();
+        _should_stop = true;
+        _tasks_condvar.notify_all();
 
-        for (auto& worker : m_workers) worker.join();
+        for (auto& worker : _workers) worker.join();
 
-        m_workers.clear();
+        _workers.clear();
     }
 
 public:
     bool is_running() const
     {
-        return !m_should_stop;
+        return !_should_stop;
     }
 
 public:
     void set_nb_threads(std::size_t nb_threads)
     {
-        m_nb_threads = nb_threads;
+        _nb_threads = nb_threads;
 
-        if (m_workers.size() < m_nb_threads)
+        if (_workers.size() < _nb_threads)
         {
-            while (m_workers.size() < m_nb_threads) m_workers.push_back(std::thread([this]() { run(); }));
+            while (_workers.size() < _nb_threads) _workers.push_back(std::thread([this]() { run(); }));
         }
-        else m_tasks_condvar.notify_all();
+        else _tasks_condvar.notify_all();
     }
 
 private:
@@ -180,31 +181,31 @@ private:
 
     task_t fetch_task()
     {
-        std::unique_lock lock { m_tasks_mtx };
+        std::unique_lock lock { _tasks_mtx };
 
-        m_tasks_condvar.wait(lock, [this] { return should_stop() || !std::empty(m_tasks); });
+        _tasks_condvar.wait(lock, [this] { return should_stop() || !std::empty(_tasks); });
 
-        if (should_stop() || std::empty(m_tasks)) return nullptr;
+        if (should_stop() || std::empty(_tasks)) return nullptr;
 
-        task_t task = std::move(m_tasks.front());
+        task_t task = std::move(_tasks.front());
 
-        m_tasks.pop();
+        _tasks.pop();
 
         return task;
     }
 
     bool should_stop(void) const
     {
-        return m_should_stop || m_workers.size() > m_nb_threads;
+        return _should_stop || _workers.size() > _nb_threads;
     }
 
 private:
-    std::vector<std::thread> m_workers {};
-    std::size_t m_nb_threads { 0 };
-    std::atomic_bool m_should_stop { false };
-    std::queue<task_t> m_tasks {};
-    std::mutex m_tasks_mtx {};
-    std::condition_variable m_tasks_condvar {};
+    std::vector<std::thread> _workers {};
+    std::size_t _nb_threads { 0 };
+    std::atomic_bool _should_stop { false };
+    std::queue<task_t> _tasks {};
+    std::mutex _tasks_mtx {};
+    std::condition_variable _tasks_condvar {};
 };
 
 #ifndef SOCKET_ERROR
@@ -217,13 +218,13 @@ public:
     self_pipe()
     {
 #ifdef _WIN32
-        m_fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+        _fd = ::socket(AF_INET, SOCK_DGRAM, 0);
 
-        if (m_fd == INVALID_FD) throw sharp_tcp_error { "fail socket()" };
+        if (_fd == INVALID_FD) throw sharp_tcp_error { "fail socket()" };
 
         u_long flags = 1;
 
-        ioctlsocket(m_fd, FIONBIO, &flags);
+        ioctlsocket(_fd, FIONBIO, &flags);
 
         struct sockaddr_in inaddr;
 
@@ -233,27 +234,27 @@ public:
         inaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
         inaddr.sin_port        = 0;
 
-        if (::bind(m_fd, (struct sockaddr*) &inaddr, sizeof(inaddr)) == SOCKET_ERROR) throw sharp_tcp_error { "fail bind()" };
+        if (::bind(_fd, (struct sockaddr*) &inaddr, sizeof(inaddr)) == SOCKET_ERROR) throw sharp_tcp_error { "fail bind()" };
 
-        m_addr_len = sizeof(m_addr);
+        _addr_len = sizeof(_addr);
 
-        memset(&m_addr, 0, sizeof(m_addr));
+        memset(&_addr, 0, sizeof(_addr));
 
-        if (getsockname(m_fd, &m_addr, &m_addr_len) == SOCKET_ERROR) throw sharp_tcp_error { "fail getsockname()" };
+        if (getsockname(_fd, &_addr, &_addr_len) == SOCKET_ERROR) throw sharp_tcp_error { "fail getsockname()" };
 
-        if (connect(m_fd, &m_addr, m_addr_len) == SOCKET_ERROR) throw sharp_tcp_error { "fail connect()" };
+        if (connect(_fd, &_addr, _addr_len) == SOCKET_ERROR) throw sharp_tcp_error { "fail connect()" };
 #else
-        if (::pipe(m_fds) == -1) throw sharp_tcp_error { "pipe() failure" };
+        if (::pipe(_fds) == -1) throw sharp_tcp_error { "pipe() failure" };
 #endif
     }
 
     ~self_pipe()
     {
 #ifdef _WIN32
-        if (m_fd != INVALID_FD) closesocket(m_fd);
+        if (_fd != INVALID_FD) closesocket(_fd);
 #else
-        if (m_fds[0] != INVALID_FD) ::close(m_fds[0]);
-        if (m_fds[1] != INVALID_FD) ::close(m_fds[1]);
+        if (_fds[0] != INVALID_FD) ::close(_fds[0]);
+        if (_fds[1] != INVALID_FD) ::close(_fds[1]);
 #endif
     }
 
@@ -264,28 +265,28 @@ public:
     fd_t get_read_fd() const
     {
 #ifdef _WIN32
-        return m_fd;
+        return _fd;
 #else
-        return m_fds[0];
+        return _fds[0];
 #endif
     }
 
     fd_t get_write_fd() const
     {
 #ifdef _WIN32
-        return m_fd;
+        return _fd;
 #else
-        return m_fds[1];
+        return _fds[1];
 #endif
     }
 
     void notify(void)
     {
 #ifdef _WIN32
-        auto unused = sendto(m_fd, "a", 1, 0, &m_addr, m_addr_len);
+        auto unused = sendto(_fd, "a", 1, 0, &_addr, _addr_len);
         static_cast<void>(unused);
 #else
-        auto unused = write(m_fds[1], "a", 1);
+        auto unused = write(_fds[1], "a", 1);
         static_cast<void>(unused);
 #endif
     }
@@ -294,22 +295,22 @@ public:
     {
 #ifdef _WIN32
         char buf[1024];
-        auto unused = recvfrom(m_fd, buf, 1024, 0, &m_addr, &m_addr_len);
+        auto unused = recvfrom(_fd, buf, 1024, 0, &_addr, &_addr_len);
         static_cast<void>(unused);
 #else
         char buf[1024];
-        auto unused = read(m_fds[0], buf, 1024);
+        auto unused = read(_fds[0], buf, 1024);
         static_cast<void>(unused);
 #endif
     }
 
 private:
 #ifdef _WIN32
-    fd_t m_fd { INVALID_FD };
-    struct sockaddr m_addr {};;
-    int m_addr_len {};
+    fd_t _fd { INVALID_FD };
+    struct sockaddr _addr {};;
+    int _addr_len {};
 #else
-    fd_t m_fds[2] { INVALID_FD, INVALID_FD };
+    fd_t _fds[2] { INVALID_FD, INVALID_FD };
 #endif
 };
 
@@ -333,12 +334,12 @@ public:
     tcp_socket() = default;
     ~tcp_socket() = default;
 
-    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : m_fd(fd), m_host(host), m_port(port), m_type(t) {}
+    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : _fd(fd), _host(host), _port(port), _type(t) {}
 
-    tcp_socket(tcp_socket&& socket) : m_fd(std::move(socket.m_fd)), m_host(socket.m_host), m_port(socket.m_port), m_type(socket.m_type)
+    tcp_socket(tcp_socket&& socket) : _fd(std::move(socket._fd)), _host(socket._host), _port(socket._port), _type(socket._type)
     {
-        socket.m_fd   = INVALID_FD;
-        socket.m_type = type::UNKNOWN;
+        socket._fd   = INVALID_FD;
+        socket._type = type::UNKNOWN;
     }
 
     tcp_socket(const tcp_socket&) = delete;
@@ -347,7 +348,7 @@ public:
 public:
     bool operator==(const tcp_socket& rhs) const
     {
-        return m_fd == rhs.m_fd && m_type == rhs.m_type;
+        return _fd == rhs._fd && _type == rhs._type;
     }
 
     bool operator!=(const tcp_socket& rhs) const
@@ -363,7 +364,7 @@ public:
 
         std::vector<char> data(size_to_read, 0);
 
-        ssize_t rd_size = ::recv(m_fd, const_cast<char*>(data.data()), cast_length(size_to_read), 0);
+        ssize_t rd_size = ::recv(_fd, const_cast<char*>(std::data(data)), cast_length(size_to_read), 0);
 
         if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
 
@@ -379,7 +380,7 @@ public:
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
 
-        ssize_t wr_size = ::send(m_fd, data.data(), cast_length(size_to_write), 0);
+        ssize_t wr_size = ::send(_fd, data.data(), cast_length(size_to_write), 0);
 
         if (wr_size == SOCKET_ERROR) throw sharp_tcp_error { "send() failure" };
 
@@ -389,8 +390,8 @@ public:
     void connect(const std::string& host, std::uint32_t port, std::uint32_t timeout_msecs = 0)
     {
 #ifdef _WIN32
-        m_host = host;
-        m_port = port;
+        _host = host;
+        _port = port;
 
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
@@ -416,7 +417,7 @@ public:
         {
             u_long mode = 1;
 
-            if (::ioctlsocket(m_fd, FIONBIO, &mode) != 0)
+            if (::ioctlsocket(_fd, FIONBIO, &mode) != 0)
             {
               close();
 
@@ -424,7 +425,7 @@ public:
             }
         }
 
-        int ret = ::connect(m_fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
+        int ret = ::connect(_fd, (const struct sockaddr*) &server_addr, sizeof(server_addr));
 
         if (ret == -1 && ::WSAGetLastError() != WSAEWOULDBLOCK)
         {
@@ -440,12 +441,12 @@ public:
 
             FD_SET set;
             FD_ZERO(&set);
-            FD_SET(m_fd, &set);
+            FD_SET(_fd, &set);
 
             if (::select(0, NULL, &set, NULL, &tv) == 1)
             {
                 u_long mode = 0;
-                if (::ioctlsocket(m_fd, FIONBIO, &mode) != 0)
+                if (::ioctlsocket(_fd, FIONBIO, &mode) != 0)
                 {
                     close();
                     throw sharp_tcp_error { "connect() set blocking failure" };
@@ -458,8 +459,8 @@ public:
             }
         }
 #else
-        m_host = host;
-        m_port = port;
+        _host = host;
+        _port = port;
 
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
@@ -467,7 +468,7 @@ public:
         struct sockaddr_un server_addr_un;
         struct sockaddr_in server_addr_in;
 
-        bool is_unix_socket = m_port == 0;
+        bool is_unix_socket = _port == 0;
 
         if (is_unix_socket)
         {
@@ -499,14 +500,14 @@ public:
 
         if (timeout_msecs > 0)
         {
-            if (fcntl(m_fd, F_SETFL, fcntl(m_fd, F_GETFL, 0) | O_NONBLOCK) == -1)
+            if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK) == -1)
             {
                 close();
                 throw sharp_tcp_error { "connect() set non-blocking failure" };
             }
         }
 
-        int ret = ::connect(m_fd, server_addr, addr_len);
+        int ret = ::connect(_fd, server_addr, addr_len);
         if (ret < 0 && errno != EINPROGRESS)
         {
             close();
@@ -521,11 +522,11 @@ public:
 
             fd_set set;
             FD_ZERO(&set);
-            FD_SET(m_fd, &set);
+            FD_SET(_fd, &set);
 
             if (select(0, NULL, &set, NULL, &tv) == 1)
             {
-                if (fcntl(m_fd, F_SETFL, fcntl(m_fd, F_GETFL, 0) & (~O_NONBLOCK)) == -1)
+                if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) & (~O_NONBLOCK)) == -1)
                 {
                     close();
                     throw sharp_tcp_error { "connect() set blocking failure" };
@@ -543,8 +544,8 @@ public:
     void bind(const std::string& host, std::uint32_t port)
     {
 #ifdef _WIN32
-        m_host = host;
-        m_port = port;
+        _host = host;
+        _port = port;
 
         create_socket_if_necessary();
         check_or_set_type(type::SERVER);
@@ -562,10 +563,10 @@ public:
 
         ::freeaddrinfo(result);
 
-        if (::bind(m_fd, (const struct sockaddr*) &server_addr, sizeof(server_addr)) == SOCKET_ERROR) throw sharp_tcp_error { "bind() failure" };
+        if (::bind(_fd, (const struct sockaddr*) &server_addr, sizeof(server_addr)) == SOCKET_ERROR) throw sharp_tcp_error { "bind() failure" };
 #else
-        m_host = host;
-        m_port = port;
+        _host = host;
+        _port = port;
 
         create_socket_if_necessary();
         check_or_set_type(type::SERVER);
@@ -573,7 +574,7 @@ public:
         struct sockaddr_un server_addr_un;
         struct sockaddr_in server_addr_in;
 
-        bool is_unix_socket = m_port == 0;
+        bool is_unix_socket = _port == 0;
 
         if (is_unix_socket)
         {
@@ -598,7 +599,7 @@ public:
         socklen_t addr_len                 = is_unix_socket ? sizeof(server_addr_un) : sizeof(server_addr_in);
         const struct sockaddr* server_addr = is_unix_socket ? (const struct sockaddr*) &server_addr_un : (const struct sockaddr*) &server_addr_in;
 
-        if (::bind(m_fd, server_addr, addr_len) == -1) throw sharp_tcp_error { "bind() failure" };
+        if (::bind(_fd, server_addr, addr_len) == -1) throw sharp_tcp_error { "bind() failure" };
 #endif
     }
 
@@ -607,7 +608,7 @@ public:
         create_socket_if_necessary();
         check_or_set_type(type::SERVER);
 
-        if (::listen(m_fd, cast_length(max_connection_queue)) == SOCKET_ERROR) throw sharp_tcp_error { "listen() failure" };
+        if (::listen(_fd, cast_length(max_connection_queue)) == SOCKET_ERROR) throw sharp_tcp_error { "listen() failure" };
     }
 
     tcp_socket accept()
@@ -618,7 +619,7 @@ public:
         struct sockaddr_in client_info;
         socklen_t client_info_struct_size = sizeof(client_info);
 
-        fd_t client_fd = ::accept(m_fd, (struct sockaddr*) &client_info, &client_info_struct_size);
+        fd_t client_fd = ::accept(_fd, (struct sockaddr*) &client_info, &client_info_struct_size);
 
         if (client_fd == INVALID_FD) throw sharp_tcp_error { "accept() failure" };
 
@@ -628,91 +629,91 @@ public:
     void close()
     {
 #ifdef _WIN32
-        if (m_fd != INVALID_FD) ::closesocket(m_fd);
+        if (_fd != INVALID_FD) ::closesocket(_fd);
 #else
-        if (m_fd != INVALID_FD) ::close(m_fd);
+        if (_fd != INVALID_FD) ::close(_fd);
 #endif
-        m_fd   = INVALID_FD;
-        m_type = type::UNKNOWN;
+        _fd   = INVALID_FD;
+        _type = type::UNKNOWN;
     }
 
 public:
     const std::string& get_host() const
     {
-        return m_host;
+        return _host;
     }
 
     std::uint32_t get_port() const
     {
-        return m_port;
+        return _port;
     }
 
     type get_type() const
     {
-        return m_type;
+        return _type;
     }
 
     void set_type(type t)
     {
-        m_type = t;
+        _type = t;
     }
 
     fd_t get_fd() const
     {
-        return m_fd;
+        return _fd;
     }
 
 private:
     void create_socket_if_necessary()
     {
 #ifdef _WIN32
-        if (m_fd != INVALID_FD) return;
+        if (_fd != INVALID_FD) return;
 
-        m_fd   = socket(AF_INET, SOCK_STREAM, 0);
-        m_type = type::UNKNOWN;
+        _fd   = socket(AF_INET, SOCK_STREAM, 0);
+        _type = type::UNKNOWN;
 
-        if (m_fd == INVALID_FD) throw sharp_tcp_error { "tcp_socket::create_socket_if_necessary: socket() failure" };
+        if (_fd == INVALID_FD) throw sharp_tcp_error { "tcp_socket::create_socket_if_necessary: socket() failure" };
 #else
-        if (m_fd != INVALID_FD) return;
+        if (_fd != INVALID_FD) return;
 
-        m_fd   = socket(m_port == 0 ? AF_UNIX : AF_INET, SOCK_STREAM, 0);
-        m_type = type::UNKNOWN;
+        _fd   = socket(_port == 0 ? AF_UNIX : AF_INET, SOCK_STREAM, 0);
+        _type = type::UNKNOWN;
 
-        if (m_fd == INVALID_FD) throw sharp_tcp_error { "tcp_socket::create_socket_if_necessary: socket() failure" };
+        if (_fd == INVALID_FD) throw sharp_tcp_error { "tcp_socket::create_socket_if_necessary: socket() failure" };
 #endif
     }
 
     void check_or_set_type(type t)
     {
-        if (m_type != type::UNKNOWN && m_type != t) throw sharp_tcp_error { "trying to perform invalid operation on socket" };
+        if (_type != type::UNKNOWN && _type != t) throw sharp_tcp_error { "trying to perform invalid operation on socket" };
 
-        m_type = t;
+        _type = t;
     }
 
 private:
-    fd_t m_fd { INVALID_FD };
-    std::string m_host {};
-    std::uint32_t m_port { 0 };
-    type m_type { type::UNKNOWN };
+    fd_t _fd { INVALID_FD };
+    std::string _host {};
+    std::uint32_t _port { 0 };
+    type _type { type::UNKNOWN };
 };
 
 class io_service
 {
 public:
-    io_service(std::size_t nb_threads = 1) : m_callback_workers(nb_threads)
+    io_service(std::size_t nb_threads = 1) : _callback_workers(nb_threads)
     {
-        m_poll_worker = std::thread([&](){ poll(); });
+        _poll_worker = std::thread([&](){ poll(); });
     }
 
     ~io_service()
     {
-        m_should_stop = true;
+        _should_stop = true;
 
-        m_notifier.notify();
+        _notifier.notify();
 
-        if (m_poll_worker.joinable()) m_poll_worker.join();
+        if (_poll_worker.joinable()) _poll_worker.join();
 
-        m_callback_workers.stop();
+        _callback_workers.stop();
     }
 
     io_service(const io_service&) = delete;
@@ -720,7 +721,7 @@ public:
 
     void set_nb_workers(std::size_t nb_threads)
     {
-        m_callback_workers.set_nb_threads(nb_threads);
+        _callback_workers.set_nb_threads(nb_threads);
     }
 
     void set_use_timeout(std::optional<int> timeout_usecs)
@@ -732,43 +733,43 @@ public:
 
     void track(const tcp_socket& socket, const event_callback_t& rd_callback = nullptr, const event_callback_t& wr_callback = nullptr)
     {
-        std::scoped_lock lock { m_tracked_sockets_mtx };
+        std::scoped_lock lock { _tracked_sockets_mtx };
 
-        auto& track_info              { m_tracked_sockets[socket.get_fd()] };
+        auto& track_info              { _tracked_sockets[socket.get_fd()] };
         track_info.rd_callback        = rd_callback;
         track_info.wr_callback        = wr_callback;
         track_info.marked_for_untrack = false;
 
-        m_notifier.notify();
+        _notifier.notify();
     }
 
     void set_rd_callback(const tcp_socket& socket, const event_callback_t& event_callback)
     {
-        std::scoped_lock lock { m_tracked_sockets_mtx };
+        std::scoped_lock lock { _tracked_sockets_mtx };
 
-        auto& track_info       { m_tracked_sockets[socket.get_fd()] };
+        auto& track_info       { _tracked_sockets[socket.get_fd()] };
         track_info.rd_callback = event_callback;
 
-        m_notifier.notify();
+        _notifier.notify();
     }
 
     void set_wr_callback(const tcp_socket& socket, const event_callback_t& event_callback)
     {
-        std::scoped_lock lock { m_tracked_sockets_mtx };
+        std::scoped_lock lock { _tracked_sockets_mtx };
 
-        auto& track_info       { m_tracked_sockets[socket.get_fd()] };
+        auto& track_info       { _tracked_sockets[socket.get_fd()] };
         track_info.wr_callback = event_callback;
 
-        m_notifier.notify();
+        _notifier.notify();
     }
 
     void untrack(const tcp_socket& socket)
     {
-        std::scoped_lock lock { m_tracked_sockets_mtx };
+        std::scoped_lock lock { _tracked_sockets_mtx };
 
-        auto it { m_tracked_sockets.find(socket.get_fd()) };
+        auto it { _tracked_sockets.find(socket.get_fd()) };
 
-        if (it == std::end(m_tracked_sockets)) return;
+        if (it == std::end(_tracked_sockets)) return;
 
         if (it->second.is_executing_rd_callback || it->second.is_executing_wr_callback)
         {
@@ -776,20 +777,20 @@ public:
         }
         else
         {
-            m_tracked_sockets.erase(it);
-            m_wait_for_removal_condvar.notify_all();
+            _tracked_sockets.erase(it);
+            _wait_for_removal_condvar.notify_all();
         }
 
-        m_notifier.notify();
+        _notifier.notify();
     }
 
     void wait_for_removal(const tcp_socket& socket)
     {
-        std::unique_lock lock { m_tracked_sockets_mtx };
+        std::unique_lock lock { _tracked_sockets_mtx };
 
-        m_wait_for_removal_condvar.wait(lock, [&]()
+        _wait_for_removal_condvar.wait(lock, [&]()
         {
-            return m_tracked_sockets.find(socket.get_fd()) == m_tracked_sockets.end();
+            return _tracked_sockets.find(socket.get_fd()) == _tracked_sockets.end();
         });
     }
 
@@ -808,7 +809,7 @@ private:
 
     void poll()
     {
-        while (!m_should_stop)
+        while (!_should_stop)
         {
             int ndfs = init_poll_fds_info();
 
@@ -821,38 +822,38 @@ private:
                 timeout_ptr     = &timeout;
             }
 
-            if (select(ndfs, &m_rd_set, &m_wr_set, nullptr, timeout_ptr) > 0) process_events();
+            if (select(ndfs, &_rd_set, &_wr_set, nullptr, timeout_ptr) > 0) process_events();
         }
     }
 
     int init_poll_fds_info()
     {
-        std::scoped_lock lock { m_tracked_sockets_mtx };
+        std::scoped_lock lock { _tracked_sockets_mtx };
 
-        m_polled_fds.clear();
+        _polled_fds.clear();
 
-        FD_ZERO(&m_rd_set);
-        FD_ZERO(&m_wr_set);
+        FD_ZERO(&_rd_set);
+        FD_ZERO(&_wr_set);
 
-        int ndfs = (int) m_notifier.get_read_fd();
+        int ndfs = (int) _notifier.get_read_fd();
 
-        FD_SET(m_notifier.get_read_fd(), &m_rd_set);
-        m_polled_fds.push_back(m_notifier.get_read_fd());
+        FD_SET(_notifier.get_read_fd(), &_rd_set);
+        _polled_fds.push_back(_notifier.get_read_fd());
 
-        for (const auto& socket : m_tracked_sockets)
+        for (const auto& socket : _tracked_sockets)
         {
             const auto& fd          { socket.first };
             const auto& socket_info { socket.second };
 
             bool should_rd = socket_info.rd_callback && !socket_info.is_executing_rd_callback;
 
-            if (should_rd) FD_SET(fd, &m_rd_set);
+            if (should_rd) FD_SET(fd, &_rd_set);
 
             bool should_wr = socket_info.wr_callback && !socket_info.is_executing_wr_callback;
 
-            if (should_wr) FD_SET(fd, &m_wr_set);
+            if (should_wr) FD_SET(fd, &_wr_set);
 
-            if (should_rd || should_wr || socket_info.marked_for_untrack) m_polled_fds.push_back(fd);
+            if (should_rd || should_wr || socket_info.marked_for_untrack) _polled_fds.push_back(fd);
 
             if ((should_rd || should_wr) && (int) fd > ndfs) ndfs = (int) fd;
         }
@@ -862,30 +863,30 @@ private:
 
     void process_events()
     {
-        std::scoped_lock lock { m_tracked_sockets_mtx };
+        std::scoped_lock lock { _tracked_sockets_mtx };
 
-        for (const auto& fd : m_polled_fds)
+        for (const auto& fd : _polled_fds)
         {
-            if (fd == m_notifier.get_read_fd() && FD_ISSET(fd, &m_rd_set))
+            if (fd == _notifier.get_read_fd() && FD_ISSET(fd, &_rd_set))
             {
-                m_notifier.clr_buffer();
+                _notifier.clr_buffer();
 
                 continue;
             }
 
-            auto it { m_tracked_sockets.find(fd) };
+            auto it { _tracked_sockets.find(fd) };
 
-            if (it == std::end(m_tracked_sockets)) continue;
+            if (it == std::end(_tracked_sockets)) continue;
 
             auto& socket { it->second };
 
-            if (FD_ISSET(fd, &m_rd_set) && socket.rd_callback && !socket.is_executing_rd_callback) process_rd_event(fd, socket);
-            if (FD_ISSET(fd, &m_wr_set) && socket.wr_callback && !socket.is_executing_wr_callback) process_wr_event(fd, socket);
+            if (FD_ISSET(fd, &_rd_set) && socket.rd_callback && !socket.is_executing_rd_callback) process_rd_event(fd, socket);
+            if (FD_ISSET(fd, &_wr_set) && socket.wr_callback && !socket.is_executing_wr_callback) process_wr_event(fd, socket);
 
             if (socket.marked_for_untrack && !socket.is_executing_rd_callback && !socket.is_executing_wr_callback)
             {
-                m_tracked_sockets.erase(it);
-                m_wait_for_removal_condvar.notify_all();
+                _tracked_sockets.erase(it);
+                _wait_for_removal_condvar.notify_all();
             }
         }
     }
@@ -896,26 +897,26 @@ private:
 
         socket.is_executing_rd_callback = true;
 
-        m_callback_workers << [=]
+        _callback_workers << [=]
         {
             rd_callback(fd);
 
-            std::scoped_lock lock { m_tracked_sockets_mtx };
+            std::scoped_lock lock { _tracked_sockets_mtx };
 
-            auto it { m_tracked_sockets.find(fd) };
+            auto it { _tracked_sockets.find(fd) };
 
-            if (it == std::end(m_tracked_sockets)) return;
+            if (it == std::end(_tracked_sockets)) return;
 
             auto& socket                    { it->second };
             socket.is_executing_rd_callback = false;
 
             if (socket.marked_for_untrack && !socket.is_executing_wr_callback)
             {
-                m_tracked_sockets.erase(it);
-                m_wait_for_removal_condvar.notify_all();
+                _tracked_sockets.erase(it);
+                _wait_for_removal_condvar.notify_all();
             }
 
-            m_notifier.notify();
+            _notifier.notify();
         };
     }
 
@@ -925,49 +926,49 @@ private:
 
         socket.is_executing_wr_callback = true;
 
-        m_callback_workers << [=]
+        _callback_workers << [=]
         {
             wr_callback(fd);
 
-            std::scoped_lock lock { m_tracked_sockets_mtx };
+            std::scoped_lock lock { _tracked_sockets_mtx };
 
-            auto it = m_tracked_sockets.find(fd);
+            auto it = _tracked_sockets.find(fd);
 
-            if (it == std::end(m_tracked_sockets)) return;
+            if (it == std::end(_tracked_sockets)) return;
 
             auto& socket                    { it->second };
             socket.is_executing_wr_callback = false;
 
             if (socket.marked_for_untrack && !socket.is_executing_rd_callback)
             {
-                m_tracked_sockets.erase(it);
-                m_wait_for_removal_condvar.notify_all();
+                _tracked_sockets.erase(it);
+                _wait_for_removal_condvar.notify_all();
             }
 
-            m_notifier.notify();
+            _notifier.notify();
         };
     }
 
 private:
     std::optional<int> _use_timeout{};
-    std::unordered_map<fd_t, tracked_socket> m_tracked_sockets {};
-    std::atomic_bool m_should_stop { false };
-    std::thread m_poll_worker {};
-    thread_pool m_callback_workers;
-    std::mutex m_tracked_sockets_mtx {};
-    std::vector<fd_t> m_polled_fds {};
-    fd_set m_rd_set {};
-    fd_set m_wr_set {};
-    std::condition_variable m_wait_for_removal_condvar {};
-    self_pipe m_notifier {};
+    std::unordered_map<fd_t, tracked_socket> _tracked_sockets {};
+    std::atomic_bool _should_stop { false };
+    std::thread _poll_worker {};
+    thread_pool _callback_workers;
+    std::mutex _tracked_sockets_mtx {};
+    std::vector<fd_t> _polled_fds {};
+    fd_set _rd_set {};
+    fd_set _wr_set {};
+    std::condition_variable _wait_for_removal_condvar {};
+    self_pipe _notifier {};
 };
 
 static inline std::shared_ptr<io_service> io_service_default_instance = nullptr;
 
-const std::shared_ptr<io_service>& get_default_io_service(std::uint32_t num_io_workers = 1)
+const std::shared_ptr<io_service>& get_default_io_service(std::uint32_t nu_io_workers = 1)
 {
-    if (io_service_default_instance == nullptr) io_service_default_instance = std::make_shared<io_service>(num_io_workers);
-    else io_service_default_instance->set_nb_workers(num_io_workers);
+    if (io_service_default_instance == nullptr) io_service_default_instance = std::make_shared<io_service>(nu_io_workers);
+    else io_service_default_instance->set_nb_workers(nu_io_workers);
 
     return io_service_default_instance;
 }
@@ -980,7 +981,7 @@ void set_default_io_service(const std::shared_ptr<io_service>& service)
 class tcp_client
 {
 public:
-    tcp_client(uint32_t num_io_workers = 1) : m_io_service { get_default_io_service(num_io_workers) } {}
+    tcp_client(uint32_t nu_io_workers = 1) : _io_service { get_default_io_service(nu_io_workers) } {}
 
     ~tcp_client()
     {
@@ -988,11 +989,11 @@ public:
     }
 
     explicit tcp_client(tcp_socket&& socket) :
-        m_io_service { get_default_io_service() },
-        m_socket { std::forward<tcp_socket>(socket) },
-        m_is_connected { true }
+        _io_service { get_default_io_service() },
+        _socket { std::forward<tcp_socket>(socket) },
+        _is_connected { true }
     {
-        m_io_service->track(m_socket);
+        _io_service->track(_socket);
     }
 
     tcp_client(const tcp_client&) = delete;
@@ -1000,7 +1001,7 @@ public:
 
     bool operator==(const tcp_client& rhs) const
     {
-        return m_socket == rhs.m_socket;
+        return _socket == rhs._socket;
     }
 
     bool operator!=(const tcp_client& rhs) const
@@ -1010,12 +1011,12 @@ public:
 
     const std::string& get_host() const
     {
-        return m_socket.get_host();
+        return _socket.get_host();
     }
 
     uint32_t get_port() const
     {
-        return m_socket.get_port();
+        return _socket.get_port();
     }
 
     void connect(const std::string& host, uint32_t port, uint32_t timeout_msecs = 0)
@@ -1024,44 +1025,44 @@ public:
 
         try
         {
-            m_socket.connect(host, port, timeout_msecs);
-            m_io_service->track(m_socket);
+            _socket.connect(host, port, timeout_msecs);
+            _io_service->track(_socket);
         }
         catch (const sharp_tcp_error& e)
         {
-            m_socket.close();
+            _socket.close();
 
             throw e;
         }
 
-        m_is_connected = true;
+        _is_connected = true;
     }
 
     void disconnect(bool wait_for_removal = false)
     {
         if (!is_connected()) return;
 
-        m_is_connected = false;
+        _is_connected = false;
 
         clear_read_requests();
         clear_write_requests();
 
-        m_io_service->untrack(m_socket);
+        _io_service->untrack(_socket);
 
-        if (wait_for_removal) m_io_service->wait_for_removal(m_socket);
+        if (wait_for_removal) _io_service->wait_for_removal(_socket);
 
-        m_socket.close();
+        _socket.close();
     }
 
     bool is_connected() const
     {
-        return m_is_connected;
+        return _is_connected;
     }
 
 private:
     void call_disconnection_handler()
     {
-        if (m_disconnection_handler) m_disconnection_handler();
+        if (_disconnection_handler) _disconnection_handler();
     }
 
 public:
@@ -1094,48 +1095,48 @@ public:
 
     void async_read(const read_request& request)
     {
-        std::scoped_lock lock { m_read_requests_mtx };
+        std::scoped_lock lock { _read_requests_mtx };
 
         if (is_connected())
         {
-            m_io_service->set_rd_callback(m_socket, [this](auto &&fd){ on_read_available(fd); });
-            m_read_requests.push(request);
+            _io_service->set_rd_callback(_socket, [this](auto &&fd){ on_read_available(fd); });
+            _read_requests.push(request);
         }
         else {}
     }
 
     void async_write(const write_request& request)
     {
-        std::scoped_lock lock { m_write_requests_mtx };
+        std::scoped_lock lock { _write_requests_mtx };
 
         if (is_connected())
         {
-            m_io_service->set_wr_callback(m_socket, [this](auto fd) { on_write_available(fd); });
-            m_write_requests.push(request);
+            _io_service->set_wr_callback(_socket, [this](auto fd) { on_write_available(fd); });
+            _write_requests.push(request);
         }
         else {}
     }
 
     tcp_socket& get_socket()
     {
-        return m_socket;
+        return _socket;
     }
 
     const tcp_socket& get_socket() const
     {
-        return m_socket;
+        return _socket;
     }
 
     const std::shared_ptr<io_service>& get_io_service() const
     {
-        return m_io_service;
+        return _io_service;
     }
 
     using disconnection_handler_t = std::function<void()>;
 
     void set_on_disconnection_handler(const disconnection_handler_t& disconnection_handler)
     {
-        m_disconnection_handler = disconnection_handler;
+        _disconnection_handler = disconnection_handler;
     }
 
 private:
@@ -1161,32 +1162,32 @@ private:
 
     void clear_read_requests()
     {
-        std::scoped_lock lock { m_read_requests_mtx };
+        std::scoped_lock lock { _read_requests_mtx };
 
         std::queue<read_request> empty;
-        std::swap(m_read_requests, empty);
+        std::swap(_read_requests, empty);
     }
 
     void clear_write_requests()
     {
-        std::scoped_lock lock { m_write_requests_mtx };
+        std::scoped_lock lock { _write_requests_mtx };
 
         std::queue<write_request> empty;
-        std::swap(m_write_requests, empty);
+        std::swap(_write_requests, empty);
     }
 
     async_read_callback_t process_read(read_result& result)
     {
-        std::scoped_lock lock { m_read_requests_mtx };
+        std::scoped_lock lock { _read_requests_mtx };
 
-        if (std::empty(m_read_requests)) return nullptr;
+        if (std::empty(_read_requests)) return nullptr;
 
-        const auto& request = m_read_requests.front();
+        const auto& request = _read_requests.front();
         auto callback       = request.async_read_callback;
 
         try
         {
-            result.buffer  = m_socket.recv(request.size);
+            result.buffer  = _socket.recv(request.size);
             result.success = true;
         }
         catch (const sharp_tcp_error&)
@@ -1194,25 +1195,25 @@ private:
             result.success = false;
         }
 
-        m_read_requests.pop();
+        _read_requests.pop();
 
-        if (std::empty(m_read_requests)) m_io_service->set_rd_callback(m_socket, nullptr);
+        if (std::empty(_read_requests)) _io_service->set_rd_callback(_socket, nullptr);
 
         return callback;
     }
 
     async_write_callback_t process_write(write_result& result)
     {
-        std::scoped_lock lock { m_write_requests_mtx };
+        std::scoped_lock lock { _write_requests_mtx };
 
-        if (std::empty(m_write_requests)) return nullptr;
+        if (std::empty(_write_requests)) return nullptr;
 
-        const auto& request = m_write_requests.front();
+        const auto& request = _write_requests.front();
         auto callback       = request.async_write_callback;
 
         try
         {
-            result.size    = m_socket.send(request.buffer, request.buffer.size());
+            result.size    = _socket.send(request.buffer, request.buffer.size());
             result.success = true;
         }
         catch (const sharp_tcp_error&)
@@ -1220,28 +1221,28 @@ private:
             result.success = false;
         }
 
-        m_write_requests.pop();
+        _write_requests.pop();
 
-        if (std::empty(m_write_requests)) m_io_service->set_wr_callback(m_socket, nullptr);
+        if (std::empty(_write_requests)) _io_service->set_wr_callback(_socket, nullptr);
 
         return callback;
     }
 
-    std::shared_ptr<io_service> m_io_service {};
-    tcp_socket m_socket {};
-    std::atomic_bool m_is_connected { false };
-    std::queue<read_request> m_read_requests {};
-    std::queue<write_request> m_write_requests {};
-    std::mutex m_read_requests_mtx {};
-    std::mutex m_write_requests_mtx {};
-    disconnection_handler_t m_disconnection_handler { nullptr };
+    std::shared_ptr<io_service> _io_service {};
+    tcp_socket _socket {};
+    std::atomic_bool _is_connected { false };
+    std::queue<read_request> _read_requests {};
+    std::queue<write_request> _write_requests {};
+    std::mutex _read_requests_mtx {};
+    std::mutex _write_requests_mtx {};
+    disconnection_handler_t _disconnection_handler { nullptr };
 };
 
 template<auto ConnectionQueueSize = 1024>
 class tcp_server
 {
 public:
-    tcp_server() : m_io_service { get_default_io_service() } {}
+    tcp_server() : _io_service { get_default_io_service() } {}
 
     ~tcp_server()
     {
@@ -1253,7 +1254,7 @@ public:
 
     bool operator==(const tcp_server& rhs) const
     {
-        return m_socket == rhs.m_socket;
+        return _socket == rhs._socket;
     }
 
     bool operator!=(const tcp_server& rhs) const
@@ -1267,60 +1268,60 @@ public:
     {
         if (is_running()) throw sharp_tcp_error { "tcp_server is already running" };
 
-        m_socket.bind(host, port);
-        m_socket.listen(ConnectionQueueSize);
+        _socket.bind(host, port);
+        _socket.listen(ConnectionQueueSize);
 
-        m_io_service->track(m_socket);
-        m_io_service->set_rd_callback(m_socket, [this](auto &&fd) { on_read_available(fd); });
-        m_on_new_connection_callback = callback;
+        _io_service->track(_socket);
+        _io_service->set_rd_callback(_socket, [this](auto &&fd) { on_read_available(fd); });
+        _on_new_connection_callback = callback;
 
-        m_is_running = true;
+        _is_running = true;
     }
 
     void stop(bool wait_for_removal = false, bool recursive_wait_for_removal = true)
     {
         if (!is_running()) return;
 
-        m_is_running = false;
+        _is_running = false;
 
-        m_io_service->untrack(m_socket);
+        _io_service->untrack(_socket);
 
-        if (wait_for_removal) m_io_service->wait_for_removal(m_socket);
+        if (wait_for_removal) _io_service->wait_for_removal(_socket);
 
-        m_socket.close();
+        _socket.close();
 
-        std::scoped_lock lock { m_clients_mtx };
-        for (auto& client : m_clients)
+        std::scoped_lock lock { _clients_mtx };
+        for (auto& client : _clients)
         {
             client->disconnect(recursive_wait_for_removal && wait_for_removal);
         }
 
-        m_clients.clear();
+        _clients.clear();
     }
 
     bool is_running() const
     {
-        return m_is_running;
+        return _is_running;
     }
 
     tcp_socket& get_socket()
     {
-        return m_socket;
+        return _socket;
     }
 
     const tcp_socket& get_socket() const
     {
-        return m_socket;
+        return _socket;
     }
 
     const std::shared_ptr<io_service>& get_io_service() const
     {
-        return m_io_service;
+        return _io_service;
     }
 
     const std::list<std::shared_ptr<tcp_client>>& get_clients() const
     {
-        return m_clients;
+        return _clients;
     }
 
 private:
@@ -1328,13 +1329,13 @@ private:
     {
         try
         {
-            auto client = std::make_shared<tcp_client>(m_socket.accept());
+            auto client = std::make_shared<tcp_client>(_socket.accept());
 
-            if (!m_on_new_connection_callback || !m_on_new_connection_callback(client))
+            if (!_on_new_connection_callback || !_on_new_connection_callback(client))
             {
               client->set_on_disconnection_handler([this, client]() { on_client_disconnected(client); });
 
-              m_clients.push_back(client);
+              _clients.push_back(client);
             }
             else {}
         }
@@ -1348,18 +1349,18 @@ private:
     {
         if (!is_running()) return;
 
-        std::scoped_lock lock { m_clients_mtx };
-        auto it = std::find(m_clients.begin(), m_clients.end(), client);
+        std::scoped_lock lock { _clients_mtx };
+        auto it = std::find(_clients.begin(), _clients.end(), client);
 
-        if (it != m_clients.end()) m_clients.erase(it);
+        if (it != _clients.end()) _clients.erase(it);
     }
 
-    std::shared_ptr<io_service> m_io_service {};
-    tcp_socket m_socket {};
-    std::atomic_bool m_is_running { false };
-    std::list<std::shared_ptr<tcp_client>> m_clients {};
-    std::mutex m_clients_mtx {};
-    on_new_connection_callback_t m_on_new_connection_callback { nullptr };
+    std::shared_ptr<io_service> _io_service {};
+    tcp_socket _socket {};
+    std::atomic_bool _is_running { false };
+    std::list<std::shared_ptr<tcp_client>> _clients {};
+    std::mutex _clients_mtx {};
+    on_new_connection_callback_t _on_new_connection_callback { nullptr };
 };
 
 #ifdef _WIN32
