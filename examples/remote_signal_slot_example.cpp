@@ -30,6 +30,10 @@ int main()
 {
     using namespace std::literals;
 
+    std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
+
+    auto to_string = [](auto &&container) { return std::string { std::begin(container), std::end(container) }; };
+
     ::signal(SIGINT, &signint_handler);
 
     nstd::remote::remote_signal_hub remote_signals {};
@@ -39,7 +43,10 @@ int main()
     nstd::remote::remote_slot_hub remote_slots {};
     remote_slots.connect_to_remote_signal_hub();
 
-    cons = remote_slots.get_remote_signal("test_signal"s)->connect([](auto s, auto &&str) { std::cout << "remote signal: "s << s->name() << ", data: "s << str << std::endl; });
+    cons = remote_slots.get_remote_signal("test_signal"s)->connect([&to_string](auto s, auto &&data)
+    {
+        std::cout << "remote signal: "s << s->name() << ", data: "s << to_string(data) << std::endl;
+    });
 
     std::this_thread::sleep_for(30ms);
 

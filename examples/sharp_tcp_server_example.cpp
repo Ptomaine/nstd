@@ -43,6 +43,8 @@ void on_new_message(const std::shared_ptr<nstd::net::tcp_client>& client, const 
 
 int main()
 {
+    std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
+
     nstd::net::tcp_server s;
     s.start("127.0.0.1", 3001, [](const std::shared_ptr<nstd::net::tcp_client>& client)
     {

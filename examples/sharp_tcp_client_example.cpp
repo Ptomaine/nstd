@@ -28,6 +28,8 @@ void signint_handler(int) { cv.notify_all(); }
 
 int main()
 {
+    std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
+
     nstd::net::tcp_client client;
     client.connect("127.0.0.1", 3001);
 
