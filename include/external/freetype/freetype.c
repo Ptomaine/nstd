@@ -90,6 +90,7 @@
 #include "freetype2/src/base/fttype1.c"
 #include "freetype2/src/base/ftlcdfil.c"
 #include "freetype2/src/base/ftwinfnt.c"
+#include "freetype2/src/base/ftfntfmt.c"
 #include "freetype2/src/pcf/pcf.c"
 #include "freetype2/src/pfr/pfr.c"
 #include "freetype2/src/psaux/psaux.c"
