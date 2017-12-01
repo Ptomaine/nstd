@@ -314,12 +314,6 @@ private:
 #endif
 };
 
-#if _WIN32
-#define cast_length(size) static_cast<int>(size)
-#else
-#define cast_length(size) size
-#endif
-
 class tcp_socket
 {
 public:
@@ -364,7 +358,7 @@ public:
 
         std::vector<char> data(size_to_read, 0);
 
-        ssize_t rd_size = ::recv(_fd, const_cast<char*>(std::data(data)), cast_length(size_to_read), 0);
+        ssize_t rd_size = ::recv(_fd, const_cast<char*>(std::data(data)), static_cast<int>(size_to_read), 0);
 
         if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
 
@@ -380,7 +374,7 @@ public:
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
 
-        ssize_t wr_size = ::send(_fd, data.data(), cast_length(size_to_write), 0);
+        ssize_t wr_size = ::send(_fd, data.data(), static_cast<int>(size_to_write), 0);
 
         if (wr_size == SOCKET_ERROR) throw sharp_tcp_error { "send() failure" };
 
@@ -389,13 +383,13 @@ public:
 
     void connect(const std::string& host, std::uint32_t port, std::uint32_t timeout_msecs = 0)
     {
-#ifdef _WIN32
         _host = host;
         _port = port;
 
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
 
+#ifdef _WIN32
         struct addrinfo* result = nullptr;
         struct addrinfo hints;
 
@@ -459,12 +453,6 @@ public:
             }
         }
 #else
-        _host = host;
-        _port = port;
-
-        create_socket_if_necessary();
-        check_or_set_type(type::CLIENT);
-
         struct sockaddr_un server_addr_un;
         struct sockaddr_in server_addr_in;
 
@@ -543,13 +531,13 @@ public:
 
     void bind(const std::string& host, std::uint32_t port)
     {
-#ifdef _WIN32
         _host = host;
         _port = port;
 
         create_socket_if_necessary();
         check_or_set_type(type::SERVER);
 
+#ifdef _WIN32
         struct addrinfo* result = nullptr;
 
         if (getaddrinfo(host.c_str(), nullptr, nullptr, &result) != 0) throw sharp_tcp_error { "getaddrinfo() failure" };
@@ -565,12 +553,6 @@ public:
 
         if (::bind(_fd, (const struct sockaddr*) &server_addr, sizeof(server_addr)) == SOCKET_ERROR) throw sharp_tcp_error { "bind() failure" };
 #else
-        _host = host;
-        _port = port;
-
-        create_socket_if_necessary();
-        check_or_set_type(type::SERVER);
-
         struct sockaddr_un server_addr_un;
         struct sockaddr_in server_addr_in;
 
@@ -608,7 +590,7 @@ public:
         create_socket_if_necessary();
         check_or_set_type(type::SERVER);
 
-        if (::listen(_fd, cast_length(max_connection_queue)) == SOCKET_ERROR) throw sharp_tcp_error { "listen() failure" };
+        if (::listen(_fd, static_cast<int>(max_connection_queue)) == SOCKET_ERROR) throw sharp_tcp_error { "listen() failure" };
     }
 
     tcp_socket accept()
@@ -628,10 +610,11 @@ public:
 
     void close()
     {
+        if (_fd != INVALID_FD)
 #ifdef _WIN32
-        if (_fd != INVALID_FD) ::closesocket(_fd);
+        ::closesocket(_fd);
 #else
-        if (_fd != INVALID_FD) ::close(_fd);
+        ::close(_fd);
 #endif
         _fd   = INVALID_FD;
         _type = type::UNKNOWN;
@@ -666,21 +649,18 @@ public:
 private:
     void create_socket_if_necessary()
     {
+        if (_fd != INVALID_FD) return;
+
+        _fd   = ::socket(
 #ifdef _WIN32
-        if (_fd != INVALID_FD) return;
-
-        _fd   = socket(AF_INET, SOCK_STREAM, 0);
-        _type = type::UNKNOWN;
-
-        if (_fd == INVALID_FD) throw sharp_tcp_error { "tcp_socket::create_socket_if_necessary: socket() failure" };
+                         AF_INET
 #else
-        if (_fd != INVALID_FD) return;
-
-        _fd   = socket(_port == 0 ? AF_UNIX : AF_INET, SOCK_STREAM, 0);
+                         _port == 0 ? AF_UNIX : AF_INET
+#endif
+                         , SOCK_STREAM, 0);
         _type = type::UNKNOWN;
 
         if (_fd == INVALID_FD) throw sharp_tcp_error { "tcp_socket::create_socket_if_necessary: socket() failure" };
-#endif
     }
 
     void check_or_set_type(type t)
