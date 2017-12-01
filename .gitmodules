@@ -25,6 +25,3 @@
 [submodule "resources/fonts"]
 	path = resources/fonts
 	url = https://github.com/google/fonts.git
-[submodule "include/external/libguarded"]
-	path = include/external/libguarded
-	url = https://github.com/copperspice/libguarded.git
