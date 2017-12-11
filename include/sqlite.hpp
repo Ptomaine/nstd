@@ -38,7 +38,7 @@ namespace sqlite = sqlite;
 struct scoped_transaction
 {
     scoped_transaction(nstd::db::sqlite::database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << "begin"; };
-    ~scoped_transaction() { if (!_rollback) _db << "commit"; else _db << "rollback"; };
+    ~scoped_transaction() { _db << (_rollback ? "rollback" : "commit"); };
 
     void rollback() { _rollback = true; }
     void commit() { _rollback = false; }
@@ -60,7 +60,7 @@ struct records
 
     void operator()(ColTypes... args)
     {
-        records.emplace_back(std::forward<ColTypes&&>(args)...);
+        records.emplace_back(std::forward_as_tuple(std::move(args)...));
     };
 
     data_container_type &data()
@@ -81,7 +81,7 @@ struct tuple_records
 
     void operator()(ColTypes... args)
     {
-        records.emplace_back(std::forward<ColTypes&&>(args)...);
+        records.emplace_back(std::forward_as_tuple(std::move(args)...));
     };
 
     data_container_type &data()
