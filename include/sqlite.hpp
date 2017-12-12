@@ -27,6 +27,7 @@ extern "C"
 
 #define MODERN_SQLITE_STD_OPTIONAL_SUPPORT
 #include "external/sqlite_modern_cpp/hdr/sqlite_modern_cpp.h"
+#include <chrono>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -47,7 +48,10 @@ private:
     bool _rollback { true };
 };
 
-auto backup_database(const database &from, const database &to, const std::string_view from_db_name = "main", const std::string_view to_db_name = "main", int page_size = -1, bool use_sleep = false)
+using namespace std::chrono_literals;
+
+template <int page_size = -1, uint32_t sleep_time_ms = 0>
+inline auto backup_database(const database &from, const database &to, const std::string_view from_db_name = "main", const std::string_view to_db_name = "main")
 {
     using namespace std::literals;
 
@@ -61,7 +65,7 @@ auto backup_database(const database &from, const database &to, const std::string
         {
             rc = ::sqlite3_backup_step(state.get(), page_size);
 
-            if (use_sleep) std::this_thread::sleep_for(10ms);
+            if constexpr (sleep_time_ms) std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time_ms));
         }
         while(rc == SQLITE_OK || rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
     }
