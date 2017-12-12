@@ -27,26 +27,54 @@ extern "C"
 
 #define MODERN_SQLITE_STD_OPTIONAL_SUPPORT
 #include "external/sqlite_modern_cpp/hdr/sqlite_modern_cpp.h"
+#include <thread>
 #include <tuple>
 #include <vector>
 
-namespace nstd::db
+namespace sqlite
 {
-
-namespace sqlite = sqlite;
 
 struct scoped_transaction
 {
-    scoped_transaction(nstd::db::sqlite::database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << "begin"; };
-    ~scoped_transaction() { _db << (_rollback ? "rollback" : "commit"); };
+    scoped_transaction(database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << "begin;"; };
+    ~scoped_transaction() { _db << (_rollback ? "rollback;" : "commit;"); };
 
     void rollback() { _rollback = true; }
     void commit() { _rollback = false; }
 
 private:
-    nstd::db::sqlite::database &_db;
+    database &_db;
     bool _rollback { true };
 };
+
+auto backup_database(const database &from, const database &to, const std::string_view from_db_name = "main", const std::string_view to_db_name = "main", int page_size = -1, bool use_sleep = false)
+{
+    using namespace std::literals;
+
+    auto from_con { from.connection() };
+    auto state { std::unique_ptr<::sqlite3_backup, decltype(&::sqlite3_backup_finish)>(::sqlite3_backup_init(to.connection().get(), std::data(to_db_name), from_con.get(), std::data(from_db_name)), ::sqlite3_backup_finish) };
+    int rc { SQLITE_DONE };
+
+    if (state)
+    {
+        do
+        {
+            rc = ::sqlite3_backup_step(state.get(), page_size);
+
+            if (use_sleep) std::this_thread::sleep_for(10ms);
+        }
+        while(rc == SQLITE_OK || rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
+    }
+
+    return rc;
+}
+
+}
+
+namespace nstd::db
+{
+
+namespace sqlite = sqlite;
 
 template<typename Target, typename... ColTypes>
 struct records

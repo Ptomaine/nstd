@@ -35,7 +35,7 @@ int main()
     db << "create table example(id int primary key, name text, password text)";
 
     {
-        nstd::db::scoped_transaction tr(db, true);
+        nstd::db::sqlite::scoped_transaction tr(db, true);
 
         nstd::relinx::range(1, 100)->for_each([&db](auto &&idx)
         {
@@ -68,7 +68,7 @@ int main()
     db << "create table example(id text primary key, name text, password text, json_data text)";
 
     {
-        nstd::db::scoped_transaction tr(db, true);
+        nstd::db::sqlite::scoped_transaction tr(db, true);
 
         nstd::from_uuid()->take(100)->for_each([&db](auto &&uuid)
         {
@@ -102,6 +102,17 @@ int main()
 
     auto iff { js_ord[0].value("8", "***") };
     std::cout << iff << std::endl;
+
+    nstd::db::sqlite::backup_database(db, nstd::db::sqlite::database { "sqlite_example_backup.db" }); //from memory to file
+
+    nstd::db::sqlite::database mem_db { ":memory:" };
+    nstd::db::sqlite::backup_database(nstd::db::sqlite::database { "sqlite_example_backup.db" }, mem_db); //from file to memory
+
+    std::cout << "restored db..." << std::endl;
+    mem_db << "select name, password from example order by name desc limit 5" >> [](std::string name, std::string password)
+    {
+        std::cout << "name: " << name << ";\tpassword: " << password << std::endl;
+    };
 
     std::cout << "exiting..." << std::endl;
 
