@@ -27,16 +27,19 @@ SOFTWARE.
 
 int main()
 {
+    using namespace nstd::str;
+    using namespace nstd::platform;
     using namespace nstd::platform::utilities;
 
-    auto res { shell_execute("gcc -E -Wp,-v -xc++ nul 2>&1") };
+    constexpr const bool if_windows { (current_os_family == os_family::Windows) };
+
+    auto cmd { compose_string((if_windows ? "where" : "which"), " gcc 2>&1") };
+    auto res { shell_execute(cmd) };
 
     std::cout << "shell_execute: " << std::endl << res << std::endl;
 
-    using namespace nstd::platform;
-
-    std::cout << "Is Little Endian: " << nstd::str::boolalpha[is_little_endian] << std::endl;
-    std::cout << "Is 64 bit: " << nstd::str::boolalpha[is_64bit] << std::endl;
+    std::cout << "Is Little Endian: " << boolalpha[is_little_endian] << std::endl;
+    std::cout << "Is 64 bit: " << boolalpha[is_64bit] << std::endl;
     std::cout << "      OS: " << get_current_os_type_name() << std::endl;
     std::cout << "Platform: " << get_current_os_family_name() << std::endl;
     std::cout << "Compiler: " << get_current_compiler_name() << std::endl << std::endl;
