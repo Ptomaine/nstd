@@ -22,10 +22,17 @@ SOFTWARE.
 #include <string>
 #include "planar_movements_recognizer.hpp"
 #include "platform.hpp"
+#include "platform_utilities.hpp"
 #include "strings.hpp"
 
 int main()
 {
+    using namespace nstd::platform::utilities;
+
+    auto res { shell_execute("gcc -E -Wp,-v -xc++ nul 2>&1") };
+
+    std::cout << "shell_execute: " << std::endl << res << std::endl;
+
     using namespace nstd::platform;
 
     std::cout << "Is Little Endian: " << nstd::str::boolalpha[is_little_endian] << std::endl;

@@ -481,7 +481,9 @@ protected:
 template<typename... Args> using throttled_signal = throttled_signal_base<signal, Args...>;
 template<typename... Args> using throttled_signal_ex = throttled_signal_base<signal_ex, Args...>;
 
-template<template <typename...> typename signal_type, typename... Args>
+struct queued_signal_default_scope {};
+
+template<typename scope, template <typename...> typename signal_type, typename... Args>
 class queued_signal_base : public signal_type<Args...>
 {
 public:
@@ -594,8 +596,10 @@ protected:
     }
 };
 
-template<typename... Args> using queued_signal = queued_signal_base<signal, Args...>;
-template<typename... Args> using queued_signal_ex = queued_signal_base<signal_ex, Args...>;
+template<typename... Args> using queued_signal = queued_signal_base<queued_signal_default_scope, signal, Args...>;
+template<typename... Args> using queued_signal_ex = queued_signal_base<queued_signal_default_scope, signal_ex, Args...>;
+template<typename scope, typename... Args> using queued_signal_scoped = queued_signal_base<scope, signal, Args...>;
+template<typename scope, typename... Args> using queued_signal_ex_scoped = queued_signal_base<scope, signal_ex, Args...>;
 
 template<typename... Args>
 class timer_signal : public signal<timer_signal<Args...>*, Args...>
