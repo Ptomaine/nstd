@@ -48,5 +48,4 @@ auto shell_execute(const std::string_view cmd)
     return result.str();
 }
 
-
 }
