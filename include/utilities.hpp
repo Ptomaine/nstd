@@ -39,8 +39,8 @@ public:
     at_scope_exit() = delete;
     at_scope_exit(const at_scope_exit&) = delete;
     at_scope_exit(at_scope_exit&&) = delete;
-    operator =(const at_scope_exit&) = delete;
-    operator =(at_scope_exit&&) = delete;
+    at_scope_exit &operator =(const at_scope_exit&) = delete;
+    at_scope_exit &operator =(at_scope_exit&&) = delete;
 
 private:
     std::function<void(void)> _functor;
