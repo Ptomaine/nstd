@@ -35,7 +35,7 @@ namespace
 {
 
 template <typename StringViewType>
-inline auto trim_left_impl(StringViewType sv, const StringViewType& chars_to_remove)
+inline auto trim_left_impl(StringViewType sv, const StringViewType chars_to_remove)
 {
     sv.remove_prefix(std::min(sv.find_first_not_of(chars_to_remove), std::size(sv)));
 
@@ -43,7 +43,7 @@ inline auto trim_left_impl(StringViewType sv, const StringViewType& chars_to_rem
 }
 
 template <typename StringViewType>
-inline auto trim_right_impl(StringViewType sv, const StringViewType& chars_to_remove)
+inline auto trim_right_impl(StringViewType sv, const StringViewType chars_to_remove)
 {
     sv.remove_suffix(sv.size() - (sv.find_last_not_of(chars_to_remove) + 1));
 
@@ -51,7 +51,7 @@ inline auto trim_right_impl(StringViewType sv, const StringViewType& chars_to_re
 }
 
 template <typename StringViewType>
-inline auto trim_impl(StringViewType sv, const StringViewType& chars_to_remove)
+inline auto trim_impl(StringViewType sv, const StringViewType chars_to_remove)
 {
     return trim_right_impl(trim_left_impl(sv, chars_to_remove), chars_to_remove);
 }
@@ -142,20 +142,20 @@ constexpr const wchar_t *const wboolalpha[] = { L"false", L"true" };
 constexpr const char16_t *const u16boolalpha[] = { u"false", u"true" };
 constexpr const char32_t *const u32boolalpha[] = { U"false", U"true" };
 
-inline std::string_view trim_left(std::string_view sv, const std::string_view &chars_to_remove = whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
-inline std::wstring_view trim_left(std::wstring_view sv, const std::wstring_view &chars_to_remove = wwhitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
-inline std::u16string_view trim_left(std::u16string_view sv, const std::u16string_view &chars_to_remove = u16whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
-inline std::u32string_view trim_left(std::u32string_view sv, const std::u32string_view &chars_to_remove = u32whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
+inline std::string_view trim_left(std::string_view sv, const std::string_view chars_to_remove = whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
+inline std::wstring_view trim_left(std::wstring_view sv, const std::wstring_view chars_to_remove = wwhitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
+inline std::u16string_view trim_left(std::u16string_view sv, const std::u16string_view chars_to_remove = u16whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
+inline std::u32string_view trim_left(std::u32string_view sv, const std::u32string_view chars_to_remove = u32whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
 
-inline std::string_view trim_right(std::string_view sv, const std::string_view &chars_to_remove = whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
-inline std::wstring_view trim_right(std::wstring_view sv, const std::wstring_view &chars_to_remove = wwhitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
-inline std::u16string_view trim_right(std::u16string_view sv, const std::u16string_view &chars_to_remove = u16whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
-inline std::u32string_view trim_right(std::u32string_view sv, const std::u32string_view &chars_to_remove = u32whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
+inline std::string_view trim_right(std::string_view sv, const std::string_view chars_to_remove = whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
+inline std::wstring_view trim_right(std::wstring_view sv, const std::wstring_view chars_to_remove = wwhitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
+inline std::u16string_view trim_right(std::u16string_view sv, const std::u16string_view chars_to_remove = u16whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
+inline std::u32string_view trim_right(std::u32string_view sv, const std::u32string_view chars_to_remove = u32whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
 
-inline std::string_view trim(std::string_view sv, const std::string_view &chars_to_remove = whitespace_chars) { return trim_impl(sv, chars_to_remove); }
-inline std::wstring_view trim(std::wstring_view sv, const std::wstring_view &chars_to_remove = wwhitespace_chars) { return trim_impl(sv, chars_to_remove); }
-inline std::u16string_view trim(std::u16string_view sv, const std::u16string_view &chars_to_remove = u16whitespace_chars) { return trim_impl(sv, chars_to_remove); }
-inline std::u32string_view trim(std::u32string_view sv, const std::u32string_view &chars_to_remove = u32whitespace_chars) { return trim_impl(sv, chars_to_remove); }
+inline std::string_view trim(std::string_view sv, const std::string_view chars_to_remove = whitespace_chars) { return trim_impl(sv, chars_to_remove); }
+inline std::wstring_view trim(std::wstring_view sv, const std::wstring_view chars_to_remove = wwhitespace_chars) { return trim_impl(sv, chars_to_remove); }
+inline std::u16string_view trim(std::u16string_view sv, const std::u16string_view chars_to_remove = u16whitespace_chars) { return trim_impl(sv, chars_to_remove); }
+inline std::u32string_view trim(std::u32string_view sv, const std::u32string_view chars_to_remove = u32whitespace_chars) { return trim_impl(sv, chars_to_remove); }
 
 template <typename T>
 using any_string = std::basic_string<T, std::char_traits<T>, std::allocator<T>>;

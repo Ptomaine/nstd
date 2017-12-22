@@ -19,7 +19,7 @@ SOFTWARE.
 */
 
 #include <iostream>
-#include <string>
+
 #include "planar_movements_recognizer.hpp"
 #include "platform.hpp"
 #include "platform_utilities.hpp"
@@ -34,20 +34,20 @@ int main()
     using namespace nstd::utilities;
 
     const std::string app_name { "pmr_example" };
-    at_scope_exit execute { [&]() { std::cout << std::endl << "exitting " << app_name << "..." << std::endl;} };
+    at_scope_exit execute { [&app_name]() { std::cout << std::endl << "exitting " << app_name << "..." << std::endl;} };
 
-    constexpr const bool if_windows { (current_os_family == os_family::Windows) };
+    constexpr const bool if_windows { current_os_family == os_family::Windows };
 
-    auto cmd { compose_string((if_windows ? "where" : "which"), " gcc 2>&1") };
+    auto cmd { compose_string(if_windows ? "where" : "which", " gcc 2>&1") };
     auto res { shell_execute(cmd) };
 
-    std::cout << "shell_execute: " << std::endl << res << std::endl;
+    std::cout << "shell execute: \"" << trim(res) << "\"" << std::endl << std::endl;
 
-    std::cout << "Is Little Endian: " << boolalpha[is_little_endian] << std::endl;
-    std::cout << "Is 64 bit: " << boolalpha[is_64bit] << std::endl;
-    std::cout << "      OS: " << get_current_os_type_name() << std::endl;
-    std::cout << "Platform: " << get_current_os_family_name() << std::endl;
-    std::cout << "Compiler: " << get_current_compiler_name() << std::endl << std::endl;
+    std::cout << "Is Little Endian: "   << boolalpha[is_little_endian]  << std::endl;
+    std::cout << "Is 64 bit: "          << boolalpha[is_64bit]          << std::endl;
+    std::cout << "      OS: "           << get_current_os_type_name()   << std::endl;
+    std::cout << "Platform: "           << get_current_os_family_name() << std::endl;
+    std::cout << "Compiler: "           << get_current_compiler_name()  << std::endl << std::endl;
 
     using namespace std::string_literals;
     using namespace nstd::pmr;
