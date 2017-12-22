@@ -24,12 +24,17 @@ SOFTWARE.
 #include "platform.hpp"
 #include "platform_utilities.hpp"
 #include "strings.hpp"
+#include "utilities.hpp"
 
 int main()
 {
     using namespace nstd::str;
     using namespace nstd::platform;
     using namespace nstd::platform::utilities;
+    using namespace nstd::utilities;
+
+    const std::string app_name { "pmr_example" };
+    at_scope_exit execute { [&]() { std::cout << std::endl << "exitting " << app_name << "..." << std::endl;} };
 
     constexpr const bool if_windows { (current_os_family == os_family::Windows) };
 
@@ -111,8 +116,6 @@ int main()
 
         std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
     }
-
-    std::cout << "exiting..." << std::endl;
 
     return 0;
 }
