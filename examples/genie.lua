@@ -109,9 +109,6 @@ solution "nstd_examples"
             configuration "not vs*"
                 buildoptions { "-Wno-unused-variable", "-Wno-unused-but-set-variable" }
 
-            objdir "obj/relinx_example/Release"
-            targetdir "bin/relinx_example/Release"
-
     project "relinx_generator_example"
         files { "relinx_generator_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
