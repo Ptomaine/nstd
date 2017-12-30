@@ -18,6 +18,7 @@ The library currently contains the following features:
    * sqlite3/sqlite c++ wrapper - sql database support [https://github.com/aminroosta/sqlite_modern_cpp]
    * quantum random number provider (using QRNG internet service: http://qrng.anu.edu.au)
    * strings - a library to do string manipulations like: trim, unicode convertions, replace, join, split, composing (aka format) etc.
+   * cmdline_options - a commandline parser [https://github.com/Fytch/ProgramOptions.hxx]
    * giant - r-lyeh's tiny library to handle little/big endianness [https://github.com/r-lyeh/giant]
    * ordered_map, ordered_set - Tessil's C++ hash map/set which preserves the order of insertion [https://github.com/Tessil/ordered-map]
    * Google fonts were added [https://github.com/google/fonts]
