@@ -25,9 +25,23 @@ SOFTWARE.
 #include "platform_utilities.hpp"
 #include "strings.hpp"
 #include "utilities.hpp"
+#include "cmdline_options.hpp"
 
-int main()
+int main(int argc, char **argv)
 {
+    nstd::po::parser p;
+
+    p["execute"].abbreviation('E').type(nstd::po::string);
+    p["help"].abbreviation('?').callback([&p]{ std::cout << p << std::endl; });
+
+    p(argc, argv);
+
+    auto &&help = p["help"];
+    auto &&exe = p["execute"];
+
+    if (help.was_set()) return 0;
+    if (exe.was_set()) { std::cout << "executing: " << exe.get().string << std::endl; return 0; }
+
     using namespace nstd::str;
     using namespace nstd::platform;
     using namespace nstd::platform::utilities;
