@@ -16,10 +16,10 @@
 //----------------------------------------------------------------------------
 //
 // 2007-01-25 Jerry Evans (jerry@novadsp.com)
-//   Ported to AGG 2.4 
+//   Ported to AGG 2.4
 //
 // 2008-09-25 Jim Barry (jim@mvps.org)
-//   Fixed errors in kerning 
+//   Fixed errors in kerning
 //
 //----------------------------------------------------------------------------
 
@@ -957,27 +957,6 @@ void Agg2D::textAlignment(TextAlignment alignX, TextAlignment alignY)
 }
 
 //------------------------------------------------------------------------
-double Agg2D::textWidth(const char* str)
-{
-    double x = 0;
-    double y = 0;
-    bool first = true;
-    while(*str)
-    {
-        const agg::glyph_cache* glyph = m_fontCacheManager.glyph(*str);
-        if(glyph)
-        {
-            if(!first) m_fontCacheManager.add_kerning(&x, &y);
-            x += glyph->advance_x;
-            y += glyph->advance_y;
-            first = false;
-        }
-        ++str;
-    }
-    return (m_fontCacheType == VectorFontCache) ? x : screenToWorld(x);
-}
-
-//------------------------------------------------------------------------
 bool Agg2D::textHints() const
 {
    return m_textHints;
@@ -987,95 +966,6 @@ bool Agg2D::textHints() const
 void Agg2D::textHints(bool hints)
 {
    m_textHints = hints;
-}
-
-
-
-//------------------------------------------------------------------------
-void Agg2D::text(double x, double y, const char* str, bool roundOff, double ddx, double ddy)
-{
-   double dx = 0.0;
-   double dy = 0.0;
-
-   switch(m_textAlignX)
-   {
-       case AlignCenter:  dx = -textWidth(str) * 0.5; break;
-       case AlignRight:   dx = -textWidth(str);       break;
-       default: break;
-   }
-
-
-   double asc = fontHeight();
-   const agg::glyph_cache* glyph = m_fontCacheManager.glyph('H');
-   if(glyph)
-   {
-       asc = glyph->bounds.y2 - glyph->bounds.y1;
-   }
-
-   if(m_fontCacheType == RasterFontCache)
-   {
-       asc = screenToWorld(asc);
-   }
-
-   switch(m_textAlignY)
-   {
-       case AlignCenter:  dy = -asc * 0.5; break;
-       case AlignTop:     dy = -asc;       break;
-       default: break;
-   }
-
-   if(m_fontEngine.flip_y()) dy = -dy;
-
-   agg::trans_affine  mtx;
-
-    double start_x = x + dx;
-    double start_y = y + dy;
-
-    if (roundOff)
-    {
-        start_x = int(start_x);
-        start_y = int(start_y);
-    }
-    start_x += ddx;
-    start_y += ddy;
-
-    mtx *= agg::trans_affine_translation(-x, -y);
-    mtx *= agg::trans_affine_rotation(m_textAngle);
-    mtx *= agg::trans_affine_translation(x, y);
-
-    agg::conv_transform<FontCacheManager::path_adaptor_type> tr(m_fontCacheManager.path_adaptor(), mtx);
-
-    if(m_fontCacheType == RasterFontCache)
-    {
-        worldToScreen(start_x, start_y);
-    }
-
-    int i;
-    for (i = 0; str[i]; i++)
-    {
-        glyph = m_fontCacheManager.glyph(str[i]);
-        if(glyph)
-        {
-            if(i) m_fontCacheManager.add_kerning(&start_x, &start_y);
-            m_fontCacheManager.init_embedded_adaptors(glyph, start_x, start_y);
-
-            if(glyph->data_type == agg::glyph_data_outline)
-            {
-                m_path.remove_all();
-                //m_path.add_path(tr, 0, false);
-				m_path.concat_path(tr,0); // JME
-                drawPath();
-            }
-
-            if(glyph->data_type == agg::glyph_data_gray8)
-            {
-                render(m_fontCacheManager.gray8_adaptor(),
-                       m_fontCacheManager.gray8_scanline());
-            }
-            start_x += glyph->advance_x;
-            start_y += glyph->advance_y;
-        }
-    }
 }
 
 //------------------------------------------------------------------------
