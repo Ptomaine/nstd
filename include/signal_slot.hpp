@@ -210,7 +210,7 @@ public:
 
     bool operator == (const paired_ptr<> &s) const
     {
-        return _connection == s;
+        return &_connection == s.connected_ptr();
     }
 
     bool operator == (const slot &s) const
