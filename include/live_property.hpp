@@ -40,8 +40,8 @@ public:
     };
 
     live_property(const std::string &name, const value_type &value = value_type()) :
-        signal_value_changing{ "/live_property/"s + name + "/signal_value_changing"s },
-        signal_value_changed{ "/live_property/"s + name + "/signal_value_changed"s },
+        signal_value_changing{ u8"/live_property/"s + name + u8"/signal_value_changing"s },
+        signal_value_changed{ u8"/live_property/"s + name + u8"/signal_value_changed"s },
         _name{ name }, _value{ value }
     {
     }
@@ -277,5 +277,321 @@ private:
 
     std::string _name {};
     value_type _value {};
+};
+
+template<typename T>
+class live_property_ts
+{
+public:
+    using value_type = T;
+
+    struct value_changing_context
+    {
+        const live_property_ts &property;
+        const value_type &new_value;
+        bool cancel = false;
+    };
+
+    live_property_ts(const std::string &name, const value_type &value = value_type()) :
+        signal_value_changing{ u8"/live_property_ts/"s + name + u8"/signal_value_changing"s },
+        signal_value_changed{ u8"/live_property_ts/"s + name + u8"/signal_value_changed"s },
+        _name{ name }, _value{ value }
+    {
+    }
+
+    live_property_ts(const live_property_ts &other)
+    {
+        operator= (other._value);
+    }
+
+    live_property_ts(live_property_ts &&other)
+    {
+        operator=(std::forward<live_property_ts>(other));
+    }
+
+    live_property_ts &operator=(value_type &&value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(std::forward<value_type>(value));
+    }
+
+    live_property_ts &operator=(live_property_ts &&other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator=(std::move(other._value));
+    }
+
+    live_property_ts &operator=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator= (other._value);
+    }
+
+    live_property_ts &operator=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return assign_value(value);
+    }
+
+    std::string_view name() const
+    {
+        std::scoped_lock lock { _lock };
+
+        return _name;
+    }
+
+    const value_type &value() const
+    {
+        std::scoped_lock lock { _lock };
+
+        return _value;
+    }
+
+    operator value_type() const
+    {
+        std::scoped_lock lock { _lock };
+
+        return _value;
+    }
+
+    live_property_ts &operator +=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value + value);
+    }
+
+    live_property_ts &operator +=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator += (other._value);
+    }
+
+    live_property_ts &operator -=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value - value);
+    }
+
+    live_property_ts &operator -=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator -= (other._value);
+    }
+
+    live_property_ts &operator *=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value * value);
+    }
+
+    live_property_ts &operator *=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator *= (other._value);
+    }
+
+    live_property_ts &operator /=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value / value);
+    }
+
+    live_property_ts &operator /=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator /= (other._value);
+    }
+
+    live_property_ts &operator >>=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value >> value);
+    }
+
+    live_property_ts &operator >>=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator >>= (other._value);
+    }
+
+    live_property_ts &operator <<=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value << value);
+    }
+
+    live_property_ts &operator <<=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator <<= (other._value);
+    }
+
+    live_property_ts &operator &=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value & value);
+    }
+
+    live_property_ts &operator &=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator &= (other._value);
+    }
+
+    live_property_ts &operator |=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value | value);
+    }
+
+    live_property_ts &operator |=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator |= (other._value);
+    }
+
+    live_property_ts &operator ^=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value ^ value);
+    }
+
+    live_property_ts &operator ^=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator ^= (other._value);
+    }
+
+    live_property_ts &operator %=(const value_type &value)
+    {
+        std::scoped_lock lock { _lock };
+
+        return move_value(_value % value);
+    }
+
+    live_property_ts &operator %=(const live_property_ts &other)
+    {
+        std::scoped_lock lock { _lock };
+
+        return operator %= (other._value);
+    }
+
+    live_property_ts &operator ++()
+    {
+        std::scoped_lock lock { _lock };
+
+        auto value { _value };
+
+        if (emit_changing(++value))
+        {
+            ++_value;
+
+            emit_changed();
+        }
+
+        return *this;
+    }
+
+    live_property_ts operator ++(int)
+    {
+        std::scoped_lock lock { _lock };
+
+        live_property_ts return_value{ _name, _value };
+
+        return operator ++(), return_value;
+    }
+
+    live_property_ts &operator --()
+    {
+        std::scoped_lock lock { _lock };
+
+        auto value { _value };
+
+        if (emit_changing(--value))
+        {
+            --_value;
+
+            emit_changed();
+        }
+
+        return *this;
+    }
+
+    live_property_ts operator --(int)
+    {
+        std::scoped_lock lock { _lock };
+
+        live_property_ts return_value{ _name, _value };
+
+        return operator --(), return_value;
+    }
+
+    nstd::signal_slot::signal<value_changing_context&> signal_value_changing {};
+    nstd::signal_slot::signal<const live_property_ts&> signal_value_changed {};
+
+private:
+    live_property_ts &assign_value(const value_type &value)
+    {
+        if (emit_changing(value))
+        {
+            _value = value;
+
+            emit_changed();
+        }
+
+        return *this;
+    }
+
+    live_property_ts &move_value(value_type &&value)
+    {
+        if (emit_changing(value))
+        {
+            _value = std::forward<value_type>(value);
+
+            emit_changed();
+        }
+
+        return *this;
+    }
+
+    bool emit_changing(const value_type &value)
+    {
+        value_changing_context context{ *this, value };
+
+        signal_value_changing.emit(context);
+
+        return !context.cancel;
+    }
+
+    void emit_changed()
+    {
+        signal_value_changed.emit(*this);
+    }
+
+    std::string _name {};
+    value_type _value {};
+    std::mutex _lock {};
 };
 }
