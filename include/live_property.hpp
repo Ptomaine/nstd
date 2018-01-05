@@ -592,6 +592,6 @@ private:
 
     std::string _name {};
     value_type _value {};
-    std::mutex _lock {};
+    mutable std::recursive_mutex _lock {};
 };
 }

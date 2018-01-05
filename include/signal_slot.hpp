@@ -180,12 +180,24 @@ bool operator!=(std::nullptr_t, const paired_ptr<T1, T2> & rhs)
     return !(nullptr == rhs);
 }
 
+class slot_base
+{
+protected:
+    template<typename... Args> friend class signal;
+
+    paired_ptr<> _connection {};
+    bool _enabled { true };
+
+public:
+    void enabled(bool is_enabled) { _enabled = is_enabled; }
+    bool enabled() const { return _enabled; }
+};
+
 template<typename... Args>
-class slot
+class slot : public slot_base
 {
 protected:
     std::function<void (Args...)> _functor {};
-    paired_ptr<> _connection {};
 
     friend class connection;
 
@@ -195,6 +207,16 @@ public:
     void operator()(const Args &... args) { _functor(args...); }
     bool is_disconnected() const { return !_connection; }
     void clear() { _connection.disconnect(); }
+
+    bool operator == (const paired_ptr<> &s) const
+    {
+        return _connection == s;
+    }
+
+    bool operator == (const slot &s) const
+    {
+        return operator ==(s._connection);
+    }
 };
 
 class signal_base
@@ -206,6 +228,10 @@ public:
     virtual void enabled(bool) const = 0;
     virtual size_t size() const = 0;
     virtual std::any &payload() = 0;
+    virtual void enable_slot(const slot_base&, bool enabled) = 0;
+    virtual void enable_slot(const paired_ptr<>&, bool enabled) = 0;
+    virtual bool is_slot_enabled(const slot_base&) const = 0;
+    virtual bool is_slot_enabled(const paired_ptr<>&) const = 0;
 };
 
 class connection
@@ -250,6 +276,16 @@ public:
         return *_signal;
     }
 
+    void enabled(bool enabled)
+    {
+        const_cast<signal_base*>(_signal)->enable_slot(_slot, enabled);
+    }
+
+    bool enabled() const
+    {
+        return _signal->is_slot_enabled(_slot);
+    }
+
 protected:
     paired_ptr<> _slot {};
     const signal_base *_signal { nullptr };
@@ -292,7 +328,7 @@ public:
             {
                 if (callable.is_disconnected()) return true;
 
-                callable(args...);
+                if (callable.enabled()) callable(args...);
 
                 return callable.is_disconnected();
             }), end);
@@ -361,6 +397,34 @@ public:
     virtual std::any &payload() override
     {
         return _payload;
+    }
+
+    virtual void enable_slot(const slot_base &slot, bool enabled) override
+    {
+        enable_slot(slot._connection, enabled);
+    }
+
+    virtual void enable_slot(const paired_ptr<> &slot, bool enabled) override
+    {
+        auto send { std::end(_slots) };
+        auto sit { std::find(std::begin(_slots), send, slot) };
+
+        if (sit != send) sit->enabled(enabled);
+    }
+
+    virtual bool is_slot_enabled(const slot_base &slot) const
+    {
+        return is_slot_enabled(slot._connection);
+    }
+
+    virtual bool is_slot_enabled(const paired_ptr<> &slot) const
+    {
+        auto send { std::cend(_slots) };
+        auto sit { std::find(std::cbegin(_slots), send, slot) };
+
+        if (sit != send) return sit->enabled();
+
+        return false;
     }
 
 protected:
