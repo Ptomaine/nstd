@@ -461,9 +461,18 @@ public:
         }
 
         int i;
+        wchar_t nl { L'\n' };
         for (i = 0; str[i]; i++)
         {
+            if (str[i] == CharType(nl))
+            {
+                start_x = (roundOff) ? int(x + dx) : x + dx;
+                start_y += m_fontEngine.height();
+                continue;
+            }
+
             glyph = m_fontCacheManager.glyph(str[i]);
+
             if(glyph)
             {
                 if(i) m_fontCacheManager.add_kerning(&start_x, &start_y);
