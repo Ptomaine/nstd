@@ -106,6 +106,9 @@ solution "nstd_examples"
             targetdir "bin/relinx_example/Debug"
 
         configuration { "Release" }
+            objdir "obj/relinx_example/Release"
+            targetdir "bin/relinx_example/Release"
+
             configuration "not vs*"
                 buildoptions { "-Wno-unused-variable", "-Wno-unused-but-set-variable" }
 
