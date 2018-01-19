@@ -609,7 +609,7 @@ public:
     static double deg2Rad(double v) { return v * agg::pi / 180.0; }
     static double rad2Deg(double v) { return v * 180.0 / agg::pi; }
 
-private:
+protected:
     void render(bool fillColor);
     void render(FontRasterizer& ras, FontScanline& sl);
 
