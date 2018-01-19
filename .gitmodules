@@ -28,3 +28,6 @@
 [submodule "include/external/cmdline_options"]
 	path = include/external/cmdline_options
 	url = https://github.com/Fytch/ProgramOptions.hxx.git
+[submodule "include/external/lodepng"]
+	path = include/external/lodepng
+	url = https://github.com/lvandeve/lodepng.git
