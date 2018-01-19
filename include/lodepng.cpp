@@ -1,5 +1,3 @@
-#pragma once
-
 /*
 MIT License
 Copyright (c) 2018 Arlen Keshabyan (arlen.albert@gmail.com)
