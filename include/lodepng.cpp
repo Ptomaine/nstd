@@ -19,3 +19,4 @@ SOFTWARE.
 */
 
 #include "external/lodepng/lodepng.cpp"
+#include "external/lodepng/lodepng_util.cpp"

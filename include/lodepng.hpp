@@ -21,6 +21,7 @@ SOFTWARE.
 */
 
 #include "external/lodepng/lodepng.h"
+#include "external/lodepng/lodepng_util.h"
 
 namespace nstd
 {
