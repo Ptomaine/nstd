@@ -133,6 +133,11 @@ inline std::wstring from_utf8_to_wchar(const std::string &s)
     return conv.from_bytes(reinterpret_cast<const char*>(pData), reinterpret_cast<const char*>(pData + s.length()));
 }
 
+inline std::string from_wchar_to_utf8(const std::wstring &s)
+{
+    return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(s);
+}
+
 constexpr const char     *const whitespace_chars { " \t\n\v\f\r" };
 constexpr const wchar_t  *const wwhitespace_chars { L" \t\n\v\f\r" };
 constexpr const char16_t *const u16whitespace_chars { u" \t\n\v\f\r" };
