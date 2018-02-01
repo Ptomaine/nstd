@@ -466,23 +466,30 @@ public:
     bridged_signal_base &operator=(bridged_signal_base &&other) = default;
     virtual ~bridged_signal_base() override = default;
 
-    virtual void emit(const Args&... args) override
+    virtual void emit(const Args&... args, bool transparent = false)
     {
+        if (transparent)
         {
-            if (!base_class::_enabled) return;
-
-            std::scoped_lock lock(base_class::_emit_lock);
-
-            if (!base_class::_enabled) return;
+            base_class::emit(args...);
         }
-
+        else
         {
-            std::scoped_lock lock(_queue_lock);
+            {
+                if (!base_class::_enabled) return;
 
-            _signal_queue.push_back(std::make_tuple(args...));
+                std::scoped_lock lock(base_class::_emit_lock);
+
+                if (!base_class::_enabled) return;
+            }
+
+            {
+                std::scoped_lock lock(_queue_lock);
+
+                _signal_queue.push_back(std::make_tuple(args...));
+            }
+
+            if (!_emit_functor || !_emit_functor(this)) invoke();
         }
-
-        if (!_emit_functor || !_emit_functor(this)) invoke();
     }
 
     virtual bool invoke()
@@ -499,9 +506,7 @@ public:
 
         std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
 
-        if (std::empty(_signal_queue)) return false;
-
-        return true;
+        return !std::empty(_signal_queue);
     }
 
     void set_emit_functor(const std::function<bool(bridged_signal_base*)>& emit_functor)
