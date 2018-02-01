@@ -31,11 +31,20 @@ int main()
     using namespace std::literals;
     namespace ss = nstd::signal_slot;
 
+    ss::connection_bag cons;
+    ss::bridged_signal_set<std::string> two_step_signal_set([](auto&& s) { std::cout << "signal: '" << s->name() << "' pushed..." << std::endl; return true; });
+
     using live_int = nstd::live_property<int>;
     using live_string = nstd::live_property<std::string>;
 
 	live_int int_prop{ "integer property for tests"s }, dummy_int_prop{ "dummy"s };
-    ss::connection_bag cons;
+
+    cons = two_step_signal_set["tss"]->connect([](auto &&data)
+    {
+        std::cout << "TSS: '" << data << "'" << std::endl;
+    });
+    two_step_signal_set["tss"]->emit("this is two step signal");
+
     auto changing_callback = [](auto &&ctx)
     {
         std::cout << "The property '" << ctx.property.name() << "' changing: from [" << ctx.property.value() << "] to [" << ctx.new_value << "]" << std::endl;
@@ -96,6 +105,9 @@ int main()
     int_prop++;
     --int_prop;
     int_prop--;
+
+    while (two_step_signal_set["tss"]->invoke())
+        ;
 
 	cons.connections.clear(); //auto-disconnect from all slots
     std::cout << "no slots are called from now on since we destroied all connections..." << std::endl << "...setting int_prop to -1 should not be restricted now..." << std::endl;
