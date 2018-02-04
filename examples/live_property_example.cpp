@@ -32,7 +32,7 @@ int main()
     namespace ss = nstd::signal_slot;
 
     ss::connection_bag cons;
-    ss::bridged_signal_set<std::string> two_step_signal_set([](auto&& s) { std::cout << "signal: '" << s->name() << "' pushed..." << std::endl; return true; });
+    ss::bridged_signal_set<std::string> two_step_signal_set([](auto s) { std::cout << "signal: '" << s->signal->name() << "' pushed..." << std::endl; return true; });
 
     using live_int = nstd::live_property<int>;
     using live_string = nstd::live_property<std::string>;
