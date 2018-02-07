@@ -468,21 +468,25 @@ public:
 
     virtual void emit(const Args&... args) override
     {
+        if (_bridge_enabled)
         {
-            if (!base_class::_enabled) return;
+            {
+                if (!base_class::_enabled) return;
 
-            std::scoped_lock lock(base_class::_emit_lock);
+                std::scoped_lock lock(base_class::_emit_lock);
 
-            if (!base_class::_enabled) return;
+                if (!base_class::_enabled) return;
+            }
+
+            {
+                std::scoped_lock lock(_queue_lock);
+
+                _signal_queue.push_back(std::make_tuple(args...));
+            }
+
+            if (!_emit_functor || !_emit_functor(this)) invoke();
         }
-
-        {
-            std::scoped_lock lock(_queue_lock);
-
-            _signal_queue.push_back(std::make_tuple(args...));
-        }
-
-        if (!_emit_functor || !_emit_functor(this)) invoke();
+        else base_class::emit(args...);
     }
 
     virtual void emit_sync(const Args&... args)
@@ -522,7 +526,18 @@ public:
         return std::size(_signal_queue);
     }
 
+    void set_bridge_enabled(bool enabled)
+    {
+        _bridge_enabled = enabled;
+    }
+
+    const bool get_bridge_enabled() const
+    {
+        return _bridge_enabled;
+    }
+
 protected:
+    std::atomic_bool _bridge_enabled { true };
     std::mutex _queue_lock {};
     std::deque<std::tuple<Args...>> _signal_queue {};
     std::function<bool(bridged_signal_base*)> _emit_functor { nullptr };
