@@ -536,6 +536,17 @@ public:
         return _bridge_enabled;
     }
 
+    void clear_queue()
+    {
+        if (std::empty(_signal_queue)) return;
+
+        std::scoped_lock lock(_queue_lock);
+
+        if (std::empty(_signal_queue)) return;
+
+        _signal_queue.clear();
+    }
+
 protected:
     std::atomic_bool _bridge_enabled { true };
     std::mutex _queue_lock {};
