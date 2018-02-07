@@ -484,7 +484,7 @@ public:
                 _signal_queue.push_back(std::make_tuple(args...));
             }
 
-            if (!_emit_functor || !_emit_functor(this)) invoke();
+            if (!_emit_functor || !_emit_functor(this)) invoke_next();
         }
         else base_class::emit(args...);
     }
@@ -494,7 +494,7 @@ public:
         base_class::emit(args...);
     }
 
-    virtual bool invoke()
+    virtual bool invoke_next()
     {
         if (std::empty(_signal_queue)) return false;
 
@@ -509,6 +509,32 @@ public:
         std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
 
         return !std::empty(_signal_queue);
+    }
+
+    virtual void invoke_all()
+    {
+        if (std::empty(_signal_queue)) return;
+
+        std::scoped_lock lock(_queue_lock);
+
+        if (std::empty(_signal_queue)) return;
+
+        for (auto &&args : _signal_queue) std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+
+        _signal_queue.clear();
+    }
+
+    virtual void invoke_last_and_clear()
+    {
+        if (std::empty(_signal_queue)) return;
+
+        std::scoped_lock lock(_queue_lock);
+
+        if (std::empty(_signal_queue)) return;
+
+        std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.back());
+
+        _signal_queue.clear();
     }
 
     void set_emit_functor(const std::function<bool(bridged_signal_base*)>& emit_functor)

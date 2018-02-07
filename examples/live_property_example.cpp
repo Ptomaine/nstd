@@ -106,8 +106,7 @@ int main()
     --int_prop;
     int_prop--;
 
-    while (two_step_signal_set["tss"]->invoke())
-        ;
+    two_step_signal_set["tss"]->invoke_all();
 
 	cons.connections.clear(); //auto-disconnect from all slots
     std::cout << "no slots are called from now on since we destroied all connections..." << std::endl << "...setting int_prop to -1 should not be restricted now..." << std::endl;
