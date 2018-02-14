@@ -461,50 +461,122 @@ public:
 
     bridged_signal_base() = default;
     bridged_signal_base(const std::string &name) : base_class(name) {}
-    bridged_signal_base(const std::string &name, const std::function<bool(bridged_signal_base*)>& emit_functor = nullptr) : base_class(name), _emit_functor { emit_functor } {}
+    bridged_signal_base(const std::string &name, const std::function<bool(bridged_signal_base*)>& emit_functor) : base_class(name), _emit_functor { emit_functor } {}
     bridged_signal_base(bridged_signal_base &&other) = default;
     bridged_signal_base &operator=(bridged_signal_base &&other) = default;
     virtual ~bridged_signal_base() override = default;
 
     virtual void emit(const Args&... args) override
     {
-        if (!base_class::_enabled) return;
-
+        if (_bridge_enabled)
         {
-            std::scoped_lock lock { base_class::_emit_lock };
+            {
+                if (!base_class::_enabled) return;
 
-            if (!base_class::_enabled) return;
+                std::scoped_lock lock(base_class::_emit_lock);
 
-            _queue.push_back(std::make_tuple(args...));
+                if (!base_class::_enabled) return;
+            }
+
+            {
+                std::scoped_lock lock(_queue_lock);
+
+                _signal_queue.push_back(std::make_tuple(args...));
+            }
+
+            if (!_emit_functor || !_emit_functor(this)) invoke_next();
         }
-
-        if (!_emit_functor || !_emit_functor()) invoke();
+        else base_class::emit(args...);
     }
 
-    void invoke()
+    virtual void emit_sync(const Args&... args)
     {
-        if (!base_class::_enabled || std::empty(_queue)) return;
+        base_class::emit(args...);
+    }
 
-        std::scoped_lock lock { base_class::_emit_lock };
+    virtual bool invoke_next()
+    {
+        if (std::empty(_signal_queue)) return false;
 
-        if (!base_class::_enabled || std::empty(_queue)) return;
+        std::scoped_lock lock(_queue_lock);
 
-        auto args = std::move(_queue.front());
+        if (std::empty(_signal_queue)) return false;
 
-        _queue.pop_front();
+        auto args = std::move(_signal_queue.front());
+
+        _signal_queue.pop_front();
 
         std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+
+        return !std::empty(_signal_queue);
+    }
+
+    virtual void invoke_all()
+    {
+        if (std::empty(_signal_queue)) return;
+
+        std::scoped_lock lock(_queue_lock);
+
+        if (std::empty(_signal_queue)) return;
+
+        for (auto &&args : _signal_queue) std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+
+        _signal_queue.clear();
+    }
+
+    virtual void invoke_last_and_clear()
+    {
+        if (std::empty(_signal_queue)) return;
+
+        std::scoped_lock lock(_queue_lock);
+
+        if (std::empty(_signal_queue)) return;
+
+        std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.back());
+
+        _signal_queue.clear();
     }
 
     void set_emit_functor(const std::function<bool(bridged_signal_base*)>& emit_functor)
     {
-        std::scoped_lock lock { base_class::_emit_lock };
-
         _emit_functor = emit_functor;
     }
 
-private:
-    std::deque<std::tuple<Args...>> _queue {};
+    const std::function<bool(bridged_signal_base*)> &get_emit_functor() const
+    {
+        return _emit_functor;
+    }
+
+    const uint64_t get_queue_size() const
+    {
+        return std::size(_signal_queue);
+    }
+
+    void set_bridge_enabled(bool enabled)
+    {
+        _bridge_enabled = enabled;
+    }
+
+    const bool get_bridge_enabled() const
+    {
+        return _bridge_enabled;
+    }
+
+    void clear_queue()
+    {
+        if (std::empty(_signal_queue)) return;
+
+        std::scoped_lock lock(_queue_lock);
+
+        if (std::empty(_signal_queue)) return;
+
+        _signal_queue.clear();
+    }
+
+protected:
+    std::atomic_bool _bridge_enabled { true };
+    std::mutex _queue_lock {};
+    std::deque<std::tuple<Args...>> _signal_queue {};
     std::function<bool(bridged_signal_base*)> _emit_functor { nullptr };
 };
 
@@ -813,7 +885,7 @@ public:
         for (auto &&s : _signals) s.second->emit(args...);
     }
 
-    const std::unique_ptr<signal_type> &get_signal(const std::string &signal_name)
+    virtual const std::unique_ptr<signal_type> &get_signal(const std::string &signal_name)
     {
         auto signal { _signals.find(signal_name) };
 
@@ -845,12 +917,45 @@ protected:
     std::unordered_map<std::string, std::unique_ptr<signal_type>> _signals {};
 };
 
+template<template <typename...> typename BridgedSignalType, typename... Args>
+class bridged_signal_set_base : public signal_set_base<BridgedSignalType, Args...>
+{
+public:
+    using base_class = signal_set_base<BridgedSignalType, Args...>;
+
+    bridged_signal_set_base(const std::function<bool(typename base_class::signal_type::bridged_signal_base*)>& emit_functor) : base_class {}, _emit_functor { emit_functor } {}
+
+    virtual const std::unique_ptr<typename base_class::signal_type> &get_signal(const std::string &signal_name) override
+    {
+        auto &signal { base_class::get_signal(signal_name) };
+
+        if (!signal->get_emit_functor() && _emit_functor) signal->set_emit_functor(_emit_functor);
+
+        return signal;
+    }
+
+    void set_emit_functor(const std::function<bool(typename base_class::signal_type::bridged_signal_base*)>& emit_functor)
+    {
+        _emit_functor = emit_functor;
+    }
+
+    const std::function<bool(typename base_class::signal_type::bridged_signal_base*)> &get_emit_functor() const
+    {
+        return _emit_functor;
+    }
+
+protected:
+    std::function<bool(typename base_class::signal_type::bridged_signal_base*)> _emit_functor { nullptr };
+};
+
 template<typename... Args> using signal_set = signal_set_base<signal, Args...>;
 template<typename... Args> using signal_ex_set = signal_set_base<signal_ex, Args...>;
 template<typename... Args> using throttled_signal_set = signal_set_base<throttled_signal, Args...>;
 template<typename... Args> using throttled_signal_ex_set = signal_set_base<throttled_signal_ex, Args...>;
 template<typename... Args> using queued_signal_set = signal_set_base<queued_signal, Args...>;
 template<typename... Args> using queued_signal_ex_set = signal_set_base<queued_signal_ex, Args...>;
+template<typename... Args> using bridged_signal_set = bridged_signal_set_base<bridged_signal, Args...>;
+template<typename... Args> using bridged_signal_ex_set = bridged_signal_set_base<bridged_signal_ex, Args...>;
 
 struct connection_bag
 {
