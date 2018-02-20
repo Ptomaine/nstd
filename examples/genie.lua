@@ -25,6 +25,7 @@ solution "nstd_examples"
     project "asio_example"
         files { "asio_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
+        includedirs { "../include/external/json/include" }
         configuration { "Debug" }
             objdir "obj/asio_example/Debug"
             targetdir "bin/asio_example/Debug"
@@ -88,6 +89,7 @@ solution "nstd_examples"
 
     project "live_property_example"
         files { "live_property_example.cpp" }
+        includedirs { "../include/external/json/include" }
         configuration { "Debug" }
             objdir "obj/live_property_example/Debug"
             targetdir "bin/live_property_example/Debug"
@@ -115,6 +117,7 @@ solution "nstd_examples"
     project "relinx_generator_example"
         files { "relinx_generator_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
+        includedirs { "../include/external/json/include" }
         configuration { "Debug" }
             objdir "obj/relinx_generator_example/Debug"
             targetdir "bin/relinx_generator_example/Debug"
@@ -161,7 +164,7 @@ solution "nstd_examples"
 
     project "sqlite_example"
         files { "sqlite_example.cpp", "../include/external/sqlite/sqlite3.c" }
-        includedirs { "../include/external/sqlite" }
+        includedirs { "../include/external/sqlite", "../include/external/json/include" }
         configuration "not vs*"
             buildoptions { "-Wno-unused-but-set-variable" }
 
@@ -189,6 +192,7 @@ solution "nstd_examples"
     project "urdl_example"
         files { "urdl_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
+        includedirs { "../include/external/json/include" }
         configuration { "Debug" }
             objdir "obj/urdl_example/Debug"
             targetdir "bin/urdl_example/Debug"
@@ -206,6 +210,7 @@ solution "nstd_examples"
     project "uuid_example"
         files { "uuid_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
+        includedirs { "../include/external/json/include" }
         configuration { "Debug" }
             objdir "obj/uuid_example/Debug"
             targetdir "bin/uuid_example/Debug"

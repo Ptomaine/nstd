@@ -37,6 +37,7 @@
 			<Add option="-Wno-unused-but-set-variable" />
 			<Add directory="../include" />
 			<Add directory="../include/external/sqlite" />
+			<Add directory="../include/external/json/include" />
 		</Compiler>
 		<Linker>
 			<Add option="-static" />

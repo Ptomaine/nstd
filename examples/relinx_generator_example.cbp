@@ -36,6 +36,7 @@
 			<Add option="-fexceptions" />
 			<Add directory="../include" />
 			<Add directory="../include/external/asio/asio/include" />
+			<Add directory="../include/external/json/include" />
 		</Compiler>
 		<Linker>
 			<Add option="-static" />
