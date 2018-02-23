@@ -21,6 +21,7 @@ SOFTWARE.
 #include <iostream>
 #include "base64.hpp"
 #include "crc32.hpp"
+#include "tailed.hpp"
 
 int main()
 {
@@ -44,6 +45,13 @@ int main()
 
     std::cout << "  crc32 :" << nstd::crc32::crc32("1234567890", 10) << std::endl;
     std::cout << "c_crc32 :" << nstd::crc32::c_crc32<10>("1234567890") << std::endl;
+
+    nstd::tailed<int, 3> tailed_int { 5 };
+
+    tailed_int = 10;
+    ++tailed_int;
+
+    std::cout << tailed_int[0] << ">>" << tailed_int[1] << ">>" << tailed_int[2] << std::endl;
 
 	std::cout << "exitting..." << std::endl;
 
