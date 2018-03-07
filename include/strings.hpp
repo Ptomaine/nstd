@@ -267,9 +267,9 @@ inline std::string numeric_to_string(NumericType value, int precision = -1)
 template<typename NumericType>
 inline std::wstring numeric_to_wstring(NumericType value, int precision = -1)
 {
-         if (value ==  std::numeric_limits<NumericType>::infinity()) return  "INF";
-    else if (value == -std::numeric_limits<NumericType>::infinity()) return "-INF";
-    else if (value != value) return "NaN";
+         if (value ==  std::numeric_limits<NumericType>::infinity()) return  L"INF";
+    else if (value == -std::numeric_limits<NumericType>::infinity()) return L"-INF";
+    else if (value != value) return L"NaN";
 
     std::wostringstream oss;
 

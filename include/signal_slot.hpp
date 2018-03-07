@@ -65,7 +65,7 @@ public:
 	using base_type = base_value_type<T1>;
 	using connected_paired_ptr_type = paired_ptr<T2, T1>;
 
-	template<typename, typename> friend struct paired_ptr;
+	template<typename, typename> friend class paired_ptr;
 	template<typename T12, typename T22> friend bool operator==(const paired_ptr<T12, T22> &, const paired_ptr<T12, T22> &);
 	template<typename T12, typename T22> friend bool operator!=(const paired_ptr<T12, T22> &, const paired_ptr<T12, T22> &);
 	template<typename T12, typename T22> friend bool operator==(const paired_ptr<T12, T22> &, std::nullptr_t);
@@ -412,12 +412,12 @@ public:
         if (sit != send) sit->enabled(enabled);
     }
 
-    virtual bool is_slot_enabled(const slot_base &slot) const
+    virtual bool is_slot_enabled(const slot_base &slot) const override
     {
         return is_slot_enabled(slot._connection);
     }
 
-    virtual bool is_slot_enabled(const paired_ptr<> &slot) const
+    virtual bool is_slot_enabled(const paired_ptr<> &slot) const override
     {
         auto send { std::cend(_slots) };
         auto sit { std::find(std::cbegin(_slots), send, slot) };
@@ -506,7 +506,7 @@ public:
 
         _signal_queue.pop_front();
 
-        std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+        std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
 
         return !std::empty(_signal_queue);
     }
@@ -519,7 +519,7 @@ public:
 
         if (std::empty(_signal_queue)) return;
 
-        for (auto &&args : _signal_queue) std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+        for (auto &&args : _signal_queue) std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
 
         _signal_queue.clear();
     }
@@ -547,7 +547,7 @@ public:
         return _emit_functor;
     }
 
-    const uint64_t get_queue_size() const
+    uint64_t get_queue_size() const
     {
         return std::size(_signal_queue);
     }
@@ -557,7 +557,7 @@ public:
         _bridge_enabled = enabled;
     }
 
-    const bool get_bridge_enabled() const
+    bool get_bridge_enabled() const
     {
         return _bridge_enabled;
     }
@@ -878,7 +878,7 @@ public:
     using signal_args_tuple_type = std::tuple<Args...>;
 
     signal_set_base() = default;
-    ~signal_set_base() = default;
+    virtual ~signal_set_base() = default;
 
     void emit(const Args &... args) const
     {
@@ -961,7 +961,7 @@ struct connection_bag
 {
     std::deque<connection> connections;
 
-    void operator= (connection &&c) { connections.push_front(std::forward<connection>(c)); }
+    connection_bag &operator= (connection &&c) { connections.push_front(std::forward<connection>(c)); return *this; }
 };
 
 }

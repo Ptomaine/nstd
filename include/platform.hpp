@@ -325,7 +325,7 @@ false
 #endif
 ;
 
-inline constexpr const char *const get_current_os_type_name()
+inline constexpr const char *get_current_os_type_name()
 {
     if constexpr (current_os_type == os_type::FreeBSD)          return "FreeBSD";
     else if constexpr (current_os_type == os_type::AIX)         return "AIX";
@@ -349,7 +349,7 @@ inline constexpr const char *const get_current_os_type_name()
     else                                                        return "Unknown";
 }
 
-inline constexpr const char *const get_current_os_family_name()
+inline constexpr const char *get_current_os_family_name()
 {
     if constexpr (current_os_family == os_family::Unix)         return "Unix";
     else if constexpr (current_os_family == os_family::UnixBSD) return "Unix,BSD";
@@ -358,7 +358,7 @@ inline constexpr const char *const get_current_os_family_name()
     else                                                        return "Unknown";
 }
 
-inline constexpr const char *const get_current_compiler_name()
+inline constexpr const char *get_current_compiler_name()
 {
     if constexpr (current_compiler == compiler::MSVC)               return "MSVC";
     else if constexpr (current_compiler == compiler::Clang)         return "Clang";
