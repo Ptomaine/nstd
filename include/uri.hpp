@@ -660,6 +660,7 @@ protected:
         }
         else parse_path_etc(it, end);
     }
+
     void parse_authority(std::string::const_iterator& it, const std::string::const_iterator& end)
     {
         std::string user_info;
@@ -682,6 +683,7 @@ protected:
 
         _user_info = user_info;
     }
+
     void parse_host_and_port(std::string::const_iterator& it, const std::string::const_iterator& end)
     {
         if (it == end) return;
