@@ -25,10 +25,20 @@ SOFTWARE.
 #include "urdl.hpp"
 #include "json.hpp"
 #include "relinx.hpp"
+#include "uri.hpp"
 
 int main()
 {
-    auto [headers, json_str] { nstd::download_url("http://qrng.anu.edu.au/API/jsonI.php?length=1024&type=uint8") };
+    //nstd::uri qrng_url { "http://qrng.anu.edu.au/API/jsonI.php?length=1024&type=uint8" };
+    nstd::uri qrng_url;
+
+    qrng_url.set_scheme("http");
+    qrng_url.set_host("qrng.anu.edu.au");
+    qrng_url.set_path("/API/jsonI.php");
+    qrng_url.add_query_parameter("length", "1024");
+    qrng_url.add_query_parameter("type", "uint8");
+
+    auto [headers, json_str] { nstd::download_url(qrng_url.to_string()) };
     auto json { nstd::json::json::parse(json_str) };
     auto rdata { nstd::relinx::from(json[0]["data"])->select([](auto &&v){ return static_cast<uint8_t>(v);})->to_vector() };
     auto data_ptr { std::data(rdata) };
