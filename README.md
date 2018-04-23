@@ -12,6 +12,7 @@ The library currently contains the following features:
    * units - r-lyeh's library to provide numerical quantities with units [https://github.com/r-lyeh/units]
    * base64, crc32 - base64 encoding/decoding, CRC32/constexpr CRC32
    * uuid - unique id generator
+   * uri - class for URI manipulations
    * relinx - LINQ-like data transformations
    * planar_movements_recognizer - a set of classes to track and recognize planar movements and to execute corresponding commands
    * topological_sorter - the class to sort objects with dependencies (dependency solver)
