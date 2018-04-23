@@ -21,6 +21,7 @@ SOFTWARE.
 */
 
 #include <algorithm>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -214,10 +215,10 @@ public:
 
     const std::string& get_user_info() const { return _user_info; }
 
-    void set_user_info(const std::string& userInfo)
+    void set_user_info(const std::string& user_info)
     {
         _user_info.clear();
-        decode(userInfo, _user_info);
+        decode(user_info, _user_info);
     }
 
     const std::string& get_host() const { return _host; }
@@ -543,16 +544,16 @@ public:
 
     static void decode(const std::string& str, std::string& decoded_str, bool plus_as_space = false)
     {
-        bool inQuery { false };
+        bool in_query { false };
         auto it { std::cbegin(str) }, end { std::cend(str) };
 
         while (it != end)
         {
             char c { *it++ };
 
-            if (!inQuery && c == '?') inQuery = true;
+            if (!in_query && c == '?') in_query = true;
 
-            if (inQuery && plus_as_space && c == '+')
+            if (in_query && plus_as_space && c == '+')
             {
                 c = ' ';
             }
@@ -661,14 +662,14 @@ protected:
     }
     void parse_authority(std::string::const_iterator& it, const std::string::const_iterator& end)
     {
-        std::string userInfo;
+        std::string user_info;
         std::string part;
 
         while (it != end && *it != '/' && *it != '?' && *it != '#')
         {
             if (*it == '@')
             {
-                userInfo = part;
+                user_info = part;
                 part.clear();
             }
             else part += *it;
@@ -679,7 +680,7 @@ protected:
 
         parse_host_and_port(pbeg, pend);
 
-        _user_info = userInfo;
+        _user_info = user_info;
     }
     void parse_host_and_port(std::string::const_iterator& it, const std::string::const_iterator& end)
     {
@@ -780,9 +781,9 @@ protected:
         {
             get_path_segments(segments);
 
-            bool endsWithSlash { *(_path.rbegin()) == '/' };
+            bool ends_with_slash { *(_path.rbegin()) == '/' };
 
-            if (!endsWithSlash && !std::empty(segments)) segments.pop_back();
+            if (!ends_with_slash && !std::empty(segments)) segments.pop_back();
 
             add_leading_slash = _path[0] == '/';
         }
@@ -814,7 +815,7 @@ protected:
         build_path(normalized_segments, add_leading_slash, has_trailing_slash || add_trailing_slash);
     }
 
-    void remove_dot_segments(bool removeLeading = true)
+    void remove_dot_segments(bool remove_leading = true)
     {
         if (std::empty(_path)) return;
 
@@ -834,7 +835,7 @@ protected:
                     if (normalized_segments.back() == "..") normalized_segments.push_back(seg);
                     else normalized_segments.pop_back();
                 }
-                else if (!removeLeading) normalized_segments.push_back(seg);
+                else if (!remove_leading) normalized_segments.push_back(seg);
             }
             else if (seg != ".") normalized_segments.push_back(seg);
         }
