@@ -1316,14 +1316,26 @@ int main()
         print_duration("take_while(f):", start);
     }
 
-    { //auto take_while_i(LimitFunctor &&limitFunctor) const noexcept -> decltype(auto)
+    { //auto take_while_i(LimitFunctor &&limitFunctor) noexcept
         auto start = hr_clock::now();
-
-        std::vector<int> t1_data;
 
         assert(from({"1"s, "2"s, "3"s, "4"s, "5"s, "6"s, "7"s, "8"s})->take_while_i([](auto &&, auto &&idx) { return idx < 6; })->to_string() == "123456"s);
 
         print_duration("take_while_i(f):", start);
+    }
+
+    { //auto tee(TeeFunctor &&teeFunctor) noexcept
+        auto start = hr_clock::now();
+
+        int cnt { 0 };
+        std::vector<int> t1_data { 1, 2, 3, 4, 5, 6, 7, 8 };
+
+        auto s { from(t1_data)->tee([&cnt](auto &&v) { ++cnt; })->where([](auto &&v) { return v <= 3; })->count() };
+
+        assert(cnt == std::size(t1_data));
+        assert(s == 3);
+
+        print_duration("tee(f):", start);
     }
 
     { //auto to_container() const noexcept -> decltype(auto)

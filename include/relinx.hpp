@@ -185,6 +185,75 @@ protected:
     FilterFunctor _filterFunctor;
 };
 
+template<typename ParentIterator, typename TeeFunctor>
+class tee_iterator_adapter
+{
+public:
+    using self_type = tee_iterator_adapter<ParentIterator, TeeFunctor>;
+    using value_type = typename std::decay<decltype(*ParentIterator())>::type;
+    using difference_type = std::ptrdiff_t;
+    using pointer = const value_type*;
+    using reference = const value_type&;
+    using iterator_category = std::input_iterator_tag;
+
+    tee_iterator_adapter() = default;
+    tee_iterator_adapter(const self_type &) = default;
+    tee_iterator_adapter(self_type &&) noexcept = default;
+    tee_iterator_adapter &operator=(const self_type &) = default;
+    tee_iterator_adapter &operator=(self_type &&) noexcept = default;
+
+    tee_iterator_adapter(ParentIterator begin, ParentIterator end, TeeFunctor &&teeFunctor)
+    : _begin(begin), _end(end), _teeFunctor(std::forward<TeeFunctor>(teeFunctor))
+    {
+    }
+
+    auto operator==(const self_type &s) const
+    {
+        return ((_begin == _end && s._begin == s._end) ||
+                (_begin == s._begin && _end == s._end));
+    }
+
+    auto operator!=(const self_type &s) const
+    {
+        return !(*this == s);
+    }
+
+    auto operator*() const -> const value_type&
+    {
+        auto &value { *_begin };
+
+        _teeFunctor(value);
+
+        return value;
+    }
+
+    auto operator->() -> const value_type
+    {
+        return *(*this);
+    }
+
+    auto operator++() -> self_type&
+    {
+        ++_begin;
+
+        return *this;
+    }
+
+    auto operator++(int) -> self_type
+    {
+        auto __tmp = *this;
+
+        ++(*this);
+
+        return __tmp;
+    }
+
+protected:
+    ParentIterator _begin;
+    ParentIterator _end;
+    TeeFunctor _teeFunctor;
+};
+
 template<typename ParentIterator, typename TransformFunctor>
 class transform_iterator_adapter
 {
@@ -2545,6 +2614,25 @@ public:
     auto take_while_i(LimitFunctor &&limitFunctor) noexcept
     {
         return _indexer = 0, take_while([this, &limitFunctor](auto &&v){ return limitFunctor(std::forward<decltype(v)>(v), _indexer++); });
+    }
+
+    /** \brief Transparently traverse a sequence and calls an immutable action.
+
+        Transparently traverse a sequence and calls an immutable action. This method doesn't change the original sequence.
+
+        \param teeFunctor A function to call on each element.
+
+        \note This method produces a lazy evaluation relinx_object.
+
+        \return A relinx_object that contains exectly the same elements from the input sequence.
+    */
+    template<typename TeeFunctor>
+    auto tee(TeeFunctor &&teeFunctor) noexcept
+    {
+        using adapter_type = tee_iterator_adapter<iterator_type, std::function<void(const value_type&)>>;
+        using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
+
+        return std::make_shared<next_relinx_type>(std::enable_shared_from_this<self_type>::shared_from_this(), adapter_type(_begin, _end, std::forward<TeeFunctor>(teeFunctor)), adapter_type(_end, _end, nullptr));
     }
 
     /** \brief Converts a current relinx_object to the specified container type.
