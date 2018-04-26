@@ -6,7 +6,7 @@ solution "nstd_examples"
         buildoptions { "/std:c++17", "/EHsc", "/Wall" }
 
     configuration "not vs*"
-        buildoptions_cpp { "-std=c++1z", "-fexceptions" }
+        buildoptions_cpp { "-std=c++17", "-fexceptions" }
         buildoptions "-Wall"
 
     language "C++"

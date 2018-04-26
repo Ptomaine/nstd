@@ -315,8 +315,8 @@ WriteGlyphAsTGA(FT_Library &library,
                 imgSize = imgWidth * imgHeight;
 
             // Allocate data for our image and clear it out to transparent.
-            Pixel32 *pxl = new Pixel32[imgSize];
-            memset(pxl, 0, sizeof(Pixel32) * imgSize);
+            std::vector<Pixel32> pxl_array(imgSize, { 0, 0, 0, 0 });
+            auto pxl = std::data(pxl_array);
 
             // Loop over the outline spans and just draw them into the
             // image.
@@ -347,8 +347,6 @@ WriteGlyphAsTGA(FT_Library &library,
 
             // Dump the image to disk.
             WriteTGA(fileName, pxl, imgWidth, imgHeight);
-
-            delete [] pxl;
           }
         }
       }

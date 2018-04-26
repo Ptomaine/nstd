@@ -96,11 +96,11 @@ int main()
         std::cout << "json_data: " << json_data.value_or("null") << std::endl;
     };
 
-    auto js_ord { R"({"3":null, "1":"the middle one...", "2":null})"_json_ord };
+    auto js_o { R"({"3":null, "1":"the middle one...", "2":null})"_json };
 
-    std::cout << js_ord << std::endl;
+    std::cout << js_o << std::endl;
 
-    auto iff { js_ord[0].value("8", "***") };
+    auto iff { js_o[0].value("8", "***") };
     std::cout << iff << std::endl;
 
     nstd::db::sqlite::backup_database(db, nstd::db::sqlite::database { "sqlite_example_backup.db" }); //from memory to file

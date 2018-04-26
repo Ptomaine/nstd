@@ -841,7 +841,7 @@ public:
 
     std::chrono::microseconds timer_ms() const
     {
-        return _timer_ms;
+        return _timer_ms.load();
     }
 
 private:
