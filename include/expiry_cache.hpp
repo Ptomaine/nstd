@@ -49,13 +49,16 @@ public:
         set_expiry(duration);
     }
 
-    void put(const key_type &key, const value_type &value, std::chrono::milliseconds expiry_duration_ms = 0ms)
+    template<typename duration_type = std::chrono::milliseconds>
+    void put(const key_type &key, const value_type &value, const duration_type &duration = 0ms)
     {
         std::scoped_lock lock {_mutex};
 
         auto it{ _data.find(key) };
 
         if (it != std::end(_data)) _erase(it);
+
+        auto expiry_duration_ms { std::chrono::duration_cast<std::chrono::milliseconds>(duration) };
 
         _data.emplace(key, std::make_tuple(std::chrono::high_resolution_clock::now(), (expiry_duration_ms == 0ms) ? _expiry_duration_ms.load() : expiry_duration_ms, value));
     }
@@ -117,7 +120,7 @@ public:
     template<typename duration_type>
     void set_expiry(const duration_type &duration)
     {
-        _expiry_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        _expiry_duration_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
 
     template<typename duration_type>
@@ -132,7 +135,7 @@ public:
 
     const std::chrono::milliseconds get_expiry() const
     {
-        return _expiry_duration_ms;
+        return _expiry_duration_ms.load();
     }
 
     const std::chrono::milliseconds get_expiry(const key_type &key) const
@@ -143,7 +146,7 @@ public:
 
         if (it != std::end(_data)) return std::get<1>(it->second);
 
-        return _expiry_duration_ms;
+        return _expiry_duration_ms.load();
     }
 
     void clear()

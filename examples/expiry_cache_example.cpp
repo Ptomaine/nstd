@@ -45,7 +45,7 @@ int main()
 	a.start_auto_vacuum();
 
 	const auto key { "My item"s };
-	a.put(key, new Item);
+	a.put(key, new Item, 0.790s);
 
 	if (Item* b = nullptr; a.get(key, b))
     {
