@@ -26,8 +26,8 @@ SOFTWARE.
 namespace nstd
 {
 
-template<class Key, class T, class Ignore, class Ignore2, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<std::pair<Key, T>>>
-using ordered_map = tsl::ordered_map<Key, T, Hash, KeyEqual, Allocator>;
+template<class Key, class T, class Ignore, class Allocator, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+using ordered_map = tsl::ordered_map<Key, T, Hash, KeyEqual, typename std::allocator_traits<Allocator>::template rebind_alloc<std::pair<Key, T>>>;
 
 namespace json
 {
