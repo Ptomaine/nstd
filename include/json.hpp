@@ -21,23 +21,23 @@ SOFTWARE.
 */
 
 #include "external/json/include/nlohmann/json.hpp"
-//#include "ordered_map_set.hpp"
+#include "ordered_map_set.hpp"
 
 namespace nstd
 {
 
-//template<class Key, class T, class Ignore, class Allocator, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
-//using ordered_map = tsl::ordered_map<Key, T, Hash, KeyEqual, Allocator>;
+template<class Key, class T, class Ignore, class Allocator, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+using ordered_map = tsl::ordered_map<Key, T, Hash, KeyEqual, typename std::allocator_traits<Allocator>::template rebind_alloc<std::pair<Key, T>>>;
 
 namespace json
 {
 using namespace nlohmann;
-//using json_ord = nlohmann::basic_json<ordered_map>;
+using json_ord = nlohmann::basic_json<ordered_map>;
 }
 
 }
 
-/*inline nstd::json::json_ord operator "" _json_ord(const char* s, std::size_t n)
+inline nstd::json::json_ord operator "" _json_ord(const char* s, std::size_t n)
 {
     return nstd::json::json_ord::parse(s, s + n);
 }
@@ -45,4 +45,4 @@ using namespace nlohmann;
 inline nstd::json::json_ord::json_pointer operator "" _json_ord_pointer(const char* s, std::size_t n)
 {
     return nstd::json::json_ord::json_pointer(std::string(s, n));
-}*/
+}
