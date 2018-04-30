@@ -120,7 +120,7 @@ public:
     template<typename duration_type>
     void set_expiry(const duration_type &duration)
     {
-        _expiry_duration_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
+        _expiry_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
     }
 
     template<typename duration_type>
