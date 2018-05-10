@@ -161,91 +161,125 @@ enum class os_family : uint8_t
 
 #if defined(__ALPHA) || defined(__alpha) || defined(__alpha__) || defined(_M_ALPHA)
 	#define ARCH_ALPHA
-	#define ARCH_LITTLE_ENDIAN
+    #if __cplusplus <= 201703L
+        #define ARCH_LITTLE_ENDIAN
+    #endif
 #elif defined(i386) || defined(__i386) || defined(__i386__) || defined(_M_IX86) || defined(EMSCRIPTEN) || defined(__EMSCRIPTEN__)
 	#define ARCH_IA32
-	#define ARCH_LITTLE_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_LITTLE_ENDIAN
+    #endif
 #elif defined(_IA64) || defined(__IA64__) || defined(__ia64__) || defined(__ia64) || defined(_M_IA64)
 	#define ARCH_IA64
-	#if defined(hpux) || defined(_hpux)
-		#define ARCH_BIG_ENDIAN
-	#else
-		#define ARCH_LITTLE_ENDIAN
-	#endif
+	#if __cplusplus <= 201703L
+        #if defined(hpux) || defined(_hpux)
+            #define ARCH_BIG_ENDIAN
+        #else
+            #define ARCH_LITTLE_ENDIAN
+        #endif
+    #endif
 #elif defined(__x86_64__) || defined(_M_X64)
 	#define ARCH_AMD64
-	#define ARCH_LITTLE_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_LITTLE_ENDIAN
+    #endif
 #elif defined(__mips__) || defined(__mips) || defined(__MIPS__) || defined(_M_MRX000)
 	#define ARCH_MIPS
-	#if defined(OS_FAMILY_WINDOWS)
-		#define ARCH_LITTLE_ENDIAN
-	#elif defined(__MIPSEB__) || defined(_MIPSEB) || defined(__MIPSEB)
-		#define ARCH_BIG_ENDIAN
-	#elif defined(__MIPSEL__) || defined(_MIPSEL) || defined(__MIPSEL)
-		#define ARCH_LITTLE_ENDIAN
-	#else
-		#error "Unknown MIPS!"
-	#endif
+	#if __cplusplus <= 201703L
+        #if defined(OS_FAMILY_WINDOWS)
+            #define ARCH_LITTLE_ENDIAN
+        #elif defined(__MIPSEB__) || defined(_MIPSEB) || defined(__MIPSEB)
+            #define ARCH_BIG_ENDIAN
+        #elif defined(__MIPSEL__) || defined(_MIPSEL) || defined(__MIPSEL)
+            #define ARCH_LITTLE_ENDIAN
+        #else
+            #error "Unknown MIPS!"
+        #endif
+    #endif
 #elif defined(__hppa) || defined(__hppa__)
 	#define ARCH_HPPA
-	#define ARCH_BIG_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_BIG_ENDIAN
+    #endif
 #elif defined(__PPC) || defined(__POWERPC__) || defined(__powerpc) || defined(__PPC__) || \
       defined(__powerpc__) || defined(__ppc__) || defined(__ppc) || defined(_ARCH_PPC) || defined(_M_PPC)
 	#define ARCH_PPC
-	#if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-		#define ARCH_LITTLE_ENDIAN
-	#else
-		#define ARCH_BIG_ENDIAN
-	#endif
+	#if __cplusplus <= 201703L
+        #if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+            #define ARCH_LITTLE_ENDIAN
+        #else
+            #define ARCH_BIG_ENDIAN
+        #endif
+    #endif
 #elif defined(_POWER) || defined(_ARCH_PWR) || defined(_ARCH_PWR2) || defined(_ARCH_PWR3) || \
       defined(_ARCH_PWR4) || defined(__THW_RS6000)
 	#define ARCH_POWER
-	#define ARCH_BIG_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_BIG_ENDIAN
+    #endif
 #elif defined(__sparc__) || defined(__sparc) || defined(sparc)
 	#define ARCH_SPARC
-	#define ARCH_BIG_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_BIG_ENDIAN
+    #endif
 #elif defined(__arm__) || defined(__arm) || defined(ARM) || defined(_ARM_) || defined(__ARM__) || defined(_M_ARM)
 	#define ARCH_ARM
-	#if defined(__ARMEB__)
-		#define ARCH_BIG_ENDIAN
-	#else
-		#define ARCH_LITTLE_ENDIAN
-	#endif
+	#if __cplusplus <= 201703L
+        #if defined(__ARMEB__)
+            #define ARCH_BIG_ENDIAN
+        #else
+            #define ARCH_LITTLE_ENDIAN
+        #endif
+    #endif
 #elif defined(__arm64__) || defined(__arm64)
 	#define ARCH_ARM64
-	#if defined(__ARMEB__)
-		#define ARCH_BIG_ENDIAN
-	#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-		#define ARCH_BIG_ENDIAN
-	#else
-		#define ARCH_LITTLE_ENDIAN
-	#endif
+	#if __cplusplus <= 201703L
+        #if defined(__ARMEB__)
+            #define ARCH_BIG_ENDIAN
+        #elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+            #define ARCH_BIG_ENDIAN
+        #else
+            #define ARCH_LITTLE_ENDIAN
+        #endif
+    #endif
 #elif defined(__m68k__)
 	#define ARCH_M68K
-	#define ARCH_BIG_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_BIG_ENDIAN
+    #endif
 #elif defined(__s390__)
 	#define ARCH_S390
-	#define ARCH_BIG_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_BIG_ENDIAN
+    #endif
 #elif defined(__sh__) || defined(__sh) || defined(SHx) || defined(_SHX_)
 	#define ARCH_SH
-	#if defined(__LITTLE_ENDIAN__) || (OS == OS_WINDOWS_CE)
-		#define ARCH_LITTLE_ENDIAN
-	#else
-		#define ARCH_BIG_ENDIAN
-	#endif
+	#if __cplusplus <= 201703L
+        #if defined(__LITTLE_ENDIAN__) || (OS == OS_WINDOWS_CE)
+            #define ARCH_LITTLE_ENDIAN
+        #else
+            #define ARCH_BIG_ENDIAN
+        #endif
+    #endif
 #elif defined (nios2) || defined(__nios2) || defined(__nios2__)
 	#define ARCH_NIOS2
-	#if defined(__nios2_little_endian) || defined(nios2_little_endian) || defined(__nios2_little_endian__)
-		#define ARCH_LITTLE_ENDIAN
-	#else
-		#define ARCH_BIG_ENDIAN
-	#endif
+	#if __cplusplus <= 201703L
+        #if defined(__nios2_little_endian) || defined(nios2_little_endian) || defined(__nios2_little_endian__)
+            #define ARCH_LITTLE_ENDIAN
+        #else
+            #define ARCH_BIG_ENDIAN
+        #endif
+    #endif
 #elif defined(__AARCH64EL__)
 	#define ARCH_AARCH64
-	#define ARCH_LITTLE_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_LITTLE_ENDIAN
+    #endif
 #elif defined(__AARCH64EB__)
 	#define ARCH_AARCH64
-	#define ARCH_BIG_ENDIAN
+	#if __cplusplus <= 201703L
+        #define ARCH_BIG_ENDIAN
+    #endif
 #endif
 
 enum class compiler : uint8_t
@@ -317,13 +351,18 @@ inline constexpr const compiler current_compiler =
 
 inline constexpr bool is_64bit = sizeof(void*) == sizeof(long long);
 
-inline constexpr bool is_little_endian =
-#if defined(ARCH_LITTLE_ENDIAN)
-true
+#if __cplusplus > 201703L
+    #include <type_traits>
+    inline constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 #else
-false
+    inline constexpr bool is_little_endian =
+    #if defined(ARCH_LITTLE_ENDIAN)
+    true
+    #else
+    false
+    #endif
+    ;
 #endif
-;
 
 inline constexpr const char *get_current_os_type_name()
 {
