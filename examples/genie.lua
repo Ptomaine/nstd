@@ -324,3 +324,13 @@ solution "nstd_examples"
 
         configuration "linux"
             links { "pthread" }
+
+    project "http_request_parser_example"
+        files { "http_request_parser_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/http_request_parser_example/Debug"
+            targetdir "bin/http_request_parser_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/http_request_parser_example/Release"
+            targetdir "bin/http_request_parser_example/Release"

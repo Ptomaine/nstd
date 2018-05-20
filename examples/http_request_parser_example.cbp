@@ -2,13 +2,13 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="units_example" />
+		<Option title="http_request_parser_example" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/units_example/Debug/units_example" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/units_example/Debug/" />
+				<Option output="bin/http_request_parser_example/Debug/http_request_parser_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/http_request_parser_example/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -16,8 +16,8 @@
 				</Compiler>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/units_example/Release/units_example" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/units_example/Release/" />
+				<Option output="bin/http_request_parser_example/Release/http_request_parser_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/http_request_parser_example/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -40,7 +40,7 @@
 			<Add option="-static" />
 			<Add option="-m64" />
 		</Linker>
-		<Unit filename="units_example.cpp" />
+		<Unit filename="http_request_parser_example.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />

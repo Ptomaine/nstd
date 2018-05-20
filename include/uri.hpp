@@ -28,14 +28,6 @@ SOFTWARE.
 
 namespace nstd
 {
-namespace
-{
-    static inline const std::string PathReservedChars        { "?#" };
-    static inline const std::string QueryReservedChars       { "?#/:;+@" };
-    static inline const std::string QueryParamReservedChars  { "?#/:;+@&=" };
-    static inline const std::string FragmentReservedChars;
-    static inline const std::string IlligalChars             { "%<>{}|\\\"^`!*'()$,[]" };
-}
 
 class uri_exception : public std::runtime_error
 {
@@ -49,6 +41,11 @@ class uri
 {
 public:
     using query_parameters_t = std::vector<std::pair<std::string, std::string>>;
+    static inline const std::string PathReservedChars        { "?#" };
+    static inline const std::string QueryReservedChars       { "?#/:;+@" };
+    static inline const std::string QueryParamReservedChars  { "?#/:;+@&=" };
+    static inline const std::string FragmentReservedChars;
+    static inline const std::string IlligalChars             { "%<>{}|\\\"^`!*'()$,[]" };
 
     uri() = default;
 
