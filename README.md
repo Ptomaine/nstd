@@ -13,6 +13,7 @@ The library currently contains the following features:
    * base64, crc32 - base64 encoding/decoding, CRC32/constexpr CRC32
    * uuid - unique id generator
    * uri - class for URI manipulations
+   * http_request_parser - a simple class to parse incoming http requests.
    * relinx - LINQ-like data transformations
    * planar_movements_recognizer - a set of classes to track and recognize planar movements and to execute corresponding commands
    * topological_sorter - the class to sort objects with dependencies (dependency solver)
