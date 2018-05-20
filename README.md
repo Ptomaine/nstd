@@ -26,3 +26,19 @@ The library currently contains the following features:
    * Google fonts were added [https://github.com/google/fonts]
 
 Many of these libraries are sub-modules. So, don't forget to update sub-modules after cloning this repository.
+
+For Windows users, you can download MinGW from the following sites:
+
+https://gcc-mcf.lhmouse.com/ (It doesn't contain mingw32-make utility. Download it separately)
+https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/
+
+GENie can be downloaded from https://github.com/bkaradzic/GENie and genie executable should be placed to the example folder or be in path.
+
+**A simple usage on Windows using GENie and MinGW:**
+
+Go to the example folder and type:
+```
+> genie gmake
+> mingw32-make
+```
+On Linux do the same but use 'make' instead of 'mingw32-make'
