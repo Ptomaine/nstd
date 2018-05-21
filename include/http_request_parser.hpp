@@ -57,7 +57,7 @@ public:
     bool is_ok() const
     {
         return  _request_data &&
-                _request_data_size > 10 &&
+                _request_data_size >= 5 &&
                 _http_method_traits.method != http_method_id::UNKNOWN;
     }
 
@@ -228,7 +228,7 @@ protected:
 
     void parse()
     {
-        if (!_request_data || !*_request_data || _request_data_size < 11) return;
+        if (!_request_data || !*_request_data || _request_data_size < 5) return;
 
         _http_method_traits = { http_method_id::UNKNOWN, 0xffffffff };
 

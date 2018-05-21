@@ -43,6 +43,8 @@ int main()
         "OPTIONS /index.html HTTP/1.1"s,
         "PATCH /file.txt HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: application/example\r\nIf-Match: \"e0023aa4e\"\r\nContent-Length: 3\r\n\r\nXXX"s,
         "TRACE /index.html"s,
+        "GET /",
+
         " ",
         "AG",
         "AGRRRRRRR"
@@ -63,6 +65,7 @@ int main()
             auto resource_uri { p.get_resource_uri() };
 
             std::cout << "Resource URI:\t" << resource_uri.to_string() << std::endl;
+            std::cout << "URI resource:\t" << resource_uri.get_path() << std::endl;
             std::cout << "Headers:\n" << from(p.get_headers())->select([](auto &&p){ auto &[key, value] = p; return compose_string("\t", key, ":\t", value); })->to_string("\n") << std::endl;
             std::cout << "Query params:\n" << from(resource_uri.get_query_parameters())->select([](auto &&p){ auto &[key, value] = p; return compose_string("\t", key, ":\t", value); })->to_string("\n") << std::endl;
         }
