@@ -31,3 +31,6 @@
 [submodule "include/external/lodepng"]
 	path = include/external/lodepng
 	url = https://github.com/lvandeve/lodepng.git
+[submodule "include/external/pgfe"]
+	path = include/external/pgfe
+	url = https://github.com/dmitigr/pgfe.git
