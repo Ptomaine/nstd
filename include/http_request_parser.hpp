@@ -47,9 +47,9 @@ public:
         UNKNOWN
     };
 
-    http_request_parser(const uint8_t *request_data, const size_t request_data_size) :
-        _request_data { request_data },
-        _request_data_size { request_data_size }
+    http_request_parser(const std::string_view request_data) :
+        _request_data { reinterpret_cast<const uint8_t*>(std::data(request_data)) },
+        _request_data_size { std::size(request_data) }
     {
         parse();
     }
