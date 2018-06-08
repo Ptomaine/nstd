@@ -199,14 +199,13 @@ inline any_string<T> replace_regex(const any_string<T>& cstr, const any_string<T
 inline static const std::regex is_empty_or_ws_regex { R"(^\s*$)", std::regex_constants::ECMAScript | std::regex_constants::optimize };
 inline static const std::wregex is_empty_or_ws_wregex { LR"(^\s*$)", std::regex_constants::ECMAScript | std::regex_constants::optimize };
 
-inline bool is_empty_or_ws(const std::string &str)
+template<typename T>
+inline bool is_empty_or_ws(const any_string<T> &str)
 {
-    return std::regex_match(str, is_empty_or_ws_regex);
-}
+    static_assert(std::is_same_v<T, char> || std::is_same_v<T, wchar_t>, "Unsupported string type provided to is_empty_or_ws. Supported types are std::string and std::wstring");
 
-inline bool is_empty_or_ws(const std::wstring &str)
-{
-    return std::regex_match(str, is_empty_or_ws_wregex);
+    if constexpr (std::is_same_v<T, char>) return std::regex_match(str, is_empty_or_ws_regex);
+    else if constexpr (std::is_same_v<T, wchar_t>) return std::regex_match(str, is_empty_or_ws_wregex);
 }
 
 template <typename C, typename T>
