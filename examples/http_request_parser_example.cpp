@@ -32,29 +32,29 @@ int main()
     using namespace nstd::relinx;
     using namespace nstd::str;
 
-    std::vector<std::string> request_data
+    std::vector<std::string_view> request_data
     {
-        "GET /service/user?a=5&b=\"string%20param\" HTTP/1.1\r\nHost: www.test.com\r\nAccept: *\r\nAuth: private key\r\n\r\nMessage body"s,
-        "POST / HTTP/1.1\r\nHost: foo.com\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 13\r\n\r\nsay=Hi&to=Mom"s,
-        "PUT /new.html HTTP/1.1\r\nHost: example.com\r\nContent-Type: text/html\r\nContent-Length: 15\r\n\r\n<p>New file</p>"s,
-        "DELETE /file.html HTTP/1.1\r\n\r\nOptional body"s,
-        "CONNECT www.example.com:443 HTTP/1.1"s,
-        "HEAD /index.html"s,
-        "OPTIONS /index.html HTTP/1.1"s,
-        "PATCH /file.txt HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: application/example\r\nIf-Match: \"e0023aa4e\"\r\nContent-Length: 3\r\n\r\nXXX"s,
-        "TRACE /index.html"s,
-        "GET /",
+        "GET /service/user?a=5&b=\"string%20param\" HTTP/1.1\r\nHost: www.test.com\r\nAccept: *\r\nAuth: private key\r\n\r\nMessage body"sv,
+        "POST / HTTP/1.1\r\nHost: foo.com\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 13\r\n\r\nsay=Hi&to=Mom"sv,
+        "PUT /new.html HTTP/1.1\r\nHost: example.com\r\nContent-Type: text/html\r\nContent-Length: 15\r\n\r\n<p>New file</p>"sv,
+        "DELETE /file.html HTTP/1.1\r\n\r\nOptional body"sv,
+        "CONNECT www.example.com:443 HTTP/1.1"sv,
+        "HEAD /index.html"sv,
+        "OPTIONS /index.html HTTP/1.1"sv,
+        "PATCH /file.txt HTTP/1.1\r\nHost: www.example.com\r\nContent-Type: application/example\r\nIf-Match: \"e0023aa4e\"\r\nContent-Length: 3\r\n\r\nXXX"sv,
+        "TRACE /index.html"sv,
+        "GET /"sv,
 
-        " ",
-        "AG",
-        "AGRRRRRRR"
+        " "sv,
+        "AG"sv,
+        "AGRRRRRRR"sv
     };
 
-    for (auto &data : request_data)
+    for (const auto &data : request_data)
     {
         std::cout << std::endl << "---------------------------------------------------" << std::endl;
 
-        if (http_request_parser p { reinterpret_cast<uint8_t*>(std::data(data)), std::size(data) })
+        if (http_request_parser p { data })
         {
             std::cout << "Resource:\t" << p.get_resource() << std::endl;
             std::cout << "Content:\t" << p.get_content() << std::endl;
