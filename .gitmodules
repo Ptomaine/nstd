@@ -31,3 +31,6 @@
 [submodule "include/external/lodepng"]
 	path = include/external/lodepng
 	url = https://github.com/lvandeve/lodepng.git
+[submodule "include/external/ChaiScript"]
+	path = include/external/ChaiScript
+	url = https://github.com/ChaiScript/ChaiScript.git
