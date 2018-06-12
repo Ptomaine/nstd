@@ -60,6 +60,9 @@ solution "nstd_examples"
             objdir "obj/chaiscript_example/Release"
             targetdir "bin/chaiscript_example/Release"
 
+        configuration "linux"
+            links { "pthread", "dl" }
+
     project "date_example"
         files { "date_example.cpp" }
         configuration { "Debug" }
