@@ -156,7 +156,7 @@ solution "nstd_examples"
             targetdir "bin/pmr_example/Release"
 
     project "strings_example"
-        files { "strings_example.cpp" }
+        files { "strings_example.cpp", "../include/external/string_id/database.cpp", "../include/external/string_id/error.cpp", "../include/external/string_id/generator.cpp", "../include/external/string_id/string_id.cpp" }
         configuration { "Debug" }
             objdir "obj/strings_example/Debug"
             targetdir "bin/strings_example/Debug"

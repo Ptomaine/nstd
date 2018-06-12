@@ -6,12 +6,13 @@ The library currently contains the following features:
    * live_property - a templated wrapper class that emits signals when a value is changing/changed.
    * expiry_cache  - a container where a data can expire.
    * json - Niels Lohmann's json library [https://github.com/nlohmann/json]
-   * chaiscript - ChaiScript is an easy to use embedded scripting language for C++.
+   * chaiscript - ChaiScript is an easy to use embedded scripting language for C++ [https://github.com/ChaiScript/ChaiScript]
    * asio - boost's networking library, but no dependancy on boost [http://think-async.com/]
    * urdl - the library to download web content (depends on asio) [https://github.com/chriskohlhoff/urdl]
    * date - the date and time manipulations library created by Howard Hinnant [https://github.com/HowardHinnant/date]
    * units - r-lyeh's library to provide numerical quantities with units [https://github.com/r-lyeh/units]
    * base64, crc32 - base64 encoding/decoding, CRC32/constexpr CRC32.
+   * string_id - A small C++ library to handle hashed strings serving as identifiers [https://github.com/foonathan/string_id]
    * uuid - unique id generator
    * uri - class for URI manipulations.
    * http_request_parser - a simple class to parse incoming http requests.

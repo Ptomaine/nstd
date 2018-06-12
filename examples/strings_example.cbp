@@ -40,6 +40,10 @@
 			<Add option="-static" />
 			<Add option="-m64" />
 		</Linker>
+		<Unit filename="../include/external/string_id/database.cpp" />
+		<Unit filename="../include/external/string_id/error.cpp" />
+		<Unit filename="../include/external/string_id/generator.cpp" />
+		<Unit filename="../include/external/string_id/string_id.cpp" />
 		<Unit filename="strings_example.cpp" />
 		<Extensions>
 			<code_completion />

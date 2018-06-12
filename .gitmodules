@@ -34,3 +34,6 @@
 [submodule "include/external/ChaiScript"]
 	path = include/external/ChaiScript
 	url = https://github.com/ChaiScript/ChaiScript.git
+[submodule "include/external/string_id"]
+	path = include/external/string_id
+	url = https://github.com/foonathan/string_id.git
