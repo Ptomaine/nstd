@@ -20,11 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "external\string_id\string_id.hpp"
-#include "external\string_id\database.hpp"
-#include "external\string_id\error.hpp"
-#include "external\string_id\generator.hpp"
-#include "external\string_id\string_id.hpp"
+#include "external/string_id/database.hpp"
+#include "external/string_id/error.hpp"
+#include "external/string_id/generator.hpp"
+#include "external/string_id/string_id.hpp"
 
 namespace nstd::str
 {
