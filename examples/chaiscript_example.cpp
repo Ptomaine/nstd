@@ -77,7 +77,7 @@ class Factory
 
 int main()
 {
-  chaiscript::ChaiScript chai;
+  nstd::chaiscript::ChaiScript chai;
 
   chai.add(chaiscript::fun(&Entity::width), "width");
   chai.add(chaiscript::fun(&Entity::height), "height");
@@ -94,7 +94,7 @@ int main()
 
 
   Factory f;
-  chai.add(chaiscript::var(&f), "f");
+  chai.add(nstd::chaiscript::var(&f), "f");
 
   std::string script = R""(
     f.make_entity(10,10,1,1,"entity1").updater = fun(e){ e.x += 1; e.y += 1 };
