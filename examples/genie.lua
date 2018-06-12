@@ -50,6 +50,16 @@ solution "nstd_examples"
             objdir "obj/base64_example/Release"
             targetdir "bin/base64_example/Release"
 
+    project "chaiscript_example"
+        files { "chaiscript_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/chaiscript_example/Debug"
+            targetdir "bin/chaiscript_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/chaiscript_example/Release"
+            targetdir "bin/chaiscript_example/Release"
+
     project "date_example"
         files { "date_example.cpp" }
         configuration { "Debug" }
