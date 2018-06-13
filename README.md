@@ -47,7 +47,7 @@ On Linux do the same but use 'make' instead of 'mingw32-make'
 
 
 :small_orange_diamond: ***NOTE**: To compile the '**string_id**' source code, you need to install '**cmake**' first and then run it using '**string_id**' folder as a source.
-For Ubuntu Linux it might look like this:*
+On Ubuntu Linux it might look like this:*
 ```
 > sudo apt-get install cmake
 > cd include/external/string_id
