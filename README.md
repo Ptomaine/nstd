@@ -13,7 +13,7 @@ The library currently contains the following features:
    * date - the date and time manipulations library created by Howard Hinnant [https://github.com/HowardHinnant/date]
    * units - r-lyeh's library to provide numerical quantities with units [https://github.com/r-lyeh/units]
    * base64, crc32 - base64 encoding/decoding, CRC32/constexpr CRC32.
-   * string_id - A small C++ library to handle hashed strings serving as identifiers [https://github.com/foonathan/string_id]
+   * string_id - A small C++ library to handle hashed strings serving as identifiers (see notes at the end of this page) [https://github.com/foonathan/string_id]
    * uuid - unique id generator
    * uri - class for URI manipulations.
    * http_request_parser - a simple class to parse incoming http requests.
@@ -45,11 +45,11 @@ Go to the example folder and type:
 ```
 On Linux do the same but use 'make' instead of 'mingw32-make'
 
+
 *NOTE: To compile the '**string_id**' source code, you need to install '**cmake**' first and then run it using '**string_id**' folder as a source.
-For Ubuntu Linux it might look like this:
+For Ubuntu Linux it might look like this:*
 ```
 > sudo apt-get install cmake
 > cd include/external/string_id
 > cmake . .
 ```
-*
