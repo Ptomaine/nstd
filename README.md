@@ -41,7 +41,7 @@ GENie can be downloaded from https://github.com/bkaradzic/GENie and genie execut
 Go to the example folder and type:
 ```
 > genie gmake
-> mingw32-make
+> mingw32-make config=release
 ```
 On Linux do the same but use 'make' instead of 'mingw32-make'
 
