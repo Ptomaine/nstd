@@ -55,6 +55,7 @@ solution "nstd_examples"
         configuration { "Debug" }
             objdir "obj/chaiscript_example/Debug"
             targetdir "bin/chaiscript_example/Debug"
+            flags { "Optimize" }
 
         configuration { "Release" }
             objdir "obj/chaiscript_example/Release"
