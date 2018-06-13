@@ -46,7 +46,7 @@ Go to the example folder and type:
 On Linux do the same but use 'make' instead of 'mingw32-make'
 
 
-:red_circle: ***NOTE**: To compile the '**string_id**' source code, you need to install '**cmake**' first and then run it using '**string_id**' folder as a source.
+:small_orange_diamond: ***NOTE**: To compile the '**string_id**' source code, you need to install '**cmake**' first and then run it using '**string_id**' folder as a source.
 For Ubuntu Linux it might look like this:*
 ```
 > sudo apt-get install cmake
