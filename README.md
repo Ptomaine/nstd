@@ -3,6 +3,7 @@
 This is a C++17 utility library. nstd stands for non-standard.
 The library currently contains the following features:
    * signal_slot    - a signal/slot implementation that is thread safe and supports auto-disconnection from slots.
+   * relinx - LINQ-like data transformations
    * live_property - a templated wrapper class that emits signals when a value is changing/changed.
    * expiry_cache  - a container where a data can expire.
    * json - Niels Lohmann's json library [https://github.com/nlohmann/json]
@@ -16,7 +17,6 @@ The library currently contains the following features:
    * uuid - unique id generator
    * uri - class for URI manipulations.
    * http_request_parser - a simple class to parse incoming http requests.
-   * relinx - LINQ-like data transformations
    * planar_movements_recognizer - a set of classes to track and recognize planar movements and to execute corresponding commands
    * topological_sorter - the class to sort objects with dependencies (dependency solver)
    * sqlite3/sqlite c++ wrapper - sql database support [https://github.com/aminroosta/sqlite_modern_cpp]
@@ -44,3 +44,12 @@ Go to the example folder and type:
 > mingw32-make
 ```
 On Linux do the same but use 'make' instead of 'mingw32-make'
+
+*NOTE: To compile the '**string_id**' source code, you need to install '**cmake**' first and then run it using '**string_id**' folder as a source.
+For Ubuntu Linux it might look like this:
+```
+> sudo apt-get install cmake
+> cd include/external/string_id
+> cmake . .
+```
+*
