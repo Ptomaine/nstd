@@ -68,7 +68,9 @@
 #include "freetype2/src/base/ftbase.c"
 #undef FT_COMPONENT
 #include "freetype2/src/base/ftbitmap.c"
+#undef FT_COMPONENT
 #include "freetype2/src/cache/ftcache.c"
+#undef FT_COMPONENT
 #include "freetype2/src/base/ftdebug.c"
 #include "freetype2/src/base/ftfstype.c"
 #include "freetype2/src/base/ftgasp.c"
