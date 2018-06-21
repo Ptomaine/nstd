@@ -37,8 +37,8 @@ class uuid
 {
 public:
     uuid() : uuid_data(16, 0){}
-    uuid(const std::vector<uint8_t> &data) : uuid_data(data) { if (std::size(uuid_data) != 16) throw std::runtime_error("uuid"); }
-    uuid(std::vector<uint8_t> &&data) : uuid_data(std::move(data)) { if (std::size(uuid_data) != 16) throw std::runtime_error("uuid"); }
+    uuid(const std::vector<uint8_t> &data) : uuid_data(data) { if (std::size(uuid_data) != 16) { uuid_data.~vector(); throw std::runtime_error("uuid"); } }
+    uuid(std::vector<uint8_t> &&data) : uuid_data(std::move(data)) { if (std::size(uuid_data) != 16) { uuid_data.~vector(); throw std::runtime_error("uuid"); } }
     uuid(uuid&&) = default;
     uuid(const uuid&) = default;
     uuid &operator=(const uuid&) = default;
@@ -75,7 +75,7 @@ public:
             inserter++ = chars[use_uppercase][n];
         }
 
-        if (use_dashes) for (auto pos : dash_positions) result.insert(pos, sep_char);
+        if (use_dashes) for (auto pos : dash_positions) result.insert(pos, &sep_char, 1);
 
         return result;
     }
@@ -127,8 +127,8 @@ public:
         {
             if (uuid_str[12] != '4') return false;
 
-            if (std::any_of(std::begin(str), std::end(str), [](auto &&i) { return i == '-'; }))
-                for (auto pos : dash_positions) if(str[pos] != *sep_char) return false;
+            if (std::any_of(std::begin(str), std::end(str), [](auto &&i) { return i == sep_char; }))
+                for (auto pos : dash_positions) if(str[pos] != sep_char) return false;
         }
 
         return true;
@@ -144,7 +144,7 @@ public:
 
         for (auto it = std::begin(uuid_str), end = std::end(uuid_str); it != end; )
         {
-            if (*it == '-') { ++it; continue; }
+            if (*it == sep_char) { ++it; continue; }
 
             bytes[1] = *it++;
             bytes[0] = *it++;
@@ -178,8 +178,8 @@ private:
 
     inline static uint64_t seed[2] { 0 };
     inline static bool seeded { false };
-    static constexpr std::array<size_t, 4> dash_positions {8, 13, 18, 23};
-    static constexpr const char *const sep_char { "-" };
+    inline static constexpr std::array<size_t, 4> dash_positions {8, 13, 18, 23};
+    inline static constexpr const char sep_char { '-' };
 };
 
 }

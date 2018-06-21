@@ -32,7 +32,7 @@ int main()
     std::cout << "Generated uuid (dashes/upper case): " << uuid.to_string(true, true) << std::endl;
     std::cout << "Generated uuid (no dashes/upper case): " << uuid.to_string(false, true) << std::endl;
 
-    auto uuid_parsed { nstd::uuid::uuid::parse(uuid.to_string(false, true)) };
+    auto uuid_parsed { nstd::uuid::uuid::parse(uuid.to_string(true, true)) };
 
     if (uuid == uuid_parsed)
         std::cout << "Parsed uuid: " << uuid_parsed.to_string() << std::endl;
