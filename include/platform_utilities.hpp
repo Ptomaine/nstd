@@ -39,9 +39,11 @@ auto shell_execute(const std::string_view cmd)
 
     if (!pipe) throw std::runtime_error("popen() failed!");
 
-    while (!::feof(pipe.get()))
+    auto pipe_file { pipe.get() };
+
+    while (!::feof(pipe_file))
     {
-        if (::fgets(std::data(buffer), buffer_size, pipe.get()) != nullptr)
+        if (::fgets(std::data(buffer), buffer_size, pipe_file) != nullptr)
             result << std::data(buffer);
     }
 
