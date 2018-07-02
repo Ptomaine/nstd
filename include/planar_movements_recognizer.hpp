@@ -146,11 +146,11 @@ public:
     }
 };
 
-template<typename event_type, typename command_type, typename event_sequence_type = std::vector<event_type>, template<typename, typename> typename map_type = std::map>
+template<typename event_type, typename command_type, typename event_sequence_type = std::vector<event_type>>
 class command_recognizer
 {
 private:
-    map_type<event_sequence_type, command_type> _map_to_command {};
+    std::map<event_sequence_type, command_type> _map_to_command {};
     mutable bool _remove_repetitions { true };
 
     bool discover(event_sequence_type full_sequence, event_sequence_type current_event_sequence, bool strict, bool from_end) const
@@ -312,11 +312,11 @@ public:
     }
 };
 
-template<typename event_type, template<typename, typename> typename map_type = std::map>
+template<typename event_type>
 class event_filter
 {
 private:
-    map_type<event_type, event_type> _event_map {};
+    std::map<event_type, event_type> _event_map {};
     bool _transparent { false };
     event_type _default_event { event_type { 0 } };
 

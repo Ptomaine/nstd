@@ -20,10 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "platform.hpp"
 #include <cstdio>
 #include <memory>
-#include <stdexcept>
+#include <sstream>
 #include <string_view>
 #include <vector>
 
@@ -35,7 +34,13 @@ auto shell_execute(const std::string_view cmd)
     constexpr const std::size_t buffer_size { 1024 };
     std::vector<char> buffer(buffer_size);
     std::ostringstream result;
-    std::shared_ptr<FILE> pipe { ::popen(std::data(cmd), "r"), ::pclose };
+    std::shared_ptr<FILE> pipe { 
+#if defined(_MSC_VER)
+    ::_popen(std::data(cmd), "r"), ::_pclose
+#else
+    ::popen(std::data(cmd), "r"), ::pclose
+#endif
+    };
 
     if (!pipe) throw std::runtime_error("popen() failed!");
 
