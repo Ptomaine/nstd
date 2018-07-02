@@ -1126,7 +1126,7 @@ public:
     relinx_object() = delete;
     relinx_object(const relinx_object &) = delete;
     auto operator =(const relinx_object &) -> relinx_object & = delete;
-    relinx_object(relinx_object &&) noexcept = default;
+    relinx_object(relinx_object &&) = default;
 
     relinx_object(std::shared_ptr<ParentRelinxType> &&parent_relinx_object_ptr, const iterator_type &begin, const iterator_type &end) noexcept : _begin(begin), _end(end), _parent_relinx_object_ptr(std::forward<std::shared_ptr<ParentRelinxType>>(parent_relinx_object_ptr)) { }
     relinx_object(std::shared_ptr<ParentRelinxType> &&parent_relinx_object_ptr, iterator_type &&begin, iterator_type &&end) noexcept : _begin(std::forward<iterator_type>(begin)), _end(std::forward<iterator_type>(end)), _parent_relinx_object_ptr(std::forward<std::shared_ptr<ParentRelinxType>>(parent_relinx_object_ptr)) { }
