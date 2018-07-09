@@ -96,7 +96,7 @@ int main()
   Factory f;
   chai.add(nstd::chaiscript::var(&f), "f");
 
-  std::string script = R""(
+  std::string script = R"(
     f.make_entity(10,10,1,1,"entity1").updater = fun(e){ e.x += 1; e.y += 1 };
     f.make_entity(10,10,10,10,"entity2").updater = fun(e){ e.x += 2; e.y += 2 };
     f.make_entity(10,10,20,20,"entity3");
@@ -111,7 +111,7 @@ int main()
     print(f.get_entity("entity1").x == 2)
     print(f.get_entity("entity2").x == 12)
     print(f.get_entity("entity3").x == 20) // this one has no updater, so it stays the same
-    )"";
+    )";
 
 
   chai.eval(script);
