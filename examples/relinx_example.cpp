@@ -1000,6 +1000,10 @@ int main()
 
         assert(from(std::rbegin(t1_data), std::rend(t1_data))->to_string() == "123"s);
 
+        std::forward_list<int> lst {1, 2, 3};
+
+        assert(from(lst)->reverse()->to_string() == "321"s);
+
         print_duration("reverse():", start);
     }
 
