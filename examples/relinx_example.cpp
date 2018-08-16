@@ -1330,9 +1330,9 @@ int main()
         int cnt { 0 };
         std::vector<int> t1_data { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-        auto s { from(t1_data)->tee([&cnt](auto &&v) { ++cnt; })->where([](auto &&v) { return v <= 3; })->count() };
+        auto s { from(t1_data)->tee([&cnt](auto &&) { ++cnt; })->where([](auto &&v) { return v <= 3; })->count() };
 
-        assert(cnt == std::size(t1_data));
+        assert(cnt == static_cast<int>(std::size(t1_data)));
         assert(s == 3);
 
         print_duration("tee(f):", start);
