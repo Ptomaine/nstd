@@ -34,6 +34,9 @@ solution "nstd_examples"
             objdir "obj/asio_example/Release"
             targetdir "bin/asio_example/Release"
 
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
+
         configuration { "windows" }
             links { "ws2_32", "wsock32" }
 
@@ -112,6 +115,9 @@ solution "nstd_examples"
             objdir "obj/live_property_example/Release"
             targetdir "bin/live_property_example/Release"
 
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
+
         configuration "linux"
             links { "pthread" }
 
@@ -139,6 +145,9 @@ solution "nstd_examples"
         configuration { "Release" }
             objdir "obj/relinx_generator_example/Release"
             targetdir "bin/relinx_generator_example/Release"
+
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
 
         configuration "windows"
             links { "ws2_32", "wsock32" }
@@ -190,6 +199,9 @@ solution "nstd_examples"
             objdir "obj/sqlite_example/Release"
             targetdir "bin/sqlite_example/Release"
 
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
+
         configuration "linux"
             links { "pthread", "dl" }
 
@@ -218,6 +230,9 @@ solution "nstd_examples"
         configuration "windows"
             links { "ws2_32", "wsock32" }
 
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
+
         configuration "linux"
             links { "pthread" }
 
@@ -232,6 +247,9 @@ solution "nstd_examples"
         configuration { "Release" }
             objdir "obj/uuid_example/Release"
             targetdir "bin/uuid_example/Release"
+
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
 
         configuration "windows"
             links { "ws2_32", "wsock32" }
