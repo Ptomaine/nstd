@@ -32,7 +32,7 @@ using ordered_map = tsl::ordered_map<Key, T, Hash, KeyEqual, typename std::alloc
 namespace json
 {
 using namespace nlohmann;
-using json_ord = nlohmann::basic_json<ordered_map>;
+using json_ord = basic_json<ordered_map>;
 }
 
 }

@@ -40,6 +40,9 @@ solution "nstd_examples"
         configuration { "windows" }
             links { "ws2_32", "wsock32" }
 
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
+
         configuration "linux"
             links { "pthread" }
 
@@ -248,11 +251,11 @@ solution "nstd_examples"
             objdir "obj/uuid_example/Release"
             targetdir "bin/uuid_example/Release"
 
-        configuration "not vs*"
-            buildoptions { "-fpermissive" }
-
         configuration "windows"
             links { "ws2_32", "wsock32" }
+
+        configuration "not vs*"
+            buildoptions { "-fpermissive" }
 
         configuration "linux"
             links { "pthread" }
