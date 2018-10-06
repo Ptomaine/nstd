@@ -46,4 +46,67 @@ private:
     std::function<void(void)> _functor;
 };
 
+namespace fibonacci
+{
+
+uint64_t recursive_fibonacci(const uint64_t n)
+{
+    return n < 2 ? n : recursive_fibonacci(n - 1) + recursive_fibonacci(n - 2);
+}
+
+uint64_t non_recursive_fibonacci(const uint64_t n)
+{
+    if (n < 2) return n;
+    if (n == 2) return 1;
+
+    uint64_t prev_prev { 1 }, prev { 1 }, current { 0 };
+
+    for (uint64_t idx { 3 }; idx <= n; ++idx)
+    {
+        current = prev_prev + prev;
+        prev_prev = prev;
+        prev = current;
+    }
+
+    return current;
+}
+
+template<uint64_t N>
+struct compile_time_fibonacci
+{
+    enum : uint64_t
+    {
+        value = compile_time_fibonacci<N - 1>::value + compile_time_fibonacci<N - 2>::value
+    };
+};
+
+template<>
+struct compile_time_fibonacci<0>
+{
+    enum : uint64_t
+    {
+        value = 0
+    };
+};
+
+template<>
+struct compile_time_fibonacci<1>
+{
+    enum : uint64_t
+    {
+        value = 1
+    };
+};
+
+template<>
+struct compile_time_fibonacci<2>
+{
+    enum : uint64_t
+    {
+        value = 1
+    };
+};
+
+}
+
 }
