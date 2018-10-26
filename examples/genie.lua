@@ -35,13 +35,13 @@ solution "nstd_examples"
             targetdir "bin/asio_example/Release"
 
         configuration "not vs*"
-            buildoptions { "-fpermissive" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration { "windows" }
             links { "ws2_32", "wsock32" }
 
         configuration "not vs*"
-            buildoptions { "-fpermissive" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
             links { "pthread" }
@@ -119,7 +119,7 @@ solution "nstd_examples"
             targetdir "bin/live_property_example/Release"
 
         configuration "not vs*"
-            buildoptions { "-fpermissive" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
             links { "pthread" }
@@ -150,7 +150,7 @@ solution "nstd_examples"
             targetdir "bin/relinx_generator_example/Release"
 
         configuration "not vs*"
-            buildoptions { "-fpermissive" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration "windows"
             links { "ws2_32", "wsock32" }
@@ -203,7 +203,7 @@ solution "nstd_examples"
             targetdir "bin/sqlite_example/Release"
 
         configuration "not vs*"
-            buildoptions { "-fpermissive" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
             links { "pthread", "dl" }
@@ -234,7 +234,7 @@ solution "nstd_examples"
             links { "ws2_32", "wsock32" }
 
         configuration "not vs*"
-            buildoptions { "-fpermissive" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
             links { "pthread" }
@@ -255,7 +255,7 @@ solution "nstd_examples"
             links { "ws2_32", "wsock32" }
 
         configuration "not vs*"
-            buildoptions { "-fpermissive" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
             links { "pthread" }
