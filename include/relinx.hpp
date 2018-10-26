@@ -1708,21 +1708,21 @@ public:
 
         \param keyFunctor A key selector functor.
 
-        \return A relinx_object that contains grouped elements by a key in a std::map container where values of each key is a std::vector container.
+        \return A relinx_object that contains grouped elements by a key in a std::map container where values of each key is a std::vector container of iterators to values.
     */
     template<typename KeyFunctor>
     auto group_by(KeyFunctor &&keyFunctor) noexcept
     {
         using KeyType = typename std::decay<decltype(keyFunctor(value_type()))>::type;
 
-        default_map<KeyType, default_container<value_type>> group_map;
+        default_map<KeyType, default_container<iterator_type>> group_map;
 
         auto begin = _begin;
         auto end = _end;
 
         while (begin != end)
         {
-            group_map[keyFunctor(*begin)].emplace_back(*begin);
+            group_map[keyFunctor(*begin)].emplace_back(begin);
             ++begin;
         }
 
