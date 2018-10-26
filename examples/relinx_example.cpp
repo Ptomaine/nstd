@@ -622,8 +622,8 @@ int main()
         assert(t1_res->count() == 2);
         assert(t1_res->first([](auto &&i){ return i.first == "Doe"s; }).second.size() == 4);
         assert(t1_res->first([](auto &&i){ return i.first == "Poo"s; }).second.size() == 2);
-        assert(from(t1_res->first([](auto &&i){ return i.first == "Doe"s; }).second)->contains([](auto &&i) { return i.FirstName == "Sam"s; }));
-        assert(from(t1_res->first([](auto &&i){ return i.first == "Poo"s; }).second)->contains([](auto &&i) { return i.FirstName == "Anna"s; }));
+        assert(from(t1_res->first([](auto &&i){ return i.first == "Doe"s; }).second)->contains([](auto &&i) { return (*i).FirstName == "Sam"s; }));
+        assert(from(t1_res->first([](auto &&i){ return i.first == "Poo"s; }).second)->contains([](auto &&i) { return (*i).FirstName == "Anna"s; }));
         assert(t2_res->single([](auto &&i){ return i.first == (std::hash<std::string>()("Doe"s) ^ (std::hash<std::string>()("John"s) << 1)); }).second.size() == 2);
         assert(t2_res->single([](auto &&i){ return i.first == (std::hash<std::string>()("Doe"s) ^ (std::hash<std::string>()("Sam"s) << 1)); }).second.size() == 2);
 
