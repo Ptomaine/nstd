@@ -41,7 +41,7 @@ struct scoped_transaction
     scoped_transaction(database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << _begin_cmd; };
     ~scoped_transaction()
     {
-        if (std::uncaught_exceptions()) _rollback = true;
+        if (std::uncaught_exceptions() && !_rollback) _rollback = true;
 
         _db << (_rollback ? _rollback_cmd : _commit_cmd);
     };
@@ -89,19 +89,19 @@ namespace nstd::db
 
 namespace sqlite = sqlite;
 
-template<typename Target, typename... ColTypes>
-struct records
+template<typename TargetObjectType, typename... ConstructorArgs>
+struct object_records
 {
-    using data_container_type = std::vector<Target>;
+    using data_container_type = std::vector<TargetObjectType>;
     data_container_type records;
 
-    records() = default;
-    records(std::size_t preallocate) { records.reserve(preallocate); }
-    ~records() = default;
+    object_records() = default;
+    object_records(std::size_t preallocate) { records.reserve(preallocate); }
+    ~object_records() = default;
 
-    void operator()(ColTypes... args)
+    void operator()(ConstructorArgs... args)
     {
-        records.emplace_back(std::forward_as_tuple(std::move(args)...));
+        records.emplace_back(std::forward<ConstructorArgs>(args)...);
     };
 
     data_container_type &data()

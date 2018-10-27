@@ -64,6 +64,24 @@ int main()
         std::cout << "name: " << name << ";\tpassword: " << password << std::endl;
     };
 
+    {
+        struct Rec
+        {
+            int id;
+            std::string name;
+            std::string pass;
+
+            Rec(int _id, const std::string &_name, const std::string &_pass) : id {_id}, name {_name}, pass {_pass} {}
+            Rec() = default;
+        };
+        nstd::db::object_records<Rec, int, std::string, std::string> orecs;
+        db << "select id, name, password from example where id between 30 and 80 order by id desc" >> orecs;
+        nstd::relinx::from(std::data(orecs))->for_each([] (auto &&obj)
+        {
+            std::cout << "id: " << obj.id << ";\tname: " << obj.name << ";\tpassword: " << obj.pass << std::endl;
+        });
+    }
+
     db << "drop table example";
     db << "create table example(id text primary key, name text, password text, json_data text)";
 
