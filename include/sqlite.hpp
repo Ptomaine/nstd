@@ -28,6 +28,7 @@ extern "C"
 #define MODERN_SQLITE_STD_OPTIONAL_SUPPORT
 #include "external/sqlite_modern_cpp/hdr/sqlite_modern_cpp.h"
 #include <chrono>
+#include <exception>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -37,13 +38,21 @@ namespace sqlite
 
 struct scoped_transaction
 {
-    scoped_transaction(database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << "begin;"; };
-    ~scoped_transaction() { _db << (_rollback ? "rollback;" : "commit;"); };
+    scoped_transaction(database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << _begin_cmd; };
+    ~scoped_transaction()
+    {
+        if (std::uncaught_exceptions()) _rollback = true;
+
+        _db << (_rollback ? _rollback_cmd : _commit_cmd);
+    };
 
     void rollback() { _rollback = true; }
     void commit() { _rollback = false; }
 
 private:
+    constexpr static const char* _begin_cmd { "begin" };
+    constexpr static const char* _rollback_cmd { "rollback" };
+    constexpr static const char* _commit_cmd { "commit" };
     database &_db;
     bool _rollback { true };
 };

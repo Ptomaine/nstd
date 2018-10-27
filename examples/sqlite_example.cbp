@@ -35,6 +35,7 @@
 			<Add option="-m64" />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-unused-but-set-variable" />
+			<Add option="-fpermissive" />
 			<Add directory="../include" />
 			<Add directory="../include/external/sqlite" />
 			<Add directory="../include/external/json/include" />
@@ -51,6 +52,7 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<fortran_project />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>
