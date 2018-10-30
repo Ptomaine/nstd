@@ -41,7 +41,7 @@ struct scoped_transaction
     scoped_transaction(database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << _begin_cmd; };
     ~scoped_transaction()
     {
-        if (std::uncaught_exceptions()) _rollback = true;
+        if (std::uncaught_exceptions() && !_rollback) _rollback = true;
 
         _db << (_rollback ? _rollback_cmd : _commit_cmd);
     };
@@ -50,9 +50,9 @@ struct scoped_transaction
     void commit() { _rollback = false; }
 
 private:
-    constexpr static const char* _begin_cmd { "begin" };
-    constexpr static const char* _rollback_cmd { "rollback" };
-    constexpr static const char* _commit_cmd { "commit" };
+    inline constexpr static const char* const _begin_cmd { "begin" };
+    inline constexpr static const char* const _rollback_cmd { "rollback" };
+    inline constexpr static const char* const _commit_cmd { "commit" };
     database &_db;
     bool _rollback { true };
 };
