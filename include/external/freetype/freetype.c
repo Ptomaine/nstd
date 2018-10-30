@@ -79,7 +79,8 @@
 #include "freetype2/src/base/ftstroke.c"
 #include "freetype2/src/base/ftsystem.c"
 #include "freetype2/src/smooth/smooth.c"
-
+#include "freetype2/src/base/ftlcdfil.c"
+#include "freetype2/src/base/ftfntfmt.c"
 /*
  * Modules
  *
