@@ -52,8 +52,9 @@ int main()
     ++tailed_int;
 
     std::cout << tailed_int[0] << ">>" << tailed_int[1] << ">>" << tailed_int[2] << std::endl;
+    std::cout << tailed_int.current() << ">>" << tailed_int.previous() << std::endl;
 
-	std::cout << "exitting..." << std::endl;
+    std::cout << "exitting..." << std::endl;
 
     return 0;
 }

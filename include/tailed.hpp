@@ -51,13 +51,27 @@ public:
 	{
 	}
 
-	tailed(const value_type &value) : _values(tail_limit)
+	tailed(const value_type &value) : tailed()
 	{
 		_values.front() = value;
 	}
 
 	tailed(const tailed<value_type, tail_limit> &copy) : _values(copy._values)
 	{
+	}
+
+	value_type &current()
+	{
+		return _values.front();
+	}
+
+	value_type &previous()
+	{
+		static_assert(tail_limit > 1);
+
+		auto it { std::begin(_values) };
+
+		return std::advance(it, 1), *it;
 	}
 
 	tailed &operator = (const value_type &value)
