@@ -21,6 +21,7 @@ SOFTWARE.
 */
 
 #include <functional>
+#include <unordered_map>
 
 namespace nstd::utilities
 {
@@ -70,6 +71,28 @@ uint64_t non_recursive_fibonacci(const uint64_t n)
 
     return current;
 }
+
+class optimized_fibonacci
+{
+public:
+    optimized_fibonacci() = default;
+    uint64_t operator ()(const uint64_t n)
+    {
+        if (_already_calculated.find(n) == std::end(_already_calculated))
+        {
+            for (auto idx { _high_water_mark + 1 }; idx <= n; ++idx)
+                _already_calculated[idx] = _already_calculated[idx - 1] + _already_calculated[idx - 2];
+
+            _high_water_mark = n;
+        }
+
+        return _already_calculated[n];
+    }
+
+private:
+    inline static std::unordered_map<uint64_t, uint64_t> _already_calculated { {0, 0}, {1, 1}, {2, 1} };
+    inline static uint64_t _high_water_mark { 2 };
+};
 
 template<uint64_t N>
 struct compile_time_fibonacci
