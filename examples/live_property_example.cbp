@@ -34,6 +34,7 @@
 			<Add option="-std=c++17" />
 			<Add option="-m64" />
 			<Add option="-fexceptions" />
+			<Add option="-fpermissive" />
 			<Add directory="../include" />
 			<Add directory="../include/external/json/include" />
 		</Compiler>
@@ -46,6 +47,7 @@
 			<code_completion />
 			<envvars />
 			<debugger />
+			<fortran_project />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>
