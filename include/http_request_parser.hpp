@@ -54,6 +54,12 @@ public:
         parse();
     }
 
+    http_request_parser() = default;
+    http_request_parser(http_request_parser &&) = default;
+    http_request_parser &operator =(http_request_parser &&) = default;
+    http_request_parser(const http_request_parser &) = default;
+    http_request_parser &operator =(const http_request_parser &) = default;
+
     bool is_ok() const
     {
         return  _request_data &&
