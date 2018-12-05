@@ -351,14 +351,14 @@ public:
     }
 
 public:
-    std::vector<char> recv(std::size_t size_to_read)
+    std::vector<uint8_t> recv(std::size_t size_to_read)
     {
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
 
-        std::vector<char> data(size_to_read, 0);
+        std::vector<uint8_t> data(size_to_read, 0);
 
-        ssize_t rd_size = ::recv(_fd, const_cast<char*>(std::data(data)), static_cast<int>(size_to_read), 0);
+        ssize_t rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))), static_cast<int>(size_to_read), 0);
 
         if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
 
@@ -369,12 +369,12 @@ public:
         return data;
     }
 
-    std::size_t send(const std::vector<char>& data, std::size_t size_to_write)
+    std::size_t send(const std::vector<uint8_t>& data, std::size_t size_to_write)
     {
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
 
-        ssize_t wr_size = ::send(_fd, data.data(), static_cast<int>(size_to_write), 0);
+        ssize_t wr_size = ::send(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))), static_cast<int>(size_to_write), 0);
 
         if (wr_size == SOCKET_ERROR) throw sharp_tcp_error { "send() failure" };
 
@@ -1049,7 +1049,7 @@ public:
     struct read_result
     {
         bool success { false };
-        std::vector<char> buffer {};
+        std::vector<uint8_t> buffer {};
     };
 
     struct write_result
@@ -1069,7 +1069,7 @@ public:
 
     struct write_request
     {
-        std::vector<char> buffer {};
+        std::vector<uint8_t> buffer {};
         async_write_callback_t async_write_callback {};
     };
 
@@ -1167,7 +1167,7 @@ private:
 
         try
         {
-            result.buffer  = _socket.recv(request.size);
+            result.buffer  = std::move(_socket.recv(request.size));
             result.success = true;
         }
         catch (const sharp_tcp_error&)
