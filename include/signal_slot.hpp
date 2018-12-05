@@ -913,6 +913,16 @@ public:
         return get_signal(signal_name);
     }
 
+    auto begin() const
+    {
+        return std::begin(_signals);
+    }
+
+    auto end() const
+    {
+        return std::end(_signals);
+    }
+
 protected:
     std::unordered_map<std::string, std::unique_ptr<signal_type>> _signals {};
 };
