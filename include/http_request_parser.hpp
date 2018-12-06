@@ -54,6 +54,22 @@ public:
         parse();
     }
 
+    http_request_parser() = default;
+    http_request_parser(http_request_parser &&) = default;
+    http_request_parser &operator =(http_request_parser &&) = default;
+    http_request_parser(const http_request_parser &) = default;
+    http_request_parser &operator =(const http_request_parser &) = default;
+
+    void reset(const std::string_view request_data)
+    {
+        clear();
+
+        _request_data = reinterpret_cast<const uint8_t*>(std::data(request_data));
+        _request_data_size = std::size(request_data);
+
+        parse();
+    }
+
     bool is_ok() const
     {
         return  _request_data &&
@@ -175,6 +191,20 @@ public:
     bool is_trace() const
     {
         return _http_method_traits.method == http_method_id::TRACE;
+    }
+
+    void clear()
+    {
+        _request_data = nullptr;
+        _request_data_size = 0;
+
+        _http_method_traits = { http_method_id::UNKNOWN, 0xffffffff };
+        _resource = nullptr;
+        _version_part = nullptr;
+        _protocol = nullptr;
+        _version = nullptr;
+        _content = nullptr;
+        _headers.clear();
     }
 
 protected:
