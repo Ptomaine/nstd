@@ -47,6 +47,13 @@ public:
         UNKNOWN
     };
 
+    http_request_parser(const std::vector<uint8_t> &request_data) :
+        _request_data { std::data(request_data) },
+        _request_data_size { std::size(request_data) }
+    {
+        parse();
+    }
+
     http_request_parser(const std::string_view request_data) :
         _request_data { reinterpret_cast<const uint8_t*>(std::data(request_data)) },
         _request_data_size { std::size(request_data) }
@@ -59,6 +66,16 @@ public:
     http_request_parser &operator =(http_request_parser &&) = default;
     http_request_parser(const http_request_parser &) = default;
     http_request_parser &operator =(const http_request_parser &) = default;
+
+    void reset(const std::vector<uint8_t> &request_data)
+    {
+        clear();
+
+        _request_data = std::data(request_data);
+        _request_data_size = std::size(request_data);
+
+        parse();
+    }
 
     void reset(const std::string_view request_data)
     {
