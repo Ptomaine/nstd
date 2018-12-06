@@ -51,7 +51,7 @@ int main()
     std::this_thread::sleep_for(30ms);
 
     auto msg { "...testing remote signal..."s };
-    remote_signals.emit_remote_signal("test_signal"s, std::vector<char> { std::begin(msg), std::end(msg) });
+    remote_signals.emit_remote_signal("test_signal"s, std::vector<uint8_t> { std::begin(msg), std::end(msg) });
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);

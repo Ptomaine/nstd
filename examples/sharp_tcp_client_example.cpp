@@ -35,7 +35,7 @@ int main()
 
     using namespace std::literals;
     std::string msg { "Hello world!"s };
-    std::vector<char> message { std::begin(msg), std::end(msg) };
+    std::vector<uint8_t> message { std::begin(msg), std::end(msg) };
 
     client.async_write({ message, nullptr });
 

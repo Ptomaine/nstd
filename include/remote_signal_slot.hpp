@@ -35,16 +35,16 @@ public:
         _server.start(host, port);
     }
 
-    void emit_remote_signal(const std::string &signal_name, const std::vector<char> &message)
+    void emit_remote_signal(const std::string &signal_name, const std::vector<uint8_t> &message)
     {
-        std::vector<char> msg { std::begin(signal_name), std::end(signal_name) };
+        std::vector<uint8_t> msg { std::begin(signal_name), std::end(signal_name) };
 
         msg.insert(std::end(msg), '\0');
         msg.insert(std::end(msg), std::begin(message), std::end(message));
 
         for (auto &&client : _server.get_clients())
         {
-            client->async_write({ msg, nullptr});
+            client->async_write({ msg, nullptr });
         }
     }
 
@@ -79,7 +79,7 @@ private:
 
                 if (_signal_queue.exists(signal_name))
                 {
-                    std::vector<char> data { ++divider_pos, std::end(result.buffer) };
+                    std::vector<uint8_t> data { ++divider_pos, std::end(result.buffer) };
 
                      _signal_queue[signal_name]->emit(std::ref(data));
                 }
@@ -94,7 +94,7 @@ private:
     }
 
     nstd::net::tcp_client _client {};
-    nstd::signal_slot::queued_signal_ex_set<std::vector<char>> _signal_queue {};
+    nstd::signal_slot::queued_signal_ex_set<std::vector<uint8_t>> _signal_queue {};
 };
 
 }
