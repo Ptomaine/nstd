@@ -20,7 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <cctype>
 #include <functional>
+#include <string>
+#include <string_view>
 #include <unordered_map>
 
 namespace nstd::utilities
@@ -45,6 +48,31 @@ public:
 
 private:
     std::function<void(void)> _functor;
+};
+
+struct case_insensitive_hash
+{
+    size_t operator()(const std::string_view& key) const
+    {
+        std::string lower { key };
+
+        std::transform(std::begin(lower), std::end(lower), std::begin(lower), [](auto &&c){ return std::tolower(c); });
+
+        return std::hash<std::string>()(lower);
+    }
+};
+
+struct case_insensitive_equal
+{
+    bool operator()(const std::string_view& left, const std::string_view& right) const
+    {
+        std::string a { left }, b { right };
+
+        std::transform(std::begin(a), std::end(a), std::begin(a), [](auto &&c){ return std::tolower(c); });
+        std::transform(std::begin(b), std::end(b), std::begin(b), [](auto &&c){ return std::tolower(c); });
+
+        return a == b;
+    }
 };
 
 namespace fibonacci
