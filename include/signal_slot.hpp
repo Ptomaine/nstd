@@ -908,6 +908,11 @@ public:
         return signal_names;
     }
 
+    auto get_signal_count() const
+    {
+        return std::size(_signals);
+    }
+
     const std::unique_ptr<signal_type> &operator[](const std::string &signal_name)
     {
         return get_signal(signal_name);
