@@ -22,9 +22,6 @@
 [submodule "include/external/freetype/freetype2"]
 	path = include/external/freetype/freetype2
 	url = http://git.savannah.nongnu.org/r/freetype/freetype2.git
-[submodule "resources/fonts"]
-	path = resources/fonts
-	url = https://github.com/google/fonts.git
 [submodule "include/external/cmdline_options"]
 	path = include/external/cmdline_options
 	url = https://github.com/Fytch/ProgramOptions.hxx.git
