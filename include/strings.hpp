@@ -20,6 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <cwctype>
+#include <cctype>
 #include <codecvt>
 #include <iomanip>
 #include <limits>
@@ -196,16 +198,12 @@ inline any_string<T> replace_regex(const any_string<T>& cstr, const any_string<T
     return std::regex_replace(cstr, std::basic_regex<T>{ from, opts }, to);
 }
 
-inline static const std::regex is_empty_or_ws_regex { R"(^\s*$)", std::regex_constants::ECMAScript | std::regex_constants::optimize };
-inline static const std::wregex is_empty_or_ws_wregex { LR"(^\s*$)", std::regex_constants::ECMAScript | std::regex_constants::optimize };
-
 template<typename T>
 inline bool is_empty_or_ws(const any_string<T> &str)
 {
     static_assert(std::is_same_v<T, char> || std::is_same_v<T, wchar_t>, "Unsupported string type provided to is_empty_or_ws. Supported types are std::string and std::wstring");
 
-    if constexpr (std::is_same_v<T, char>) return std::regex_match(str, is_empty_or_ws_regex);
-    else if constexpr (std::is_same_v<T, wchar_t>) return std::regex_match(str, is_empty_or_ws_wregex);
+    return std::all_of(std::begin(str), std::end(str), [](auto &&c) { if constexpr (std::is_same_v<T, char>) return std::isspace(static_cast<unsigned char>(c)); else return std::iswspace(c); });
 }
 
 template <typename C, typename T>
