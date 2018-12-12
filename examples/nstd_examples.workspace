@@ -10,6 +10,7 @@
 		<Project filename="freetype_example.cbp" />
 		<Project filename="giant_example.cbp" />
 		<Project filename="http_request_parser_example.cbp" />
+		<Project filename="http_resource_manager_example.cbp" />
 		<Project filename="live_property_example.cbp" />
 		<Project filename="pmr_example.cbp" />
 		<Project filename="relinx_example.cbp" />

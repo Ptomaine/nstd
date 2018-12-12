@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include "uri.hpp"
 
-namespace nstd::http
+namespace nstd::net
 {
 
 class http_request_parser

@@ -28,7 +28,7 @@ SOFTWARE.
 int main()
 {
     using namespace std::string_literals;
-    using namespace nstd::http;
+    using namespace nstd::net;
     using namespace nstd::relinx;
     using namespace nstd::str;
 

@@ -369,3 +369,19 @@ solution "nstd_examples"
         configuration { "Release" }
             objdir "obj/http_request_parser_example/Release"
             targetdir "bin/http_request_parser_example/Release"
+
+    project "http_resource_manager_example"
+        files { "http_resource_manager_example.cpp" }
+        configuration { "Debug" }
+            objdir "obj/http_resource_manager_example/Debug"
+            targetdir "bin/http_resource_manager_example/Debug"
+
+        configuration { "Release" }
+            objdir "obj/http_resource_manager_example/Release"
+            targetdir "bin/http_resource_manager_example/Release"
+
+        configuration { "windows" }
+            links { "ws2_32", "wsock32" }
+
+        configuration "linux"
+            links { "pthread" }
