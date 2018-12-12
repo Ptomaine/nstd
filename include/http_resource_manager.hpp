@@ -23,6 +23,7 @@ SOFTWARE.
 #include <algorithm>
 #include <exception>
 #include <iostream>
+#include <filesystem>
 #include <map>
 #include <memory>
 #include <string>
@@ -38,6 +39,7 @@ namespace nstd::net
 {
 using namespace std::string_literals;
 using namespace nstd::signal_slot;
+namespace fs = std::filesystem;
 
 class http_resource_manager
 {
@@ -51,6 +53,7 @@ public:
     	std::string resource_pattern;
         std::smatch match;
     	std::shared_ptr<tcp_client> client;
+	http_resource_manager *manager;
     };
 
     struct response
@@ -266,6 +269,16 @@ public:
         _cons = _status_signals[status_code].connect(std::move(callback));
     }
 
+    const fs::path &get_root_path() const
+    {
+        return _root_folder;
+    }
+
+    void set_root_path(const fs::path &new_root)
+    {
+        _root_folder = new_root;
+    }
+
 protected:
 
     tcp_server<65536> _server;
@@ -275,6 +288,7 @@ protected:
     nstd::signal_slot::signal<request_ptr> _not_found_signal;
     std::mutex _add_route_mutex;
     connection_bag _cons;
+    fs::path _root_folder { fs::current_path() / "www"s };
 
     void on_new_request(const std::shared_ptr<tcp_client>& client, const tcp_client::read_result& res)
     {
@@ -303,6 +317,7 @@ protected:
                     req->resource_pattern = std::move(pattern);
                     req->match = std::move(sm);
                     req->client = client;
+                    req->manager = this;
 
                     try
                     {
@@ -332,6 +347,7 @@ protected:
                 req->parser = std::move(p);
                 req->resource = std::move(resource);
                 req->client = client;
+                req->manager = this;
 
                 _status_signals[response::http_status_codes::NotFound].emit(req);
             }

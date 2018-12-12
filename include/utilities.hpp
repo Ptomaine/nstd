@@ -21,7 +21,9 @@ SOFTWARE.
 */
 
 #include <cctype>
+#include <filesystem>
 #include <functional>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -73,6 +75,26 @@ struct case_insensitive_equal
 
         return a == b;
     }
+};
+
+template<typename CharT = char>
+auto read_file_content(const std::filesystem::path &filepath)
+{
+    std::vector<CharT> contents;
+    std::ifstream in(filepath, std::ios::in | std::ios::binary);
+
+    if (in)
+    {
+        in.seekg(0, std::ios::end);
+
+        contents.resize(in.tellg());
+
+        in.seekg(0, std::ios::beg);
+        in.read(&contents[0], contents.size());
+        in.close();
+    }
+
+    return contents;
 };
 
 namespace fibonacci

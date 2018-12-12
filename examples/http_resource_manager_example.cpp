@@ -30,6 +30,7 @@ SOFTWARE.
 #include <string_view>
 #include <sstream>
 #include "http_resource_manager.hpp"
+#include "utilities.hpp"
 
 using namespace std::string_literals;
 
@@ -79,10 +80,23 @@ int main(int argc, char *argv[])
 
     mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [](auto &&req)
 	{
-		http_resource_manager::response resp { S::NotFound };
+        auto full_path { req->manager->get_root_path() / ("."s + req->resource) };
 
-		resp.content << "<html><head><title>Not Found</title></head><body><h1>404 Not Found</h1></body></html>";
-		resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
+        if (fs::exists(full_path) && fs::is_regular_file(full_path))
+        {
+            http_resource_manager::response resp { S::OK };
+            auto data { nstd::utilities::read_file_content(full_path) };
+
+            resp.content.write(std::data(data), std::size(data));
+            resp.add_content_type_header(fs::path { full_path }.extension().string().substr(1)).add_header("Connection", "Closed").send_response(req->client);
+        }
+        else
+        {
+            http_resource_manager::response resp { S::NotFound };
+
+            resp.content << "<html><head><title>Not Found</title></head><body><h1>404 Not Found</h1></body></html>";
+            resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
+        }
 	});
 
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
