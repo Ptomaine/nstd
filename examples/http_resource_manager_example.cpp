@@ -58,10 +58,29 @@ int main(int argc, char *argv[])
 
     mgr.add_route(M::GET, R"(^\/$)", [](auto &&req) // /
 	{
-		http_resource_manager::response resp { S::OK };
+        auto full_path { req->manager->get_root_path() };
 
-		resp.content << "<html><body><p>Index</p></body></html>";
-		resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
+        full_path += "/index.html"s;
+
+        std::cout << full_path << std::endl;
+
+        if (fs::exists(full_path) && fs::is_regular_file(full_path))
+        {
+            http_resource_manager::response resp { S::TemporaryRedirect };
+
+            std::cout << full_path << std::endl;
+
+            resp.add_header("Location", "/index.html").send_response(req->client);
+
+            std::cout << full_path << std::endl;
+        }
+        else
+        {
+            http_resource_manager::response resp { S::OK };
+
+            resp.content << "<html><body><p>Index</p></body></html>";
+            resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
+        }
 	});
 
     mgr.add_route(M::GET, R"(^\/time$)", [](auto &&req) // /time
