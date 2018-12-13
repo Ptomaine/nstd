@@ -263,8 +263,11 @@ protected:
         static constexpr const uint32_t TRACE_method_skip_size   { 6 };
         static constexpr const uint8_t CR                        { 0x0a };
         static constexpr const uint8_t LF                        { 0x0d };
+        static constexpr const uint8_t DASH                      { 0x2d };
+        static constexpr const uint16_t DDASH                    { 0x2d2d };
         static constexpr const uint16_t CRLF                     { 0x0a0d };
         static constexpr const uint32_t CRLFCRLF                 { 0x0a0d0a0d };
+        static constexpr const uint32_t CRLFDDASH                { 0x0a0d2d2d };
     };
 
     struct http_method_traits
