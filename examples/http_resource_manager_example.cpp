@@ -95,14 +95,19 @@ int main(int argc, char *argv[])
     mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [](auto &&req)
 	{
         auto full_path { req->manager->get_root_path() / ("."s + req->resource) };
+        auto media_type { fs::path { full_path }.extension().string() };
 
-        if (fs::exists(full_path) && fs::is_regular_file(full_path))
+        if (std::size(media_type) > 0 && media_type[0] == '.') media_type = media_type.substr(1);
+
+        const auto &[type_exists, it] = media_types::find(media_type);
+
+        if (fs::exists(full_path) && fs::is_regular_file(full_path) && type_exists)
         {
             http_resource_manager::response resp { S::OK };
             auto data { nstd::utilities::read_file_content(full_path) };
 
             resp.content.write(std::data(data), std::size(data));
-            resp.add_content_type_header(fs::path { full_path }.extension().string().substr(1)).add_header("Connection", "Closed").send_response(req->client);
+            resp.add_content_type_header(media_type).add_header("Connection", "Closed").send_response(req->client);
         }
         else
         {

@@ -639,6 +639,7 @@ protected:
         { "prs.pti"sv, "image/prs.pti"sv },
         { "pwg-raster"sv, "image/pwg-raster"sv },
         { "svg+xml"sv, "image/svg+xml"sv },
+        { "svg"sv, "image/svg+xml"sv },
         { "t38"sv, "image/t38"sv },
         { "tif"sv, "image/tiff"sv },
         { "tiff"sv, "image/tiff"sv },
