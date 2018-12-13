@@ -62,17 +62,12 @@ int main(int argc, char *argv[])
 
         full_path += "/index.html"s;
 
-        std::cout << full_path << std::endl;
-
         if (fs::exists(full_path) && fs::is_regular_file(full_path))
         {
             http_resource_manager::response resp { S::TemporaryRedirect };
 
-            std::cout << full_path << std::endl;
-
-            resp.add_header("Location", "/index.html").send_response(req->client);
-
-            std::cout << full_path << std::endl;
+            resp.content << "<html><body><p>Redirect link: <a href=\"/index.html\">click here</a></p></body></html>";
+            resp.add_content_type_header("html", "utf-8").add_header("Location", "/index.html").send_response(req->client);
         }
         else
         {
