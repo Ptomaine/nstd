@@ -267,7 +267,7 @@ protected:
         static constexpr const uint16_t DDASH                    { 0x2d2d };
         static constexpr const uint16_t CRLF                     { 0x0a0d };
         static constexpr const uint32_t CRLFCRLF                 { 0x0a0d0a0d };
-        static constexpr const uint32_t CRLFDDASH                { 0x0a0d2d2d };
+        static constexpr const uint32_t DDASHCRLF                { 0x2d2d0a0d };
     };
 
     struct http_method_traits
