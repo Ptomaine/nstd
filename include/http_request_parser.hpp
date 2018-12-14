@@ -313,31 +313,33 @@ protected:
             break;
         }
 
+        auto request_data_end = _request_data + _request_data_size;
+
         if (!_request_data || _http_method_traits.method == http_method_id::UNKNOWN) return;
 
         const uint8_t *resource_begin = _request_data + _http_method_traits.method_skip_size;
 
-        while (*resource_begin && *resource_begin == ' ') ++resource_begin;
+        while (resource_begin < request_data_end && *resource_begin == ' ') ++resource_begin;
 
-        if (!*resource_begin) return;
+        if (resource_begin >= request_data_end) return;
 
         const uint8_t *version_begin = resource_begin;
 
-        while (*version_begin && *version_begin != ' ') ++version_begin;
+        while (version_begin < request_data_end && *version_begin != ' ') ++version_begin;
 
         _resource = { reinterpret_cast<const char*>(resource_begin), static_cast<size_t>(version_begin - resource_begin) };
 
-        if (!*version_begin) return;
+        if (version_begin >= request_data_end) return;
 
-        while (*version_begin && *version_begin == ' ') ++version_begin;
+        while (version_begin < request_data_end && *version_begin == ' ') ++version_begin;
 
-        if (!*version_begin) return;
+        if (version_begin >= request_data_end) return;
 
         const uint8_t *version_end = version_begin;
 
-        while (*version_end && static_cast<uint8_t>(*version_end) != http_constants::LF) ++version_end;
+        while (version_end < request_data_end && static_cast<uint8_t>(*version_end) != http_constants::LF) ++version_end;
 
-        if (!*version_begin) return;
+        if (version_begin >= request_data_end) return;
 
         _version_part = { reinterpret_cast<const char*>(version_begin), static_cast<size_t>(version_end - version_begin) };
 
@@ -351,27 +353,27 @@ protected:
 
         if (static_cast<uint8_t>(*version_end) == http_constants::CR) ++version_end;
 
-        if (!version_end) return;
+        if (version_end >= request_data_end) return;
 
         const uint8_t *param_begin{ version_end }, *param_end{ version_end }, *value_begin{ nullptr }, *value_end{ nullptr };
 
-        while (*param_begin && *reinterpret_cast<const uint16_t*>(param_begin) != http_constants::CRLF)
+        while (param_begin < request_data_end && *reinterpret_cast<const uint16_t*>(param_begin) != http_constants::CRLF)
         {
-            while (*param_end && *param_end != ':') ++param_end;
+            while (param_end < request_data_end && *param_end != ':') ++param_end;
 
-            if (!*param_end) break;
+            if (param_end >= request_data_end) break;
 
             value_begin = param_end + 1;
 
-            while (*value_begin && *value_begin == ' ') ++value_begin;
+            while (value_begin < request_data_end && *value_begin == ' ') ++value_begin;
 
             value_end = value_begin;
 
-            while (*value_end && static_cast<uint8_t>(*value_end) != http_constants::LF) ++value_end;
+            while (value_end < request_data_end && static_cast<uint8_t>(*value_end) != http_constants::LF) ++value_end;
 
             _headers.insert({ { reinterpret_cast<const char*>(param_begin), static_cast<size_t>(param_end - param_begin) }, { reinterpret_cast<const char*>(value_begin), static_cast<size_t>(value_end - value_begin) } });
 
-            if (!static_cast<uint8_t>(*value_end)) break;
+            if (value_end >= request_data_end) break;
 
             param_begin = value_end + 1;
 
@@ -382,7 +384,7 @@ protected:
 
         auto content_ptr { (*reinterpret_cast<const uint16_t*>(param_begin) == http_constants::CRLF) ? param_begin + 2 : nullptr };
 
-        if (content_ptr) _content = {reinterpret_cast<const char*>(content_ptr), static_cast<size_t>(_request_data + _request_data_size - content_ptr) };
+        if (content_ptr) _content = { reinterpret_cast<const char*>(content_ptr), static_cast<size_t>(_request_data + _request_data_size - content_ptr) };
     }
 
     const uint8_t *_request_data { nullptr };
