@@ -313,7 +313,7 @@ protected:
             break;
         }
 
-        auto request_data_end = _request_data + _request_data_size;
+        auto request_data_end { _request_data + _request_data_size };
 
         if (!_request_data || _http_method_traits.method == http_method_id::UNKNOWN) return;
 
