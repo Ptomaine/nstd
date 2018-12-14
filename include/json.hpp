@@ -21,16 +21,16 @@ SOFTWARE.
 */
 
 #include "external/json/include/nlohmann/json.hpp"
-#include "ordered_map_set.hpp"
+#include "fifo_map.hpp"
 
 namespace nstd
 {
 
-template<class Key, class T, class Ignore, class Allocator, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
-using ordered_map = tsl::ordered_map<Key, T, Hash, KeyEqual, typename std::allocator_traits<Allocator>::template rebind_alloc<std::pair<Key, T>>>;
-
 namespace json
 {
+template<class Key, class T, class Ignore, class Allocator>
+using ordered_map = fifo_map<Key, T, fifo_map_compare<Key>, Allocator>;
+
 using namespace nlohmann;
 using json_ord = basic_json<ordered_map>;
 }

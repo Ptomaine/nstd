@@ -10,9 +10,6 @@
 [submodule "include/external/giant"]
 	path = include/external/giant
 	url = https://github.com/r-lyeh/giant.git
-[submodule "include/external/ordered-map"]
-	path = include/external/ordered-map
-	url = https://github.com/Tessil/ordered-map.git
 [submodule "include/external/units"]
 	path = include/external/units
 	url = https://github.com/r-lyeh/units.git
@@ -34,3 +31,6 @@
 [submodule "include/external/string_id"]
 	path = include/external/string_id
 	url = https://github.com/foonathan/string_id.git
+[submodule "include/external/fifo_map"]
+	path = include/external/fifo_map
+	url = https://github.com/nlohmann/fifo_map.git

@@ -20,9 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "external/ordered-map/include/tsl/ordered_map.h"
+#include "external/fifo_map/src/fifo_map.hpp"
 
 namespace nstd
 {
-namespace tsl = tsl;
+using namespace nlohmann;
 }
