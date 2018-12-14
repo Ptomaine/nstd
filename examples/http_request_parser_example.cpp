@@ -75,6 +75,21 @@ int main()
         }
     }
 
+    const char *data =
+    "--boundary\r\n"
+    "Content-Disposition: form-data; name=\"AttachedFile1\"; filename=\"horror-photo-1.jpg\"\r\n"
+    "Content-Type: image/jpeg\r\n"
+    "\r\n"
+    "data1\r\n"
+    "data2\r\n"
+    "--boundary--\r\n";
+
+    nstd::net::multipart_form_data mparser;
+
+    auto mdata { mparser.parse_data(data) };
+
+    std::cout << std::endl << "Multipart form data type: " << mdata[0].headers["Content-Disposition"][""] << std::endl;
+
     std::cout << std::endl << "exiting..." << std::endl;
     return 0;
 }

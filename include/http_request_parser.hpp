@@ -229,28 +229,28 @@ protected:
 
     struct http_constants
     {
-        static constexpr const uint32_t CONN_method_header_chars { 0x4e4e4f43 };
-        static constexpr const uint32_t ECT_method_header_chars  { 0x20544345 };
+        static constexpr const uint32_t CONN_method_header_chars { 0x4e4e4f43 }; // endianess?
+        static constexpr const uint32_t ECT_method_header_chars  { 0x20544345 }; // endianess?
 
-        static constexpr const uint32_t DELE_method_header_chars { 0x454c4544 };
-        static constexpr const uint32_t ETE_method_header_chars  { 0x20455445 };
+        static constexpr const uint32_t DELE_method_header_chars { 0x454c4544 }; // endianess?
+        static constexpr const uint32_t ETE_method_header_chars  { 0x20455445 }; // endianess?
 
-        static constexpr const uint32_t GET_method_header_chars  { 0x20544547 };
+        static constexpr const uint32_t GET_method_header_chars  { 0x20544547 }; // endianess?
 
-        static constexpr const uint32_t HEAD_method_header_chars { 0x44414548 };
+        static constexpr const uint32_t HEAD_method_header_chars { 0x44414548 }; // endianess?
 
-        static constexpr const uint32_t OPTI_method_header_chars { 0x4954504f };
-        static constexpr const uint32_t ONS_method_header_chars  { 0x20534e4f };
+        static constexpr const uint32_t OPTI_method_header_chars { 0x4954504f }; // endianess?
+        static constexpr const uint32_t ONS_method_header_chars  { 0x20534e4f }; // endianess?
 
-        static constexpr const uint32_t PATC_method_header_chars { 0x43544150 };
-        static constexpr const uint32_t TCH_method_header_chars  { 0x20484354 };
+        static constexpr const uint32_t PATC_method_header_chars { 0x43544150 }; // endianess?
+        static constexpr const uint32_t TCH_method_header_chars  { 0x20484354 }; // endianess?
 
-        static constexpr const uint32_t POST_method_header_chars { 0x54534f50 };
+        static constexpr const uint32_t POST_method_header_chars { 0x54534f50 }; // endianess?
 
-        static constexpr const uint32_t PUT_method_header_chars  { 0x20545550 };
+        static constexpr const uint32_t PUT_method_header_chars  { 0x20545550 }; // endianess?
 
-        static constexpr const uint32_t TRAC_method_header_chars { 0x43415254 };
-        static constexpr const uint32_t ACE_method_header_chars  { 0x20454341 };
+        static constexpr const uint32_t TRAC_method_header_chars { 0x43415254 }; // endianess?
+        static constexpr const uint32_t ACE_method_header_chars  { 0x20454341 }; // endianess?
 
         static constexpr const uint32_t CONNECT_method_skip_size { 8 };
         static constexpr const uint32_t DELETE_method_skip_size  { 7 };
@@ -263,11 +263,8 @@ protected:
         static constexpr const uint32_t TRACE_method_skip_size   { 6 };
         static constexpr const uint8_t CR                        { 0x0a };
         static constexpr const uint8_t LF                        { 0x0d };
-        static constexpr const uint8_t DASH                      { 0x2d };
-        static constexpr const uint16_t DDASH                    { 0x2d2d };
-        static constexpr const uint16_t CRLF                     { 0x0a0d };
-        static constexpr const uint32_t CRLFCRLF                 { 0x0a0d0a0d };
-        static constexpr const uint32_t DDASHCRLF                { 0x2d2d0a0d };
+        static constexpr const uint16_t CRLF                     { 0x0a0d }; // endianess?
+        static constexpr const uint32_t CRLFCRLF                 { 0x0a0d0a0d }; // endianess?
     };
 
     struct http_method_traits
@@ -392,6 +389,187 @@ protected:
     http_method_traits _http_method_traits { http_method_id::UNKNOWN, 0xffffffff };
     std::string_view _resource {}, _version_part {}, _protocol {}, _version {}, _content {};
     std::unordered_map<std::string_view, std::string_view> _headers;
+};
+
+class multipart_form_data
+{
+public:
+    struct multipart_item
+    {
+        std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::string_view>> headers;
+        std::string_view content;
+    };
+
+    std::vector<multipart_item> parse_data(std::string_view data, std::string_view boundary = {})
+    {
+        _data = data;
+
+        if (std::empty(boundary))
+        {
+            auto data_ptr{ std::data(_data) };
+            auto cursor{ data_ptr };
+            auto data_end{ data_ptr + std::size(_data) };
+
+            while (cursor < data_end && *reinterpret_cast<const uint16_t*>(cursor) != DDASH) ++cursor;
+
+            if (cursor < data_end)
+            {
+                cursor += sizeof(DDASH);
+
+                auto btag_start{ cursor };
+
+                while (cursor < data_end && *reinterpret_cast<const uint16_t*>(cursor) != CRLF && *reinterpret_cast<const uint16_t*>(cursor) != DDASH) ++cursor;
+
+                boundary = { btag_start, static_cast<size_t>(cursor - btag_start) };
+            }
+        }
+
+        _boundary = boundary;
+
+        return parse();
+    }
+
+    static std::unordered_map<std::string_view, std::string_view> parse_header_value(std::string_view header_value)
+    {
+        std::unordered_map<std::string_view, std::string_view> result;
+        auto cursor{ std::data(header_value) };
+        auto data_end{ cursor + std::size(header_value) };
+
+        while (cursor < data_end)
+        {
+            std::string_view name, value;
+
+            while (cursor < data_end && *cursor == ' ') ++cursor;
+
+            auto cursor_prev{ cursor };
+            bool name_consumed{ false };
+
+            while (cursor < data_end && *cursor != ';')
+            {
+                if (*cursor == '=' && !name_consumed)
+                {
+                    name = { cursor_prev, static_cast<size_t>(cursor - cursor_prev) };
+
+                    ++cursor;
+
+                    if (*cursor == '\"') ++cursor;
+
+                    cursor_prev = cursor;
+                    name_consumed = true;
+                }
+
+                ++cursor;
+            }
+
+            bool remove_quotes{ *(cursor - 1) == '\"' };
+
+            if (remove_quotes) --cursor;
+
+            value = { cursor_prev, static_cast<size_t>(cursor - cursor_prev) };
+
+            if (remove_quotes) ++cursor;
+
+            result.emplace(std::move(name), std::move(value));
+
+            ++cursor;
+        }
+
+        return result;
+    }
+
+protected:
+    std::string_view _data;
+    std::string_view _boundary;
+    std::vector<multipart_item> _multipart_items;
+    static constexpr const uint16_t DDASH{ 0x2d2d };
+    static constexpr const uint16_t CRLF{ 0x0a0d }; // endianess?
+    static constexpr const uint32_t CRLFDDASH{ 0x2d2d0a0d }; // endianess?
+
+    std::vector<multipart_item> parse()
+    {
+        std::vector<multipart_item> multipart_items;
+
+        auto data_ptr{ std::data(_data) };
+        auto data_end{ data_ptr + std::size(_data) };
+        auto btag{ std::data(_boundary) };
+        auto btag_length{ std::size(_boundary) };
+        auto cursor{ data_ptr };
+
+        if (std::empty(_data) || std::empty(_boundary)) return {};
+
+        while (cursor < data_end)
+        {
+            multipart_item item;
+
+            while (cursor < data_end && *reinterpret_cast<const uint16_t*>(cursor) != DDASH) ++cursor;
+
+            if (cursor >= data_end) break;
+
+            cursor += sizeof(DDASH);
+
+            auto btag_check{ btag };
+            auto btag_end{ cursor + btag_length };
+
+            while (cursor < btag_end && *cursor++ == *btag_check++);
+
+            if (cursor < btag_end) break;
+            if (*reinterpret_cast<const uint16_t*>(cursor) != CRLF) break;
+
+            cursor += sizeof(CRLF);
+
+            while (*reinterpret_cast<const uint16_t*>(cursor) != CRLF)
+            {
+                auto param_start{ cursor };
+
+                while (cursor < data_end && *cursor != ':') ++cursor;
+
+                std::string_view param{ param_start, static_cast<size_t>(cursor - param_start) };
+
+                if (cursor >= data_end) break;
+
+                cursor += 1;
+
+                while (cursor < data_end && *cursor == ' ') ++cursor;
+
+                if (cursor >= data_end) break;
+
+                auto value_start{ cursor };
+
+                while (cursor < data_end && *reinterpret_cast<const uint16_t*>(cursor) != CRLF) ++cursor;
+
+                item.headers.emplace(std::move(param), parse_header_value({ value_start, static_cast<size_t>(cursor - value_start) }));
+
+                cursor += sizeof(CRLF);
+            }
+
+            if (*reinterpret_cast<const uint16_t*>(cursor) == CRLF && *reinterpret_cast<const uint16_t*>(cursor - sizeof(CRLF)) == CRLF)
+            {
+                cursor += sizeof(CRLF);
+
+                auto body_start{ cursor };
+
+                while (cursor < data_end && *reinterpret_cast<const uint32_t*>(cursor) != CRLFDDASH) ++cursor;
+
+                btag_check = btag;
+                btag_end = cursor + sizeof(CRLFDDASH) + btag_length;
+
+                auto tag_start{ cursor + sizeof(CRLFDDASH) };
+
+                while (tag_start < data_end && tag_start < btag_end && *tag_start++ == *btag_check++);
+
+                if (tag_start >= btag_end)
+                {
+                    item.content = { body_start, static_cast<size_t>(cursor - body_start) };
+                }
+
+                cursor += sizeof(CRLF);
+            }
+
+            multipart_items.emplace_back(std::move(item));
+        }
+
+        return multipart_items;
+    }
 };
 
 }
