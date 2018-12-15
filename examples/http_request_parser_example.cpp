@@ -81,14 +81,27 @@ int main()
     "Content-Type: image/jpeg\r\n"
     "\r\n"
     "data1\r\n"
+    "--mixed\r\n"
+    "--mixed\r\n"
     "data2\r\n"
+    "--boundary\r\n"
+    "Content-Disposition: form-data; name=\"AttachedFile2\"; filename=\"horror-photo-2.jpg\"\r\n"
+    "Content-Type: image/jpeg\r\n"
+    "\r\n"
+    "data11\r\n"
+    "--mixed\r\n"
+    "--mixed\r\n"
+    "data22\r\n"
     "--boundary--\r\n";
 
     nstd::net::multipart_form_data mparser;
 
     auto mdata { mparser.parse_data(data) };
 
-    std::cout << std::endl << "Multipart form data type: " << mdata[0].headers["Content-Disposition"][""] << std::endl;
+    std::cout << std::endl << "Multipart form data type: '" << mdata[0].headers["Content-Disposition"][""] << "'" << std::endl;
+    std::cout << "Multipart form data size: " << std::size(mdata) << std::endl;
+    std::cout << "Multipart mixed form data detected: '" << (mdata[1].mixed_content ? "true" : "false") << "'" << std::endl;
+    std::cout << "Multipart form data: '" << mdata[1].content << "'" << std::endl;
 
     std::cout << std::endl << "exiting..." << std::endl;
     return 0;

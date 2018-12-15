@@ -431,6 +431,7 @@ public:
     {
         std::unordered_map<std::string_view, std::unordered_map<std::string_view, std::string_view>> headers;
         std::string_view content;
+        bool mixed_content;
     };
 
     std::vector<multipart_item> parse_data(std::string_view data, std::string_view boundary = {})
@@ -579,24 +580,34 @@ protected:
             if (*reinterpret_cast<const uint16_t*>(cursor) == http_constants::CRLF && *reinterpret_cast<const uint16_t*>(cursor - sizeof(http_constants::CRLF)) == http_constants::CRLF)
             {
                 cursor += sizeof(http_constants::CRLF);
-
+                
                 auto body_start{ cursor };
 
-                while (cursor < data_end && *reinterpret_cast<const uint32_t*>(cursor) != http_constants::CRLFDDASH) ++cursor;
+                item.mixed_content = false;
 
-                btag_check = btag;
-                btag_end = cursor + sizeof(http_constants::CRLFDDASH) + btag_length;
-
-                auto tag_start{ cursor + sizeof(http_constants::CRLFDDASH) };
-
-                while (tag_start < data_end && tag_start < btag_end && *tag_start++ == *btag_check++);
-
-                if (tag_start >= btag_end)
+                while (cursor < data_end)
                 {
-                    item.content = { body_start, static_cast<size_t>(cursor - body_start) };
-                }
+                    while (cursor < data_end && *reinterpret_cast<const uint32_t*>(cursor) != http_constants::CRLFDDASH) ++cursor;
 
-                cursor += sizeof(http_constants::CRLF);
+                    btag_check = btag;
+                    btag_end = cursor + sizeof(http_constants::CRLFDDASH) + btag_length;
+
+                    auto tag_start{ cursor + sizeof(http_constants::CRLFDDASH) };
+
+                    while (tag_start < data_end && tag_start < btag_end && *tag_start++ == *btag_check++);
+
+                    if (tag_start >= btag_end)
+                    {
+                        item.content = { body_start, static_cast<size_t>(cursor - body_start) };
+                        cursor += sizeof(http_constants::CRLF);
+
+                        break;
+                    }
+                    else
+                        item.mixed_content = true;
+
+                    cursor += sizeof(http_constants::CRLF);
+                }
             }
 
             multipart_items.emplace_back(std::move(item));
