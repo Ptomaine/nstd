@@ -120,7 +120,7 @@ public:
             }
         }
 
-        if (_http_method_traits.method == http_method_id::POST)
+        if (_http_method_traits.method == http_method_id::POST || _http_method_traits.method == http_method_id::PUT)
         {
             if (auto content_type { _headers.find("Content-Type") };
                 content_type == _headers.end() ||
