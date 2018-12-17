@@ -45,6 +45,14 @@ int main(int argc, char *argv[])
     using M = http_request_parser::http_method_id;
     using S = http_resource_manager::response::http_status_codes;
 
+    http_resource_manager::response bad_request { S::BadRequest };
+    bad_request.content << "<html><head><title>Bad Request</title></head><body><h1>400 Bad Request</h1></body></html>";
+    bad_request.add_content_type_header("html", "utf-8").add_header("Connection", "Closed");
+
+    http_resource_manager::response not_found { S::NotFound };
+    not_found.content << "<html><head><title>Not Found</title></head><body><h1>404 Not Found</h1></body></html>";
+    not_found.add_content_type_header("html", "utf-8").add_header("Connection", "Closed");
+
     http_resource_manager mgr;
 
     mgr.add_route(M::GET, R"(^\/services\/([^/]+)\/([^/]+))", [](auto &&req) // /services/v8/user
@@ -100,31 +108,40 @@ int main(int argc, char *argv[])
 		throw std::runtime_error("Test exception");
 	});
 
-    mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [](auto &&req)
+    mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [&bad_request, &not_found](auto &&req)
 	{
         if (req->completed) return; else req->completed = true;
 
-        auto full_path { req->manager->get_root_path() / ("."s + req->resource) };
-        auto media_type { fs::path { full_path }.extension().string() };
+        bool processed { false };
 
-        if (std::size(media_type) > 0 && media_type[0] == '.') media_type = media_type.substr(1);
-
-        const auto &[type_exists, it] = media_types::find(media_type);
-
-        if (fs::exists(full_path) && fs::is_regular_file(full_path) && type_exists)
+        if (req->parser.is_get())
         {
-            http_resource_manager::response resp { S::OK };
-            auto data { nstd::utilities::read_file_content(full_path) };
+            auto full_path { req->manager->get_root_path() / ("."s + req->resource) };
+            auto media_type { fs::path { full_path }.extension().string() };
 
-            resp.content.write(std::data(data), std::size(data));
-            resp.add_content_type_header(media_type).add_header("Connection", "Closed").send_response(req->client);
+            if (std::size(media_type) > 0 && media_type[0] == '.') media_type = media_type.substr(1);
+
+            const auto &[type_exists, it] = media_types::find(media_type);
+
+            if (fs::exists(full_path) && fs::is_regular_file(full_path) && type_exists)
+            {
+                http_resource_manager::response resp { S::OK };
+                auto data { nstd::utilities::read_file_content(full_path) };
+
+                resp.content.write(std::data(data), std::size(data));
+                resp.add_content_type_header(media_type).add_header("Connection", "Closed").send_response(req->client);
+            }
+            else
+            {
+                not_found.send_response(req->client);
+            }
+
+            processed = true;
         }
-        else
-        {
-            http_resource_manager::response resp { S::NotFound };
 
-            resp.content << "<html><head><title>Not Found</title></head><body><h1>404 Not Found</h1></body></html>";
-            resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
+        if (!processed)
+        {
+            bad_request.send_response(req->client);
         }
 	});
 
