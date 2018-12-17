@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
 
     mgr.add_route(M::GET, R"(^\/services\/([^/]+)\/([^/]+))", [](auto &&req) // /services/v8/user
 	{
+        if (req->completed) return; else req->completed = true;
+
 		http_resource_manager::response resp { S::OK };
 		std::string service_name { req->match[2] };
 
@@ -58,6 +60,8 @@ int main(int argc, char *argv[])
 
     mgr.add_route(M::GET, R"(^\/$)", [](auto &&req) // /
 	{
+        if (req->completed) return; else req->completed = true;
+
         auto full_path { req->manager->get_root_path() };
 
         full_path += "/index.html"s;
@@ -80,6 +84,8 @@ int main(int argc, char *argv[])
 
     mgr.add_route(M::GET, R"(^\/time$)", [](auto &&req) // /time
 	{
+        if (req->completed) return; else req->completed = true;
+
 		http_resource_manager::response resp { S::OK };
 		auto cur_time { std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()) };
 
@@ -89,11 +95,15 @@ int main(int argc, char *argv[])
 
     mgr.add_route(M::GET, R"(^\/throw$)", [](auto &&req) // /throw
 	{
+        if (req->completed) return; else req->completed = true;
+
 		throw std::runtime_error("Test exception");
 	});
 
     mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [](auto &&req)
 	{
+        if (req->completed) return; else req->completed = true;
+
         auto full_path { req->manager->get_root_path() / ("."s + req->resource) };
         auto media_type { fs::path { full_path }.extension().string() };
 

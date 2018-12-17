@@ -52,8 +52,9 @@ public:
         std::string resource;
     	std::string resource_pattern;
         std::smatch match;
-    	std::shared_ptr<tcp_client> client;
-	http_resource_manager *manager;
+        std::shared_ptr<tcp_client> client;
+        http_resource_manager *manager;
+        bool completed { false };
     };
 
     struct response
@@ -295,7 +296,7 @@ protected:
             http_request_parser p { res.buffer };
 
             std::string resource { p.get_resource_uri().get_path() };
-            int consumed { false };
+            int completed { false };
 
             std::scoped_lock { _add_route_mutex };
 
@@ -320,9 +321,12 @@ protected:
                     try
                     {
                         sig.second->emit(req);
+
+                        if (completed = req->completed; !completed) continue;
                     }
                     catch(const std::exception &e)
                     {
+                        completed = true;
                         response resp { response::InternalServerError };
 
                         resp.content << "<html><head><title>Internal Server Error</title></head><body><h1>500 Internal Server Error</h1>" <<
@@ -331,13 +335,11 @@ protected:
                         resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(client);
                     }
 
-                    consumed = true;
-
                     break;
                 }
             }
 
-            if (!consumed)
+            if (!completed)
             {
                 auto req { std::make_shared<request>() };
 
