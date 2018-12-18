@@ -356,15 +356,28 @@ public:
         create_socket_if_necessary();
         check_or_set_type(type::CLIENT);
 
+        uint32_t read_idx { 0 };
+        ssize_t rd_size { 0 }, total_size { 0 };
         std::vector<uint8_t> data(size_to_read, 0);
 
-        ssize_t rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))), static_cast<int>(size_to_read), 0);
+        while (true)
+        {
+            data.resize(size_to_read * (read_idx + 1));
 
-        if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
+            rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))) + (size_to_read * read_idx), static_cast<int>(size_to_read), 0);
 
-        if (rd_size == 0) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
+            if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
 
-        data.resize(rd_size);
+            total_size += rd_size;
+
+            if (rd_size == 0 || rd_size < static_cast<ssize_t>(size_to_read)) break;
+
+            ++read_idx;
+        }
+
+        if (!total_size) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
+
+        data.resize(total_size);
 
         return data;
     }
