@@ -47,10 +47,10 @@ public:
 
     struct request
     {
-    	std::vector<uint8_t> data;
-    	http_request_parser parser;
+        std::vector<uint8_t> data;
+        http_request_parser parser;
         std::string resource;
-    	std::string resource_pattern;
+        std::string resource_pattern;
         std::smatch match;
         std::shared_ptr<tcp_client> client;
         http_resource_manager *manager;
@@ -59,8 +59,8 @@ public:
 
     struct response
     {
-    	enum http_status_codes : int
-    	{
+        enum http_status_codes : int
+        {
             Continue = 100,
             SwitchingProtocols = 101,
             OK = 200,
@@ -107,10 +107,10 @@ public:
             ServiceUnavailable = 503,
             GatewayTimeout = 504,
             HttpVersionNotSupported = 505
-    	};
+        };
 
-    	inline static std::unordered_map<int, std::string> http_status_code_map
-    	{
+        inline static std::unordered_map<int, std::string> http_status_code_map
+        {
             { Continue, "Continue"s },
             { SwitchingProtocols, "Switching Protocols"s },
             { OK, "OK"s },
@@ -157,81 +157,82 @@ public:
             { ServiceUnavailable, "Service Unavailable"s },
             { GatewayTimeout, "Gateway Timeout"s },
             { HttpVersionNotSupported, "Http Version Not Supported"s }
-    	};
+        };
 
         const std::string NL { "\r\n"s };
         const std::string NLNL { "\r\n\r\n"s };
 
-    	response(int response_code)
-    	{
-    		if (auto it { http_status_code_map.find(response_code) }; it != std::end(http_status_code_map))
-    		{
-    			stream << http_vesion << " " << (*it).first << " " << (*it).second << NL;
-    		}
-    	}
+        response(int response_code)
+        {
+            if (auto it { http_status_code_map.find(response_code) }; it != std::end(http_status_code_map))
+            {
+                stream << http_vesion << " " << (*it).first << " " << (*it).second << NL;
+            }
+        }
 
-    	response &add_header(const std::string &header_name, const std::string &header_value)
-    	{
-    		headers << header_name << ": " << header_value << NL;
+        response &add_header(const std::string &header_name, const std::string &header_value)
+        {
+            headers << header_name << ": " << header_value << NL;
 
-    		return *this;
-    	}
+            return *this;
+        }
 
-    	response &add_raw_header(const std::string &header)
-    	{
-    		headers << header << NL;
+        response &add_raw_header(const std::string &header)
+        {
+            headers << header << NL;
 
-    		return *this;
-    	}
+            return *this;
+        }
 
-    	response &add_content_type_header(const std::string &media_name, const std::string &encoding = {})
-    	{
-    		if (const auto &[exists, it] = media_types::find(media_name); exists)
-    		{
-    			headers << "Content-Type: " << (*it).second;
+        response &add_content_type_header(const std::string &media_name, const std::string &encoding = {})
+        {
+            if (const auto &[exists, it] = media_types::find(media_name); exists)
+            {
+                headers << "Content-Type: " << (*it).second;
 
-    			if (!std::empty(encoding))
-    				headers << "; charset=" << encoding;
+                if (!std::empty(encoding)) headers << "; charset=" << encoding;
 
-    			headers << NL;
-    		}
+                headers << NL;
+            }
 
-    		return *this;
-    	}
+            return *this;
+        }
 
-    	tcp_client::write_request &prepare_response_data()
-    	{
-    		if (std::empty(response_data.buffer))
-    		{
-    			std::string out_headers { headers.str() };
-    			std::string out_content { content.str() };
+        tcp_client::write_request &prepare_response_data()
+        {
+            if (std::empty(response_data.buffer))
+            {
+                std::string out_headers { headers.str() };
+                std::string out_content { content.str() };
 
-    			if (!std::empty(out_headers)) stream << out_headers;
+                if (!std::empty(out_headers)) stream << out_headers;
 
-    			if (!std::empty(out_content))
-    			{
-    				stream << "Content-Length: " << std::size(out_content) << NLNL;
-    				stream << out_content;
-    			}
+                auto has_content { !std::empty(out_content) };
 
-    			std::string result { stream.str() };
+                if (has_content) stream << "Content-Length: " << std::size(out_content) << NL;
 
-    			response_data.buffer.resize(std::size(result));
+                stream << NL;
 
-    			std::copy(std::begin(result), std::end(result), std::begin(response_data.buffer));
-    		}
+                if (has_content) stream.write(std::data(out_content), std::size(out_content));
+
+                std::string result { stream.str() };
+
+                response_data.buffer.resize(std::size(result));
+
+                std::copy(std::begin(result), std::end(result), std::begin(response_data.buffer));
+            }
 
             return response_data;
-    	}
+        }
 
-    	void send_response(std::shared_ptr<tcp_client> client, std::function<void(tcp_client::write_result&)> callback = nullptr)
-    	{
-    		auto &resp { prepare_response_data() };
+        void send_response(std::shared_ptr<tcp_client> client, std::function<void(tcp_client::write_result&)> callback = nullptr)
+        {
+            auto &resp { prepare_response_data() };
 
-        	resp.async_write_callback = std::move(callback);
+            resp.async_write_callback = std::move(callback);
 
-    		client->async_write(resp);
-    	}
+            client->async_write(resp);
+        }
 
         std::ostringstream stream;
         std::ostringstream headers;

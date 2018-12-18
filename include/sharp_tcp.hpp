@@ -24,7 +24,7 @@ SOFTWARE.
 #include <condition_variable>
 #include <cstring>
 #include <functional>
-#include <list>
+#include <deque>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -1299,7 +1299,7 @@ public:
         return _io_service;
     }
 
-    const std::list<std::shared_ptr<tcp_client>>& get_clients() const
+    const std::deque<std::shared_ptr<tcp_client>>& get_clients() const
     {
         return _clients;
     }
@@ -1315,7 +1315,7 @@ private:
             {
                 client->set_on_disconnection_handler([this, client]() { on_client_disconnected(client); });
 
-                _clients.push_back(client);
+                _clients.emplace_back(std::move(client));
             }
             else {}
         }
@@ -1330,15 +1330,14 @@ private:
         if (!is_running()) return;
 
         std::scoped_lock lock { _clients_mtx };
-        auto it = std::find(_clients.begin(), _clients.end(), client);
 
-        if (it != _clients.end()) _clients.erase(it);
+        if (auto it = std::find(_clients.begin(), _clients.end(), client); it != _clients.end()) _clients.erase(it);
     }
 
     std::shared_ptr<io_service> _io_service {};
     tcp_socket _socket {};
     std::atomic_bool _is_running { false };
-    std::list<std::shared_ptr<tcp_client>> _clients {};
+    std::deque<std::shared_ptr<tcp_client>> _clients {};
     std::mutex _clients_mtx {};
     on_new_connection_callback_t _on_new_connection_callback { nullptr };
 };

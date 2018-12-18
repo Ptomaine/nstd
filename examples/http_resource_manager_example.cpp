@@ -47,27 +47,27 @@ int main(int argc, char *argv[])
 
     http_resource_manager::response bad_request { S::BadRequest };
     bad_request.content << "<html><head><title>Bad Request</title></head><body><h1>400 Bad Request</h1></body></html>";
-    bad_request.add_content_type_header("html", "utf-8").add_header("Connection", "Closed");
+    bad_request.add_content_type_header("html", "utf-8");
 
     http_resource_manager::response not_found { S::NotFound };
     not_found.content << "<html><head><title>Not Found</title></head><body><h1>404 Not Found</h1></body></html>";
-    not_found.add_content_type_header("html", "utf-8").add_header("Connection", "Closed");
+    not_found.add_content_type_header("html", "utf-8");
 
     http_resource_manager mgr;
 
     mgr.add_route(M::GET, R"(^\/services\/([^/]+)\/([^/]+))", [](auto &&req) // /services/v8/user
-	{
+    {
         if (req->completed) return; else req->completed = true;
 
-		http_resource_manager::response resp { S::OK };
-		std::string service_name { req->match[2] };
+        http_resource_manager::response resp { S::OK };
+        std::string service_name { req->match[2] };
 
-		resp.content << std::string("<html><body><p>Service: ") + service_name + "</p></body></html>";
-		resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
-	});
+        resp.content << std::string("<html><body><p>Service: ") + service_name + "</p></body></html>";
+        resp.add_content_type_header("html", "utf-8").send_response(req->client);
+    });
 
     mgr.add_route(M::GET, R"(^\/$)", [](auto &&req) // /
-	{
+    {
         if (req->completed) return; else req->completed = true;
 
         auto full_path { req->manager->get_root_path() };
@@ -76,40 +76,35 @@ int main(int argc, char *argv[])
 
         if (fs::exists(full_path) && fs::is_regular_file(full_path))
         {
-            http_resource_manager::response resp { S::TemporaryRedirect };
-
-            resp.content << "<html><body><p>Redirect link: <a href=\"/index.html\">click here</a></p></body></html>";
-            resp.add_content_type_header("html", "utf-8").add_header("Location", "/index.html").send_response(req->client);
+            http_resource_manager::response { S::TemporaryRedirect }.add_header("Location", "/index.html").send_response(req->client);
         }
         else
         {
             http_resource_manager::response resp { S::OK };
 
             resp.content << "<html><body><p>Index</p></body></html>";
-            resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
+            resp.add_content_type_header("html", "utf-8").send_response(req->client);
         }
-	});
+    });
 
     mgr.add_route(M::GET, R"(^\/time$)", [](auto &&req) // /time
-	{
+    {
         if (req->completed) return; else req->completed = true;
 
-		http_resource_manager::response resp { S::OK };
-		auto cur_time { std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()) };
+        http_resource_manager::response resp { S::OK };
+        auto cur_time { std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()) };
 
-		resp.content << std::string("<html><body><p>") + std::ctime(&cur_time) + "</p></body></html>";
-		resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(req->client);
-	});
+        resp.content << std::string("<html><body><p>") + std::ctime(&cur_time) + "</p></body></html>";
+        resp.add_content_type_header("html", "utf-8").send_response(req->client);
+    });
 
     mgr.add_route(M::GET, R"(^\/throw$)", [](auto &&req) // /throw
-	{
-        if (req->completed) return; else req->completed = true;
-
-		throw std::runtime_error("Test exception");
-	});
+    {
+        throw std::runtime_error("Test exception");
+    });
 
     mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [&bad_request, &not_found](auto &&req)
-	{
+    {
         if (req->completed) return; else req->completed = true;
 
         bool processed { false };
@@ -129,7 +124,7 @@ int main(int argc, char *argv[])
                 auto data { nstd::utilities::read_file_content(full_path) };
 
                 resp.content.write(std::data(data), std::size(data));
-                resp.add_content_type_header(media_type).add_header("Connection", "Closed").send_response(req->client);
+                resp.add_content_type_header(media_type).send_response(req->client);
             }
             else
             {
@@ -143,7 +138,7 @@ int main(int argc, char *argv[])
         {
             bad_request.send_response(req->client);
         }
-	});
+    });
 
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
 
