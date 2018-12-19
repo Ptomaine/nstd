@@ -29,6 +29,9 @@ SOFTWARE.
 #include <string>
 #include <string_view>
 #include <sstream>
+
+#define SHARP_TCP_USES_OPENSSL
+
 #include "http_resource_manager.hpp"
 #include "utilities.hpp"
 

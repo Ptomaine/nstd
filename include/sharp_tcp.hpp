@@ -50,6 +50,11 @@ SOFTWARE.
 #include <unistd.h>
 #endif
 
+#ifdef SHARP_TCP_USES_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
+
 namespace nstd::net
 {
 
@@ -1235,11 +1240,28 @@ template<auto ConnectionQueueSize = 1024>
 class tcp_server
 {
 public:
-    tcp_server() : _io_service { get_default_io_service() } {}
+    tcp_server() : _io_service { get_default_io_service() }
+    {
+#ifdef SHARP_TCP_USES_OPENSSL
+        if (!__is_openssl_initted.exchange(true))
+        {
+            SSL_library_init();
+            SSL_load_error_strings();
+            OpenSSL_add_all_algorithms();
+        }
+#endif
+    }
 
     ~tcp_server()
     {
         stop();
+#ifdef SHARP_TCP_USES_OPENSSL
+        if (__is_openssl_initted.exchange(false))
+        {
+            ERR_free_strings();
+            EVP_cleanup();
+        }
+#endif
     }
 
     tcp_server(const tcp_server&) = delete;
@@ -1353,6 +1375,12 @@ private:
     std::deque<std::shared_ptr<tcp_client>> _clients {};
     std::mutex _clients_mtx {};
     on_new_connection_callback_t _on_new_connection_callback { nullptr };
+#ifdef SHARP_TCP_USES_OPENSSL
+    static inline std::atomic_bool __is_openssl_initted { false };
+    SSL *_ssl;
+    SSL_CTX *_ssl_context;
+    SSL_METHOD *_ssl_method;
+#endif
 };
 
 #ifdef _WIN32

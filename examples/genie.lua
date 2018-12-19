@@ -381,7 +381,7 @@ solution "nstd_examples"
             targetdir "bin/http_resource_manager_example/Release"
 
         configuration { "windows" }
-            links { "ws2_32", "wsock32", "stdc++fs" }
+            links { "ssl", "crypto", "ws2_32", "stdc++fs" }
 
         configuration "linux"
             links { "pthread", "stdc++fs" }
