@@ -56,7 +56,8 @@ int main(int argc, char *argv[])
     not_found.content << "<html><head><title>Not Found</title></head><body><h1>404 Not Found</h1></body></html>";
     not_found.add_content_type_header("html", "utf-8");
 
-    http_resource_manager<false> mgr;
+    //http_resource_manager<false> mgr { "C:/Temp/cert.pem", "C:/Temp/key.pem" };
+    http_resource_manager<false> mgr { {}, {} };
 
     mgr.add_route(M::GET, R"(^\/services\/([^/]+)\/([^/]+))", [](auto &&req) // /services/v8/user
     {

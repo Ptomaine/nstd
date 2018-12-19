@@ -23,6 +23,7 @@ SOFTWARE.
 #include <atomic>
 #include <condition_variable>
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <deque>
 #include <mutex>
@@ -57,6 +58,7 @@ SOFTWARE.
 
 namespace nstd::net
 {
+namespace fs = std::filesystem;
 
 #ifdef _WIN32
 using fd_t = SOCKET;
@@ -530,7 +532,7 @@ public:
             FD_ZERO(&set);
             FD_SET(_fd, &set);
 
-            if (select(0, NULL, &set, NULL, &tv) == 1)
+            if (::select(0, NULL, &set, NULL, &tv) == 1)
             {
                 if (fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) & (~O_NONBLOCK)) == -1)
                 {
@@ -611,7 +613,11 @@ public:
         if (::listen(_fd, static_cast<int>(max_connection_queue)) == SOCKET_ERROR) throw sharp_tcp_error { "listen() failure" };
     }
 
+#ifdef SHARP_TCP_USES_OPENSSL
+    tcp_socket accept(const fs::path &cert_file, const fs::path &priv_key_file)
+#else
     tcp_socket accept()
+#endif
     {
         create_socket_if_necessary();
         check_or_set_type(type::SERVER);
@@ -623,6 +629,30 @@ public:
 
         if (client_fd == INVALID_FD) throw sharp_tcp_error { "accept() failure" };
 
+#ifdef SHARP_TCP_USES_OPENSSL
+        if constexpr (UseSSL)
+        {
+            _ssl_context = SSL_CTX_new(TLS_server_method());
+
+            SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
+
+            int use_cert = SSL_CTX_use_certificate_file(_ssl_context, cert_file.u8string().c_str() , SSL_FILETYPE_PEM);
+            int use_prv = SSL_CTX_use_PrivateKey_file(_ssl_context, priv_key_file.u8string().c_str(), SSL_FILETYPE_PEM);
+
+            _ssl = SSL_new(_ssl_context);
+            
+            SSL_set_fd(_ssl, client_fd);
+
+            auto ssl_err = SSL_accept(_ssl);
+
+            if(ssl_err <= 0)
+            {
+                close();
+
+                throw sharp_tcp_error { "SSL_accept() failure" };
+            }
+        }
+#endif
         return { client_fd, ::inet_ntoa(client_info.sin_addr), client_info.sin_port, type::CLIENT };
     }
 
@@ -1289,7 +1319,12 @@ template<bool UseSSL = false, auto ConnectionQueueSize = 1024>
 class tcp_server
 {
 public:
+#ifdef SHARP_TCP_USES_OPENSSL
+    tcp_server(const fs::path &cert_file, const fs::path &priv_key_file) : _io_service { get_default_io_service<UseSSL>() },
+        _cert_file { cert_file }, _priv_key_file { priv_key_file }
+#else
     tcp_server() : _io_service { get_default_io_service<UseSSL>() }
+#endif
     {
     }
 
@@ -1378,7 +1413,11 @@ private:
     {
         try
         {
-            auto client { std::make_shared<tcp_client<UseSSL>>(_socket.accept()) };
+            auto client { std::make_shared<tcp_client<UseSSL>>(_socket.accept(
+#ifdef SHARP_TCP_USES_OPENSSL
+                _cert_file, _priv_key_file
+#endif
+            )) };
 
             if (!_on_new_connection_callback || !_on_new_connection_callback(client))
             {
@@ -1404,11 +1443,14 @@ private:
     }
 
     std::shared_ptr<io_service<UseSSL>> _io_service {};
-    tcp_socket<false> _socket {};
+    tcp_socket<UseSSL> _socket {};
     std::atomic_bool _is_running { false };
     std::deque<std::shared_ptr<tcp_client<UseSSL>>> _clients {};
     std::mutex _clients_mtx {};
     on_new_connection_callback_t _on_new_connection_callback { nullptr };
+#ifdef SHARP_TCP_USES_OPENSSL
+    fs::path _cert_file{}, _priv_key_file{};
+#endif
 };
 
 #ifdef _WIN32
