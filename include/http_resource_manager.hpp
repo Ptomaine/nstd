@@ -41,6 +41,7 @@ using namespace std::string_literals;
 using namespace nstd::signal_slot;
 namespace fs = std::filesystem;
 
+template <bool UseSSL = false>
 class http_resource_manager
 {
 public:
@@ -52,7 +53,7 @@ public:
         std::string resource;
         std::string resource_pattern;
         std::smatch match;
-        std::shared_ptr<tcp_client> client;
+        std::shared_ptr<tcp_client<UseSSL>> client;
         http_resource_manager *manager;
         bool completed { false };
     };
@@ -198,7 +199,7 @@ public:
             return *this;
         }
 
-        tcp_client::write_request &prepare_response_data()
+        typename tcp_client<UseSSL>::write_request &prepare_response_data()
         {
             if (std::empty(response_data.buffer))
             {
@@ -225,7 +226,7 @@ public:
             return response_data;
         }
 
-        void send_response(std::shared_ptr<tcp_client> client, std::function<void(tcp_client::write_result&)> callback = nullptr)
+        void send_response(std::shared_ptr<tcp_client<UseSSL>> client, std::function<void(typename tcp_client<UseSSL>::write_result&)> callback = nullptr)
         {
             auto &resp { prepare_response_data() };
 
@@ -237,7 +238,7 @@ public:
         std::ostringstream stream;
         std::ostringstream headers;
         std::ostringstream content;
-        tcp_client::write_request response_data;
+        typename tcp_client<UseSSL>::write_request response_data;
         std::string http_vesion { "HTTP/1.1" };
     };
 
@@ -245,7 +246,7 @@ public:
 
     void start(const std::string &host, int port)
     {
-        _server.start(host, port, [this](const std::shared_ptr<tcp_client>& client)
+        _server.start(host, port, [this](const std::shared_ptr<tcp_client<UseSSL>>& client)
         {
             client->async_read({65536, [this, client](auto &&res) { on_new_request(client, res); }});
 
@@ -262,7 +263,7 @@ public:
         _cons = _signals[method][pattern]->connect(std::move(callback));
     }
 
-    void add_status_handler(response::http_status_codes status_code, std::function<void(request_ptr)> callback)
+    void add_status_handler(typename response::http_status_codes status_code, std::function<void(request_ptr)> callback)
     {
         std::scoped_lock { _add_route_mutex };
 
@@ -281,7 +282,7 @@ public:
 
 protected:
 
-    tcp_server<> _server;
+    tcp_server<UseSSL> _server;
     std::unordered_map<http_request_parser::http_method_id, signal_set<request_ptr>> _signals;
     std::unordered_map<int, signal<request_ptr>> _status_signals;
     std::unordered_map<std::string, std::regex> _regexes;
@@ -290,7 +291,7 @@ protected:
     connection_bag _cons;
     fs::path _root_folder { fs::current_path() / "www"s };
 
-    void on_new_request(const std::shared_ptr<tcp_client>& client, const tcp_client::read_result& res)
+    void on_new_request(const std::shared_ptr<tcp_client<UseSSL>>& client, const typename tcp_client<UseSSL>::read_result& res)
     {
         if (res.success)
         {

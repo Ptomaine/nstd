@@ -319,6 +319,7 @@ private:
 #endif
 };
 
+template <bool UseSSL = false>
 class tcp_socket
 {
 public:
@@ -334,7 +335,6 @@ public:
     ~tcp_socket() = default;
 
     tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : _fd(fd), _host(host), _port(port), _type(t) {}
-
     tcp_socket(tcp_socket&& socket) : _fd(std::move(socket._fd)), _host(socket._host), _port(socket._port), _type(socket._type)
     {
         socket._fd   = INVALID_FD;
@@ -628,6 +628,24 @@ public:
 
     void close()
     {
+#ifdef SHARP_TCP_USES_OPENSSL
+        if (UseSSL)
+        {
+            if (_ssl != nullptr)
+            {
+                SSL_shutdown(_ssl);
+                SSL_free(_ssl);
+                _ssl = nullptr;
+            }
+
+            if (_ssl_context != nullptr)
+            {
+                SSL_CTX_free(_ssl_context);
+                _ssl_context = nullptr;
+            }
+        }
+#endif
+
         if (_fd != INVALID_FD)
 #ifdef _WIN32
         ::closesocket(_fd);
@@ -664,6 +682,15 @@ public:
         return _fd;
     }
 
+    bool is_secure() const
+    {
+#ifdef SHARP_TCP_USES_OPENSSL
+        return UseSSL && _ssl != nullptr;
+#else
+        return false;
+#endif
+    }
+
 private:
     void create_socket_if_necessary()
     {
@@ -693,8 +720,15 @@ private:
     std::string _host {};
     std::uint32_t _port { 0 };
     type _type { type::UNKNOWN };
+#ifdef SHARP_TCP_USES_OPENSSL
+    static inline std::atomic_bool __is_openssl_initted { false };
+    SSL *_ssl { nullptr };
+    SSL_CTX *_ssl_context { nullptr };
+    SSL_METHOD *_ssl_method { nullptr };
+#endif
 };
 
+template <bool UseSSL = false>
 class io_service
 {
 public:
@@ -729,7 +763,7 @@ public:
 
     using event_callback_t = std::function<void(fd_t)>;
 
-    void track(const tcp_socket& socket, const event_callback_t& rd_callback = nullptr, const event_callback_t& wr_callback = nullptr)
+    void track(const tcp_socket<UseSSL>& socket, const event_callback_t& rd_callback = nullptr, const event_callback_t& wr_callback = nullptr)
     {
         std::scoped_lock lock { _tracked_sockets_mtx };
 
@@ -741,7 +775,7 @@ public:
         _notifier.notify();
     }
 
-    void set_rd_callback(const tcp_socket& socket, const event_callback_t& event_callback)
+    void set_rd_callback(const tcp_socket<UseSSL>& socket, const event_callback_t& event_callback)
     {
         std::scoped_lock lock { _tracked_sockets_mtx };
 
@@ -751,7 +785,7 @@ public:
         _notifier.notify();
     }
 
-    void set_wr_callback(const tcp_socket& socket, const event_callback_t& event_callback)
+    void set_wr_callback(const tcp_socket<UseSSL>& socket, const event_callback_t& event_callback)
     {
         std::scoped_lock lock { _tracked_sockets_mtx };
 
@@ -761,7 +795,7 @@ public:
         _notifier.notify();
     }
 
-    void untrack(const tcp_socket& socket)
+    void untrack(const tcp_socket<UseSSL>& socket)
     {
         std::scoped_lock lock { _tracked_sockets_mtx };
 
@@ -782,11 +816,11 @@ public:
         _notifier.notify();
     }
 
-    void wait_for_removal(const tcp_socket& socket)
+    void wait_for_removal(const tcp_socket<UseSSL>& socket)
     {
         std::unique_lock lock { _tracked_sockets_mtx };
 
-        _wait_for_removal_condvar.wait(lock, [&]()
+        _wait_for_removal_condvar.wait(lock, [this, &socket]()
         {
             return _tracked_sockets.find(socket.get_fd()) == _tracked_sockets.end();
         });
@@ -961,34 +995,49 @@ private:
     self_pipe _notifier {};
 };
 
-static inline std::shared_ptr<io_service> io_service_default_instance = nullptr;
+static inline std::shared_ptr<io_service<false>> io_service_default_instance = nullptr;
+static inline std::shared_ptr<io_service<true>> io_service_ssl_default_instance = nullptr;
 
-const std::shared_ptr<io_service>& get_default_io_service(std::uint32_t nu_io_workers = 1)
+template <bool UseSSL = false>
+const std::shared_ptr<io_service<UseSSL>>& get_default_io_service(std::uint32_t nu_io_workers = 1)
 {
-    if (io_service_default_instance == nullptr) io_service_default_instance = std::make_shared<io_service>(nu_io_workers);
-    else io_service_default_instance->set_nb_workers(nu_io_workers);
+    if constexpr (UseSSL)
+    {
+        if (io_service_ssl_default_instance == nullptr) io_service_ssl_default_instance = std::make_shared<io_service<UseSSL>>(nu_io_workers);
+        else io_service_ssl_default_instance->set_nb_workers(nu_io_workers);
 
-    return io_service_default_instance;
+        return io_service_ssl_default_instance;
+    }
+    else
+    {
+        if (io_service_default_instance == nullptr) io_service_default_instance = std::make_shared<io_service<UseSSL>>(nu_io_workers);
+        else io_service_default_instance->set_nb_workers(nu_io_workers);
+
+        return io_service_default_instance;
+    }
 }
 
-void set_default_io_service(const std::shared_ptr<io_service>& service)
+template <bool UseSSL = false>
+void set_default_io_service(const std::shared_ptr<io_service<UseSSL>>& service)
 {
-    io_service_default_instance = service;
+    if constexpr (UseSSL) io_service_ssl_default_instance = service;
+    else io_service_default_instance = service;
 }
 
+template <bool UseSSL = false>
 class tcp_client
 {
 public:
-    tcp_client(uint32_t nu_io_workers = 1) : _io_service { get_default_io_service(nu_io_workers) } {}
+    tcp_client(uint32_t nu_io_workers = 1) : _io_service { get_default_io_service<UseSSL>(nu_io_workers) } {}
 
     ~tcp_client()
     {
         disconnect(true);
     }
 
-    explicit tcp_client(tcp_socket&& socket) :
-        _io_service { get_default_io_service() },
-        _socket { std::forward<tcp_socket>(socket) },
+    explicit tcp_client(tcp_socket<UseSSL>&& socket) :
+        _io_service { get_default_io_service<UseSSL>() },
+        _socket { std::forward<tcp_socket<UseSSL>>(socket) },
         _is_connected { true }
     {
         _io_service->track(_socket);
@@ -1115,17 +1164,17 @@ public:
         else {}
     }
 
-    tcp_socket& get_socket()
+    tcp_socket<UseSSL>& get_socket()
     {
         return _socket;
     }
 
-    const tcp_socket& get_socket() const
+    const tcp_socket<UseSSL>& get_socket() const
     {
         return _socket;
     }
 
-    const std::shared_ptr<io_service>& get_io_service() const
+    const std::shared_ptr<io_service<UseSSL>>& get_io_service() const
     {
         return _io_service;
     }
@@ -1226,8 +1275,8 @@ private:
         return callback;
     }
 
-    std::shared_ptr<io_service> _io_service {};
-    tcp_socket _socket {};
+    std::shared_ptr<io_service<UseSSL>> _io_service {};
+    tcp_socket<UseSSL> _socket {};
     std::atomic_bool _is_connected { false };
     std::queue<read_request> _read_requests {};
     std::queue<write_request> _write_requests {};
@@ -1236,32 +1285,17 @@ private:
     disconnection_handler_t _disconnection_handler { nullptr };
 };
 
-template<auto ConnectionQueueSize = 1024>
+template<bool UseSSL = false, auto ConnectionQueueSize = 1024>
 class tcp_server
 {
 public:
-    tcp_server() : _io_service { get_default_io_service() }
+    tcp_server() : _io_service { get_default_io_service<UseSSL>() }
     {
-#ifdef SHARP_TCP_USES_OPENSSL
-        if (!__is_openssl_initted.exchange(true))
-        {
-            SSL_library_init();
-            SSL_load_error_strings();
-            OpenSSL_add_all_algorithms();
-        }
-#endif
     }
 
     ~tcp_server()
     {
         stop();
-#ifdef SHARP_TCP_USES_OPENSSL
-        if (__is_openssl_initted.exchange(false))
-        {
-            ERR_free_strings();
-            EVP_cleanup();
-        }
-#endif
     }
 
     tcp_server(const tcp_server&) = delete;
@@ -1277,7 +1311,7 @@ public:
         return !operator==(rhs);
     }
 
-    using on_new_connection_callback_t = std::function<bool(const std::shared_ptr<tcp_client>&)>;
+    using on_new_connection_callback_t = std::function<bool(const std::shared_ptr<tcp_client<UseSSL>>&)>;
 
     void start(const std::string& host, std::uint32_t port, const on_new_connection_callback_t& callback = nullptr)
     {
@@ -1319,22 +1353,22 @@ public:
         return _is_running;
     }
 
-    tcp_socket& get_socket()
+    tcp_socket<UseSSL>& get_socket()
     {
         return _socket;
     }
 
-    const tcp_socket& get_socket() const
+    const tcp_socket<UseSSL>& get_socket() const
     {
         return _socket;
     }
 
-    const std::shared_ptr<io_service>& get_io_service() const
+    const std::shared_ptr<io_service<UseSSL>>& get_io_service() const
     {
         return _io_service;
     }
 
-    const std::deque<std::shared_ptr<tcp_client>>& get_clients() const
+    const std::deque<std::shared_ptr<tcp_client<UseSSL>>>& get_clients() const
     {
         return _clients;
     }
@@ -1344,7 +1378,7 @@ private:
     {
         try
         {
-            auto client { std::make_shared<tcp_client>(_socket.accept()) };
+            auto client { std::make_shared<tcp_client<UseSSL>>(_socket.accept()) };
 
             if (!_on_new_connection_callback || !_on_new_connection_callback(client))
             {
@@ -1360,7 +1394,7 @@ private:
         }
     }
 
-    void on_client_disconnected(const std::shared_ptr<tcp_client>& client)
+    void on_client_disconnected(const std::shared_ptr<tcp_client<UseSSL>>& client)
     {
         if (!is_running()) return;
 
@@ -1369,18 +1403,12 @@ private:
         if (auto it = std::find(_clients.begin(), _clients.end(), client); it != _clients.end()) _clients.erase(it);
     }
 
-    std::shared_ptr<io_service> _io_service {};
-    tcp_socket _socket {};
+    std::shared_ptr<io_service<UseSSL>> _io_service {};
+    tcp_socket<false> _socket {};
     std::atomic_bool _is_running { false };
-    std::deque<std::shared_ptr<tcp_client>> _clients {};
+    std::deque<std::shared_ptr<tcp_client<UseSSL>>> _clients {};
     std::mutex _clients_mtx {};
     on_new_connection_callback_t _on_new_connection_callback { nullptr };
-#ifdef SHARP_TCP_USES_OPENSSL
-    static inline std::atomic_bool __is_openssl_initted { false };
-    SSL *_ssl;
-    SSL_CTX *_ssl_context;
-    SSL_METHOD *_ssl_method;
-#endif
 };
 
 #ifdef _WIN32
@@ -1442,6 +1470,28 @@ template <int Major, int Minor>
 winsock_init_base::data winsock_init<Major, Minor>::data_;
 
 static inline const winsock_init<>& winsock_init_instance { winsock_init<>(false) };
+#endif
+
+#ifdef SHARP_TCP_USES_OPENSSL
+template <bool>
+class openssl_init_handler
+{
+  public:
+    openssl_init_handler()
+    {
+        SSL_load_error_strings();
+        SSL_library_init();
+    }
+    ~openssl_init_handler()
+    {
+        ERR_free_strings();
+        EVP_cleanup();
+        CRYPTO_cleanup_all_ex_data();
+        sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+    }
+};
+
+static inline openssl_init_handler<true> init_openssl {};
 #endif
 
 }

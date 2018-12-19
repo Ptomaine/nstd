@@ -46,23 +46,23 @@ using namespace nstd::net;
 int main(int argc, char *argv[])
 {
     using M = http_request_parser::http_method_id;
-    using S = http_resource_manager::response::http_status_codes;
+    using S = http_resource_manager<false>::response::http_status_codes;
 
-    http_resource_manager::response bad_request { S::BadRequest };
+    http_resource_manager<false>::response bad_request { S::BadRequest };
     bad_request.content << "<html><head><title>Bad Request</title></head><body><h1>400 Bad Request</h1></body></html>";
     bad_request.add_content_type_header("html", "utf-8");
 
-    http_resource_manager::response not_found { S::NotFound };
+    http_resource_manager<false>::response not_found { S::NotFound };
     not_found.content << "<html><head><title>Not Found</title></head><body><h1>404 Not Found</h1></body></html>";
     not_found.add_content_type_header("html", "utf-8");
 
-    http_resource_manager mgr;
+    http_resource_manager<false> mgr;
 
     mgr.add_route(M::GET, R"(^\/services\/([^/]+)\/([^/]+))", [](auto &&req) // /services/v8/user
     {
         if (req->completed) return; else req->completed = true;
 
-        http_resource_manager::response resp { S::OK };
+        typename http_resource_manager<false>::response resp { S::OK };
         std::string service_name { req->match[2] };
 
         resp.content << std::string("<html><body><p>Service: ") + service_name + "</p></body></html>";
@@ -79,11 +79,11 @@ int main(int argc, char *argv[])
 
         if (fs::exists(full_path) && fs::is_regular_file(full_path))
         {
-            http_resource_manager::response { S::TemporaryRedirect }.add_header("Location", "/index.html").send_response(req->client);
+            typename http_resource_manager<false>::response { S::TemporaryRedirect }.add_header("Location", "/index.html").send_response(req->client);
         }
         else
         {
-            http_resource_manager::response resp { S::OK };
+            typename http_resource_manager<false>::response resp { S::OK };
 
             resp.content << "<html><body><p>Index</p></body></html>";
             resp.add_content_type_header("html", "utf-8").send_response(req->client);
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     {
         if (req->completed) return; else req->completed = true;
 
-        http_resource_manager::response resp { S::OK };
+        typename http_resource_manager<false>::response resp { S::OK };
         auto cur_time { std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()) };
 
         resp.content << std::string("<html><body><p>") + std::ctime(&cur_time) + "</p></body></html>";
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
         throw std::runtime_error("Test exception");
     });
 
-    mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [&bad_request, &not_found](auto &&req)
+    mgr.add_status_handler(http_resource_manager<false>::response::http_status_codes::NotFound, [&bad_request, &not_found](auto &&req)
     {
         if (req->completed) return; else req->completed = true;
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
             if (fs::exists(full_path) && fs::is_regular_file(full_path) && type_exists)
             {
-                http_resource_manager::response resp { S::OK };
+                typename http_resource_manager<false>::response resp { S::OK };
                 auto data { nstd::utilities::read_file_content(full_path) };
 
                 resp.content.write(std::data(data), std::size(data));
