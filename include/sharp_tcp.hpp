@@ -23,7 +23,6 @@ SOFTWARE.
 #include <atomic>
 #include <condition_variable>
 #include <cstring>
-#include <filesystem>
 #include <functional>
 #include <deque>
 #include <mutex>
@@ -58,8 +57,6 @@ SOFTWARE.
 
 namespace nstd::net
 {
-namespace fs = std::filesystem;
-
 #ifdef _WIN32
 using fd_t = SOCKET;
 inline constexpr const uint64_t INVALID_FD = INVALID_SOCKET;
@@ -614,7 +611,7 @@ public:
     }
 
 #ifdef SHARP_TCP_USES_OPENSSL
-    tcp_socket accept(const fs::path &cert_file, const fs::path &priv_key_file)
+    tcp_socket accept(const std::string &cert_file, const std::string &priv_key_file)
 #else
     tcp_socket accept()
 #endif
@@ -636,8 +633,8 @@ public:
 
             SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
 
-            int use_cert = SSL_CTX_use_certificate_file(_ssl_context, cert_file.u8string().c_str() , SSL_FILETYPE_PEM);
-            int use_prv = SSL_CTX_use_PrivateKey_file(_ssl_context, priv_key_file.u8string().c_str(), SSL_FILETYPE_PEM);
+            int use_cert = SSL_CTX_use_certificate_file(_ssl_context, cert_file.c_str() , SSL_FILETYPE_PEM);
+            int use_prv = SSL_CTX_use_PrivateKey_file(_ssl_context, priv_key_file.c_str(), SSL_FILETYPE_PEM);
 
             _ssl = SSL_new(_ssl_context);
             
@@ -1320,7 +1317,7 @@ class tcp_server
 {
 public:
 #ifdef SHARP_TCP_USES_OPENSSL
-    tcp_server(const fs::path &cert_file, const fs::path &priv_key_file) : _io_service { get_default_io_service<UseSSL>() },
+    tcp_server(const std::string &cert_file, const std::string &priv_key_file) : _io_service { get_default_io_service<UseSSL>() },
         _cert_file { cert_file }, _priv_key_file { priv_key_file }
 #else
     tcp_server() : _io_service { get_default_io_service<UseSSL>() }
@@ -1449,7 +1446,7 @@ private:
     std::mutex _clients_mtx {};
     on_new_connection_callback_t _on_new_connection_callback { nullptr };
 #ifdef SHARP_TCP_USES_OPENSSL
-    fs::path _cert_file{}, _priv_key_file{};
+    std::string _cert_file{}, _priv_key_file{};
 #endif
 };
 

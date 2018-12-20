@@ -243,7 +243,7 @@ public:
     };
 
 #ifdef SHARP_TCP_USES_OPENSSL
-    http_resource_manager(const fs::path &cert_file, const fs::path &priv_key_file) : _cert_file { cert_file }, _priv_key_file { priv_key_file }
+    http_resource_manager(const std::string &cert_file, const std::string &priv_key_file) : _cert_file { cert_file }, _priv_key_file { priv_key_file }
     {
     }
 #endif
@@ -299,7 +299,7 @@ protected:
     std::mutex _add_route_mutex;
     connection_bag _cons;
     fs::path _root_folder { fs::current_path() / "www"s };
-    fs::path _cert_file{}, _priv_key_file{};
+    std::string _cert_file{}, _priv_key_file{};
 
     void on_new_request(const std::shared_ptr<tcp_client<UseSSL>>& client, const typename tcp_client<UseSSL>::read_result& res)
     {
