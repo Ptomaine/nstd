@@ -22,6 +22,7 @@ SOFTWARE.
 
 #include <atomic>
 #include <condition_variable>
+#include <chrono>
 #include <cstring>
 #include <functional>
 #include <deque>
@@ -57,6 +58,8 @@ SOFTWARE.
 
 namespace nstd::net
 {
+using namespace std::chrono_literals;
+
 #ifdef _WIN32
 using fd_t = SOCKET;
 inline constexpr const uint64_t INVALID_FD = INVALID_SOCKET;
@@ -331,7 +334,11 @@ public:
 
 public:
     tcp_socket() = default;
-    ~tcp_socket() = default;
+
+    ~tcp_socket()
+    {
+        close();
+    }
 
     tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : _fd(fd), _host(host), _port(port), _type(t) {}
     tcp_socket(tcp_socket&& socket) : _fd(std::move(socket._fd)), _host(socket._host), _port(socket._port), _type(socket._type)
@@ -357,45 +364,169 @@ public:
 public:
     std::vector<uint8_t> recv(std::size_t size_to_read)
     {
-        create_socket_if_necessary();
-        check_or_set_type(type::CLIENT);
+        std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
 
-        uint32_t read_idx { 0 };
-        ssize_t rd_size { 0 }, total_size { 0 };
-        std::vector<uint8_t> data(size_to_read, 0);
-
-        while (true)
+        if constexpr (UseSSL)
         {
-            data.resize(size_to_read * (read_idx + 1));
+            while (true)
+            {
+                if (_ssl == nullptr) { std::cout << "SSL is null" << std::endl; break; }
 
-            rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))) + (size_to_read * read_idx), static_cast<int>(size_to_read), 0);
+                ssize_t read_size { SSL_read(_ssl, std::data(data), size_to_read) };
 
-            if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
+                if (read_size <= 0)
+                {
+                    switch(SSL_get_error(_ssl, size_to_read))
+                    {
+                    case SSL_ERROR_NONE:
+                        continue;
 
-            total_size += rd_size;
+                    case SSL_ERROR_ZERO_RETURN:
+                        close();
+                        return {};
 
-            if (rd_size == 0 || rd_size < static_cast<ssize_t>(size_to_read)) break;
+                    case SSL_ERROR_WANT_READ:
+                    {
+                        fd_set fds;
+                        struct timeval timeout {};
 
-            ++read_idx;
+                        FD_ZERO(&fds);
+                        FD_SET(_fd, &fds);
+
+                        timeout.tv_sec = 5;
+
+                        auto err { ::select(_fd + 1, &fds, nullptr, nullptr, &timeout) };
+                        
+                        if (err > 0) continue;
+
+                        if (err == 0)
+                        {
+                            close();
+                            throw sharp_tcp_error { "Error reading socket: " };
+                        }
+                        else
+                        {
+                            throw sharp_tcp_error { "Error reading socket: " };
+                        }
+
+                        break;
+                    }
+
+                    case SSL_ERROR_WANT_WRITE:
+                    {
+                        fd_set fds;
+                        struct timeval timeout {};
+
+                        FD_ZERO(&fds);
+                        FD_SET(_fd, &fds);
+
+                        timeout.tv_sec = 5;
+
+                        auto err { ::select(_fd + 1, nullptr, &fds, nullptr, &timeout) };
+                        
+                        if (err > 0) continue;
+
+                        if (err == 0)
+                        {
+                            close();
+                            throw sharp_tcp_error { "Error reading socket: " };
+                        }
+                        else
+                        {
+                            throw sharp_tcp_error { "Error reading socket: " };
+                        }
+
+                        break;
+                    }
+
+                    default:
+                        throw sharp_tcp_error { "Error reading socket: " };
+                    }
+                }
+            }
+
+            return data;
         }
+        else
+        {
+            create_socket_if_necessary();
+            check_or_set_type(type::CLIENT);
 
-        if (!total_size) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
+            uint32_t read_idx { 0 };
+            ssize_t rd_size { 0 }, total_size { 0 };
 
-        data.resize(total_size);
+            while (true)
+            {
+                data.resize(size_to_read * (read_idx + 1));
+
+                rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))) + (size_to_read * read_idx), static_cast<int>(size_to_read), 0);
+
+                if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
+
+                total_size += rd_size;
+
+                if (rd_size == 0 || rd_size < static_cast<ssize_t>(size_to_read)) break;
+
+                ++read_idx;
+            }
+
+            if (!total_size) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
+
+            data.resize(total_size);
+        }
 
         return data;
     }
 
     std::size_t send(const std::vector<uint8_t>& data, std::size_t size_to_write)
     {
-        create_socket_if_necessary();
-        check_or_set_type(type::CLIENT);
+        if constexpr (UseSSL)
+        {
+            const uint8_t *data_ptr { std::data(data) };
+            size_t total_size { 0 };
 
-        ssize_t wr_size = ::send(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))), static_cast<int>(size_to_write), 0);
+            for (const uint8_t* current_position = data_ptr, *end = data_ptr + size_to_write; current_position < end; )
+            {
+                ssize_t sent { SSL_write(_ssl, current_position, end - current_position) };
 
-        if (wr_size == SOCKET_ERROR) throw sharp_tcp_error { "send() failure" };
+                total_size += sent;
 
-        return wr_size;
+                if (sent > 0)
+                {
+                    current_position += sent;
+                }
+                else
+                {
+                    switch (SSL_get_error(_ssl, sent))
+                    {
+                      case SSL_ERROR_ZERO_RETURN:
+                        close();
+                        throw sharp_tcp_error { "The socket disconnected" };
+
+                      case SSL_ERROR_WANT_READ:
+                      case SSL_ERROR_WANT_WRITE:
+                        std::this_thread::sleep_for(200ms);
+                        break;
+
+                      default:
+                        throw sharp_tcp_error { "Error sending socket: " };
+                    }
+                }
+            }
+
+            return total_size;
+        }
+        else
+        {
+            create_socket_if_necessary();
+            check_or_set_type(type::CLIENT);
+
+            ssize_t wr_size = ::send(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))), static_cast<int>(size_to_write), 0);
+
+            if (wr_size == SOCKET_ERROR) throw sharp_tcp_error { "send() failure" };
+
+            return wr_size;
+        }
     }
 
     void connect(const std::string& host, std::uint32_t port, std::uint32_t timeout_msecs = 0)
@@ -631,26 +762,54 @@ public:
         {
             _ssl_context = SSL_CTX_new(TLS_server_method());
 
+            std::cout << "SSL context created..." << std::endl;
+
             SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
 
-            int use_cert = SSL_CTX_use_certificate_file(_ssl_context, cert_file.c_str() , SSL_FILETYPE_PEM);
-            int use_prv = SSL_CTX_use_PrivateKey_file(_ssl_context, priv_key_file.c_str(), SSL_FILETYPE_PEM);
+            std::cout << "SSL options set..." << std::endl;
+            std::cout << "Using cert file: " << cert_file << "; key file: " << priv_key_file << std::endl;
+
+            if (SSL_CTX_use_certificate_file(_ssl_context, cert_file.c_str() , SSL_FILETYPE_PEM) <= 0)
+                throw sharp_tcp_error { "use_certificate_file() failure" };
+            std::cout << "SSL_CTX_use_certificate_file..." << std::endl;
+
+            if (SSL_CTX_use_PrivateKey_file(_ssl_context, priv_key_file.c_str(), SSL_FILETYPE_PEM) <= 0)
+                throw sharp_tcp_error { "use_PrivateKey_file() failure" };
+            std::cout << "SSL_CTX_use_PrivateKey_file..." << std::endl;
 
             _ssl = SSL_new(_ssl_context);
+
+            std::cout << "SSL handle created..." << std::endl;
             
             SSL_set_fd(_ssl, client_fd);
+
+            std::cout << "SSL fd set..." << std::endl;
+
+            SSL_do_handshake(_ssl);
 
             auto ssl_err = SSL_accept(_ssl);
 
             if(ssl_err <= 0)
             {
+                std::cout << "SSL connection accept FAILED..." << std::endl;
+                ERR_print_errors_fp(stdout);
+
                 close();
 
                 throw sharp_tcp_error { "SSL_accept() failure" };
             }
+
+            std::cout << "SSL connection accepted..." << std::endl;
         }
 #endif
-        return { client_fd, ::inet_ntoa(client_info.sin_addr), client_info.sin_port, type::CLIENT };
+        tcp_socket new_socket { client_fd, ::inet_ntoa(client_info.sin_addr), client_info.sin_port, type::CLIENT };
+
+        new_socket._ssl = _ssl;
+        new_socket._ssl_context = _ssl_context;
+        _ssl = nullptr;
+        _ssl_context = nullptr;
+
+        return new_socket;
     }
 
     void close()
@@ -709,10 +868,10 @@ public:
         return _fd;
     }
 
-    bool is_secure() const
+    constexpr bool is_secure() const
     {
 #ifdef SHARP_TCP_USES_OPENSSL
-        return UseSSL && _ssl != nullptr;
+        return UseSSL;
 #else
         return false;
 #endif
@@ -751,7 +910,6 @@ private:
     static inline std::atomic_bool __is_openssl_initted { false };
     SSL *_ssl { nullptr };
     SSL_CTX *_ssl_context { nullptr };
-    SSL_METHOD *_ssl_method { nullptr };
 #endif
 };
 
