@@ -340,7 +340,58 @@ public:
         close();
     }
 
-    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : _fd(fd), _host(host), _port(port), _type(t) {}
+#ifdef SHARP_TCP_USES_OPENSSL
+    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t, const std::string &cert_file, const std::string &priv_key_file) : _fd(fd), _host(host), _port(port), _type(t)
+#else
+    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : _fd(fd), _host(host), _port(port), _type(t)
+#endif
+    {
+#ifdef SHARP_TCP_USES_OPENSSL
+        if constexpr (UseSSL)
+        {
+            _ssl_context = SSL_CTX_new(TLS_server_method());
+
+            std::cout << "SSL context created..." << std::endl;
+
+            SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
+
+            std::cout << "SSL options set..." << std::endl;
+            std::cout << "Using cert file: " << cert_file << "; key file: " << priv_key_file << std::endl;
+
+            if (SSL_CTX_use_certificate_file(_ssl_context, cert_file.c_str() , SSL_FILETYPE_PEM) <= 0)
+                throw sharp_tcp_error { "use_certificate_file() failure" };
+            std::cout << "SSL_CTX_use_certificate_file..." << std::endl;
+
+            if (SSL_CTX_use_PrivateKey_file(_ssl_context, priv_key_file.c_str(), SSL_FILETYPE_PEM) <= 0)
+                throw sharp_tcp_error { "use_PrivateKey_file() failure" };
+            std::cout << "SSL_CTX_use_PrivateKey_file..." << std::endl;
+
+            _ssl = SSL_new(_ssl_context);
+
+            std::cout << "SSL handle created..." << std::endl;
+            
+            SSL_set_fd(_ssl, _fd);
+
+            std::cout << "SSL fd set..." << std::endl;
+
+            SSL_do_handshake(_ssl);
+
+            auto ssl_err = SSL_accept(_ssl);
+
+            if(ssl_err <= 0)
+            {
+                std::cout << "SSL connection accept FAILED..." << std::endl;
+                ERR_print_errors_fp(stdout);
+
+                close();
+
+                throw sharp_tcp_error { "SSL_accept() failure" };
+            }
+
+            std::cout << "SSL connection accepted..." << std::endl;
+        }
+#endif
+    }
     tcp_socket(tcp_socket&& socket) : _fd(std::move(socket._fd)), _host(socket._host), _port(socket._port), _type(socket._type)
     {
         socket._fd   = INVALID_FD;
@@ -370,7 +421,7 @@ public:
         {
             while (true)
             {
-                if (_ssl == nullptr) { std::cout << "SSL is null" << std::endl; break; }
+                if (_ssl == nullptr) { std::cout << "SSL is null" << std::endl; return {}; }
 
                 ssize_t read_size { SSL_read(_ssl, std::data(data), size_to_read) };
 
@@ -757,59 +808,12 @@ public:
 
         if (client_fd == INVALID_FD) throw sharp_tcp_error { "accept() failure" };
 
+
 #ifdef SHARP_TCP_USES_OPENSSL
-        if constexpr (UseSSL)
-        {
-            _ssl_context = SSL_CTX_new(TLS_server_method());
-
-            std::cout << "SSL context created..." << std::endl;
-
-            SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
-
-            std::cout << "SSL options set..." << std::endl;
-            std::cout << "Using cert file: " << cert_file << "; key file: " << priv_key_file << std::endl;
-
-            if (SSL_CTX_use_certificate_file(_ssl_context, cert_file.c_str() , SSL_FILETYPE_PEM) <= 0)
-                throw sharp_tcp_error { "use_certificate_file() failure" };
-            std::cout << "SSL_CTX_use_certificate_file..." << std::endl;
-
-            if (SSL_CTX_use_PrivateKey_file(_ssl_context, priv_key_file.c_str(), SSL_FILETYPE_PEM) <= 0)
-                throw sharp_tcp_error { "use_PrivateKey_file() failure" };
-            std::cout << "SSL_CTX_use_PrivateKey_file..." << std::endl;
-
-            _ssl = SSL_new(_ssl_context);
-
-            std::cout << "SSL handle created..." << std::endl;
-            
-            SSL_set_fd(_ssl, client_fd);
-
-            std::cout << "SSL fd set..." << std::endl;
-
-            SSL_do_handshake(_ssl);
-
-            auto ssl_err = SSL_accept(_ssl);
-
-            if(ssl_err <= 0)
-            {
-                std::cout << "SSL connection accept FAILED..." << std::endl;
-                ERR_print_errors_fp(stdout);
-
-                close();
-
-                throw sharp_tcp_error { "SSL_accept() failure" };
-            }
-
-            std::cout << "SSL connection accepted..." << std::endl;
-        }
+        return { client_fd, ::inet_ntoa(client_info.sin_addr), client_info.sin_port, type::CLIENT, cert_file, priv_key_file };
+#else
+        return { client_fd, ::inet_ntoa(client_info.sin_addr), client_info.sin_port, type::CLIENT };
 #endif
-        tcp_socket new_socket { client_fd, ::inet_ntoa(client_info.sin_addr), client_info.sin_port, type::CLIENT };
-
-        new_socket._ssl = _ssl;
-        new_socket._ssl_context = _ssl_context;
-        _ssl = nullptr;
-        _ssl_context = nullptr;
-
-        return new_socket;
     }
 
     void close()
@@ -1584,7 +1588,7 @@ private:
         }
         catch (const sharp_tcp_error&)
         {
-            stop();
+            //stop();
         }
     }
 
