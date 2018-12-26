@@ -369,7 +369,7 @@ public:
             _ssl = SSL_new(_ssl_context);
 
             std::cout << "SSL handle created..." << std::endl;
-            
+
             SSL_set_fd(_ssl, _fd);
 
             std::cout << "SSL fd set..." << std::endl;
@@ -417,6 +417,7 @@ public:
     {
         std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
 
+#ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
             while (true)
@@ -447,7 +448,7 @@ public:
                         timeout.tv_sec = 5;
 
                         auto err { ::select(_fd + 1, &fds, nullptr, nullptr, &timeout) };
-                        
+
                         if (err > 0) continue;
 
                         if (err == 0)
@@ -474,7 +475,7 @@ public:
                         timeout.tv_sec = 5;
 
                         auto err { ::select(_fd + 1, nullptr, &fds, nullptr, &timeout) };
-                        
+
                         if (err > 0) continue;
 
                         if (err == 0)
@@ -499,6 +500,7 @@ public:
             return data;
         }
         else
+#endif
         {
             create_socket_if_necessary();
             check_or_set_type(type::CLIENT);
