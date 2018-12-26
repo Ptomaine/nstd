@@ -67,7 +67,7 @@ public:
     }
 
 private:
-    void on_remote_signal(const nstd::net::tcp_client::read_result& result)
+    void on_remote_signal(const nstd::net::tcp_client<>::read_result& result)
     {
         if (result.success)
         {
@@ -93,7 +93,7 @@ private:
         }
     }
 
-    nstd::net::tcp_client _client {};
+    nstd::net::tcp_client<> _client {};
     nstd::signal_slot::queued_signal_ex_set<std::vector<uint8_t>> _signal_queue {};
 };
 

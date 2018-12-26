@@ -533,6 +533,7 @@ public:
 
     std::size_t send(const std::vector<uint8_t>& data, std::size_t size_to_write)
     {
+#ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
             const uint8_t *data_ptr { std::data(data) };
@@ -570,6 +571,7 @@ public:
             return total_size;
         }
         else
+#endif
         {
             create_socket_if_necessary();
             check_or_set_type(type::CLIENT);

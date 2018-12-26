@@ -384,4 +384,4 @@ solution "nstd_examples"
             links { "ssl", "crypto", "ws2_32", "stdc++fs" }
 
         configuration "linux"
-            links { "pthread", "stdc++fs" }
+            links { "ssl", "crypto", "pthread", "stdc++fs" }
