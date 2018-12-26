@@ -30,7 +30,7 @@ int main()
 {
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
 
-    nstd::net::tcp_client client;
+    nstd::net::tcp_client<> client;
     client.connect("127.0.0.1", 3001);
 
     using namespace std::literals;

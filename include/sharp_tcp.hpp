@@ -378,7 +378,7 @@ public:
             _ssl = SSL_new(_ssl_context);
 
             std::cout << "SSL handle created..." << std::endl;
-            
+
             SSL_set_fd(_ssl, _fd);
 
             std::cout << "SSL fd set..." << std::endl;
@@ -440,6 +440,7 @@ public:
     std::vector<uint8_t> recv(std::size_t size_to_read)
     {
 #ifdef SHARP_TCP_USES_OPENSSL
+#ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
             std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
@@ -476,7 +477,7 @@ public:
                         timeout.tv_sec = 5;
 
                         auto err { ::select(_fd + 1, &fds, nullptr, nullptr, &timeout) };
-                        
+
                         if (err > 0) continue;
 
                         if (err == 0)
@@ -503,7 +504,7 @@ public:
                         timeout.tv_sec = 5;
 
                         auto err { ::select(_fd + 1, nullptr, &fds, nullptr, &timeout) };
-                        
+
                         if (err > 0) continue;
 
                         if (err == 0)
@@ -528,6 +529,7 @@ public:
             return data;
         }
         else
+#endif
         {
             return recv_insecure(size_to_read);
         }
@@ -538,6 +540,7 @@ public:
 
     std::size_t send(const std::vector<uint8_t>& data, std::size_t size_to_write)
     {
+#ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
             const uint8_t *data_ptr { std::data(data) };
@@ -575,6 +578,7 @@ public:
             return total_size;
         }
         else
+#endif
         {
             create_socket_if_necessary();
             check_or_set_type(type::CLIENT);
