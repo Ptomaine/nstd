@@ -52,8 +52,10 @@ SOFTWARE.
 #endif
 
 #ifdef SHARP_TCP_USES_OPENSSL
-#include <openssl/ssl.h>
+#include <openssl/bio.h>
 #include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
 #endif
 
 namespace nstd::net
@@ -337,15 +339,21 @@ public:
 
     ~tcp_socket()
     {
+        std::cout << "Socket destructed..." << std::endl;
         close();
     }
 
 #ifdef SHARP_TCP_USES_OPENSSL
-    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t, const std::string &cert_file, const std::string &priv_key_file) : _fd(fd), _host(host), _port(port), _type(t)
+    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t, const std::string &cert_file, const std::string &priv_key_file) : tcp_socket()
 #else
-    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : _fd(fd), _host(host), _port(port), _type(t)
+    tcp_socket(fd_t fd, const std::string& host, std::uint32_t port, type t) : tcp_socket()
 #endif
     {
+        _fd = fd;
+        _host = host;
+        _port = port;
+        _type = t;
+
 #ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
@@ -353,7 +361,8 @@ public:
 
             std::cout << "SSL context created..." << std::endl;
 
-            SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
+            //SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
+            SSL_CTX_set_options(_ssl_context, SSL_OP_ALL|SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
 
             std::cout << "SSL options set..." << std::endl;
             std::cout << "Using cert file: " << cert_file << "; key file: " << priv_key_file << std::endl;
@@ -374,7 +383,8 @@ public:
 
             std::cout << "SSL fd set..." << std::endl;
 
-            SSL_do_handshake(_ssl);
+            //SSL_do_handshake(_ssl);
+            SSL_set_accept_state(_ssl);
 
             auto ssl_err = SSL_accept(_ssl);
 
@@ -392,10 +402,24 @@ public:
         }
 #endif
     }
-    tcp_socket(tcp_socket&& socket) : _fd(std::move(socket._fd)), _host(socket._host), _port(socket._port), _type(socket._type)
+
+    tcp_socket(tcp_socket&& socket) :
+        _fd { std::move(socket._fd) },
+        _host { socket._host },
+        _port { socket._port },
+        _type { socket._type }
+#ifdef SHARP_TCP_USES_OPENSSL
+        ,
+        _ssl { socket._ssl },
+        _ssl_context { socket._ssl_context }
+#endif
     {
-        socket._fd   = INVALID_FD;
+        socket._fd = INVALID_FD;
         socket._type = type::UNKNOWN;
+#ifdef SHARP_TCP_USES_OPENSSL
+        socket._ssl = nullptr;
+        socket._ssl_context = nullptr;
+#endif
     }
 
     tcp_socket(const tcp_socket&) = delete;
@@ -415,18 +439,23 @@ public:
 public:
     std::vector<uint8_t> recv(std::size_t size_to_read)
     {
-        std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
-
+#ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
+            std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
+
             while (true)
             {
                 if (_ssl == nullptr) { std::cout << "SSL is null" << std::endl; return {}; }
 
                 ssize_t read_size { SSL_read(_ssl, std::data(data), size_to_read) };
 
+                std::cout << "...read request..." << std::endl;
+
                 if (read_size <= 0)
                 {
+                    std::cout << "...read request failed..." << read_size << std::endl;
+
                     switch(SSL_get_error(_ssl, size_to_read))
                     {
                     case SSL_ERROR_NONE:
@@ -500,33 +529,11 @@ public:
         }
         else
         {
-            create_socket_if_necessary();
-            check_or_set_type(type::CLIENT);
-
-            uint32_t read_idx { 0 };
-            ssize_t rd_size { 0 }, total_size { 0 };
-
-            while (true)
-            {
-                data.resize(size_to_read * (read_idx + 1));
-
-                rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))) + (size_to_read * read_idx), static_cast<int>(size_to_read), 0);
-
-                if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
-
-                total_size += rd_size;
-
-                if (rd_size == 0 || rd_size < static_cast<ssize_t>(size_to_read)) break;
-
-                ++read_idx;
-            }
-
-            if (!total_size) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
-
-            data.resize(total_size);
+            return recv_insecure(size_to_read);
         }
-
-        return data;
+#else
+        return recv_insecure(size_to_read);
+#endif
     }
 
     std::size_t send(const std::vector<uint8_t>& data, std::size_t size_to_write)
@@ -903,6 +910,37 @@ private:
         if (_type != type::UNKNOWN && _type != t) throw sharp_tcp_error { "trying to perform invalid operation on socket" };
 
         _type = t;
+    }
+
+    std::vector<uint8_t> recv_insecure(std::size_t size_to_read)
+    {
+        create_socket_if_necessary();
+        check_or_set_type(type::CLIENT);
+
+        std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
+        uint32_t read_idx { 0 };
+        ssize_t rd_size { 0 }, total_size { 0 };
+
+        while (true)
+        {
+            data.resize(size_to_read * (read_idx + 1));
+
+            rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))) + (size_to_read * read_idx), static_cast<int>(size_to_read), 0);
+
+            if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
+
+            total_size += rd_size;
+
+            if (rd_size == 0 || rd_size < static_cast<ssize_t>(size_to_read)) break;
+
+            ++read_idx;
+        }
+
+        if (!total_size) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
+
+        data.resize(total_size);
+
+        return data;
     }
 
 private:
@@ -1680,8 +1718,11 @@ class openssl_init_handler
   public:
     openssl_init_handler()
     {
-        SSL_load_error_strings();
         SSL_library_init();
+        OpenSSL_add_all_algorithms();
+        SSL_load_error_strings();
+        ERR_load_BIO_strings();
+        ERR_load_crypto_strings();
     }
     ~openssl_init_handler()
     {
