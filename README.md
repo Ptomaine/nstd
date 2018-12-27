@@ -17,6 +17,8 @@ The library currently contains the following features:
    * uuid - unique id generator
    * uri - class for URI manipulations.
    * http_request_parser - a simple class to parse incoming http requests.
+   * http_resource_manager - header-only HTTP server/router that supports OpenSSL.
+   * sharp_tcp - header-only TCP server/client classes.
    * planar_movements_recognizer - a set of classes to track and recognize planar movements and to execute corresponding commands
    * topological_sorter - the class to sort objects with dependencies (dependency solver)
    * sqlite3/sqlite c++ wrapper - sql database support [https://github.com/aminroosta/sqlite_modern_cpp]
@@ -24,8 +26,7 @@ The library currently contains the following features:
    * strings - a library to do string manipulations like: trim, unicode convertions, replace, join, split, composing (aka format) etc.
    * cmdline_options - a commandline parser [https://github.com/Fytch/ProgramOptions.hxx]
    * giant - r-lyeh's tiny library to handle little/big endianness [https://github.com/r-lyeh/giant]
-   * ordered_map, ordered_set - Tessil's C++ hash map/set which preserves the order of insertion [https://github.com/Tessil/ordered-map]
-   * Google fonts were added [https://github.com/google/fonts]
+   * fifo_map - a FIFO-ordered associative container for C++
 
 Many of these libraries are sub-modules. So, don't forget to update sub-modules after cloning this repository.
 
