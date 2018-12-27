@@ -417,103 +417,56 @@ public:
 public:
     std::vector<uint8_t> recv(std::size_t size_to_read)
     {
-#ifdef SHARP_TCP_USES_OPENSSL
+        create_socket_if_necessary();
+        check_or_set_type(type::CLIENT);
+
+        std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
+        uint32_t read_idx { 0 };
+        ssize_t rd_size { 0 }, total_size { 0 };
+
+        while (true)
+        {
+            data.resize(size_to_read * (read_idx + 1));
+
+            rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))) + (size_to_read * read_idx), static_cast<int>(size_to_read), 0);
+
+            if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
+
+            total_size += rd_size;
+
+            if (rd_size == 0 || rd_size < static_cast<ssize_t>(size_to_read)) break;
+
+            ++read_idx;
+        }
+
+        if (!total_size) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
+
+        data.resize(total_size);
+
 #ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
-            std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
+            auto ssl_length { std::size(data) };
+            std::vector<uint8_t> ssl_data(ssl_length, static_cast<uint8_t>(0));
+            auto raw_ssl_data { std::data(data) };
+            int wr_size { 0 };
 
-            while (true)
+            while (ssl_length > 0)
             {
-                if (_ssl == nullptr) { std::cout << "SSL is null" << std::endl; return {}; }
+                wr_size = BIO_write(_read_bio, raw_ssl_data, ssl_length);
 
-                ssize_t read_size { SSL_read(_ssl, std::data(data), size_to_read) };
+                if (wr_size <= 0) throw sharp_tcp_error { "SSL unrecoverable error" };
 
-                std::cout << "...read request..." << std::endl;
-
-                if (read_size <= 0)
-                {
-                    std::cout << "...read request failed..." << read_size << std::endl;
-
-                    switch(SSL_get_error(_ssl, size_to_read))
-                    {
-                    case SSL_ERROR_NONE:
-                        continue;
-
-                    case SSL_ERROR_ZERO_RETURN:
-                        close();
-                        return {};
-
-                    case SSL_ERROR_WANT_READ:
-                    {
-                        fd_set fds;
-                        struct timeval timeout {};
-
-                        FD_ZERO(&fds);
-                        FD_SET(_fd, &fds);
-
-                        timeout.tv_sec = 5;
-
-                        auto err { ::select(_fd + 1, &fds, nullptr, nullptr, &timeout) };
-
-                        if (err > 0) continue;
-
-                        if (err == 0)
-                        {
-                            close();
-                            throw sharp_tcp_error { "Error reading socket: " };
-                        }
-                        else
-                        {
-                            throw sharp_tcp_error { "Error reading socket: " };
-                        }
-
-                        break;
-                    }
-
-                    case SSL_ERROR_WANT_WRITE:
-                    {
-                        fd_set fds;
-                        struct timeval timeout {};
-
-                        FD_ZERO(&fds);
-                        FD_SET(_fd, &fds);
-
-                        timeout.tv_sec = 5;
-
-                        auto err { ::select(_fd + 1, nullptr, &fds, nullptr, &timeout) };
-
-                        if (err > 0) continue;
-
-                        if (err == 0)
-                        {
-                            close();
-                            throw sharp_tcp_error { "Error reading socket: " };
-                        }
-                        else
-                        {
-                            throw sharp_tcp_error { "Error reading socket: " };
-                        }
-
-                        break;
-                    }
-
-                    default:
-                        throw sharp_tcp_error { "Error reading socket: " };
-                    }
-                }
+                raw_ssl_data += wr_size;
+                ssl_length -= wr_size;
             }
 
-            return data;
+            //IF HANDSHAKE
+
+
         }
-        else
 #endif
-        {
-            return recv_insecure(size_to_read);
-        }
-#else
-        return recv_insecure(size_to_read);
-#endif
+        return data;
     }
 
     std::size_t send(const std::vector<uint8_t>& data, std::size_t size_to_write)
@@ -892,37 +845,6 @@ private:
         if (_type != type::UNKNOWN && _type != t) throw sharp_tcp_error { "trying to perform invalid operation on socket" };
 
         _type = t;
-    }
-
-    std::vector<uint8_t> recv_insecure(std::size_t size_to_read)
-    {
-        create_socket_if_necessary();
-        check_or_set_type(type::CLIENT);
-
-        std::vector<uint8_t> data(size_to_read, static_cast<uint8_t>(0));
-        uint32_t read_idx { 0 };
-        ssize_t rd_size { 0 }, total_size { 0 };
-
-        while (true)
-        {
-            data.resize(size_to_read * (read_idx + 1));
-
-            rd_size = ::recv(_fd, reinterpret_cast<char*>(const_cast<uint8_t*>(std::data(data))) + (size_to_read * read_idx), static_cast<int>(size_to_read), 0);
-
-            if (rd_size == SOCKET_ERROR) throw sharp_tcp_error { "recv() failure" };
-
-            total_size += rd_size;
-
-            if (rd_size == 0 || rd_size < static_cast<ssize_t>(size_to_read)) break;
-
-            ++read_idx;
-        }
-
-        if (!total_size) throw sharp_tcp_error { "nothing to read, socket has been closed by remote host" };
-
-        data.resize(total_size);
-
-        return data;
     }
 
 private:
