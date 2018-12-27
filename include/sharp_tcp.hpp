@@ -357,15 +357,11 @@ public:
 #ifdef SHARP_TCP_USES_OPENSSL
         if constexpr (UseSSL)
         {
+            _read_bio = BIO_new(BIO_s_mem());
+            _write_bio = BIO_new(BIO_s_mem());
             _ssl_context = SSL_CTX_new(TLS_server_method());
 
-            std::cout << "SSL context created..." << std::endl;
-
-            //SSL_CTX_set_options(_ssl_context, SSL_OP_SINGLE_DH_USE);
-            SSL_CTX_set_options(_ssl_context, SSL_OP_ALL|SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3);
-
-            std::cout << "SSL options set..." << std::endl;
-            std::cout << "Using cert file: " << cert_file << "; key file: " << priv_key_file << std::endl;
+            SSL_CTX_set_options(_ssl_context, SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
 
             if (SSL_CTX_use_certificate_file(_ssl_context, cert_file.c_str() , SSL_FILETYPE_PEM) <= 0)
                 throw sharp_tcp_error { "use_certificate_file() failure" };
@@ -379,26 +375,8 @@ public:
 
             std::cout << "SSL handle created..." << std::endl;
 
-            SSL_set_fd(_ssl, _fd);
-
-            std::cout << "SSL fd set..." << std::endl;
-
-            //SSL_do_handshake(_ssl);
             SSL_set_accept_state(_ssl);
-
-            auto ssl_err = SSL_accept(_ssl);
-
-            if(ssl_err <= 0)
-            {
-                std::cout << "SSL connection accept FAILED..." << std::endl;
-                ERR_print_errors_fp(stdout);
-
-                close();
-
-                throw sharp_tcp_error { "SSL_accept() failure" };
-            }
-
-            std::cout << "SSL connection accepted..." << std::endl;
+            SSL_set_bio(_ssl, _read_bio, _write_bio);
         }
 #endif
     }
@@ -956,6 +934,8 @@ private:
     static inline std::atomic_bool __is_openssl_initted { false };
     SSL *_ssl { nullptr };
     SSL_CTX *_ssl_context { nullptr };
+    BIO *_read_bio { nullptr };
+    BIO *_write_bio { nullptr };
 #endif
 };
 
