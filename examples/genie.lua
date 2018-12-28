@@ -38,7 +38,7 @@ solution "nstd_examples"
             buildoptions_cpp { "-fpermissive" }
 
         configuration { "windows" }
-            links { "ws2_32", "wsock32" }
+            links { "ws2_32" }
 
         configuration "not vs*"
             buildoptions_cpp { "-fpermissive" }
@@ -153,7 +153,7 @@ solution "nstd_examples"
             buildoptions_cpp { "-fpermissive" }
 
         configuration "windows"
-            links { "ws2_32", "wsock32" }
+            links { "ws2_32" }
 
         configuration "linux"
             links { "pthread" }
@@ -231,7 +231,7 @@ solution "nstd_examples"
             targetdir "bin/urdl_example/Release"
 
         configuration "windows"
-            links { "ws2_32", "wsock32" }
+            links { "ws2_32" }
 
         configuration "not vs*"
             buildoptions_cpp { "-fpermissive" }
@@ -252,7 +252,7 @@ solution "nstd_examples"
             targetdir "bin/uuid_example/Release"
 
         configuration "windows"
-            links { "ws2_32", "wsock32" }
+            links { "ws2_32" }
 
         configuration "not vs*"
             buildoptions_cpp { "-fpermissive" }
@@ -323,7 +323,7 @@ solution "nstd_examples"
             targetdir "bin/sharp_tcp_server_example/Release"
 
         configuration { "windows" }
-            links { "ws2_32", "wsock32" }
+            links { "ws2_32" }
 
         configuration "linux"
             links { "pthread" }
@@ -339,7 +339,7 @@ solution "nstd_examples"
             targetdir "bin/sharp_tcp_client_example/Release"
 
         configuration { "windows" }
-            links { "ws2_32", "wsock32" }
+            links { "ws2_32" }
 
         configuration "linux"
             links { "pthread" }
@@ -355,7 +355,7 @@ solution "nstd_examples"
             targetdir "bin/remote_signal_slot_example/Release"
 
         configuration { "windows" }
-            links { "ws2_32", "wsock32" }
+            links { "ws2_32" }
 
         configuration "linux"
             links { "pthread" }
@@ -381,7 +381,7 @@ solution "nstd_examples"
             targetdir "bin/http_resource_manager_example/Release"
 
         configuration { "windows" }
-            links { "ssl", "crypto", "ws2_32", "stdc++fs" }
+            links { "ws2_32", "stdc++fs" }
 
         configuration "linux"
-            links { "ssl", "crypto", "pthread", "stdc++fs" }
+            links { "pthread", "stdc++fs" }

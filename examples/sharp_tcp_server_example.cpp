@@ -27,7 +27,7 @@ std::condition_variable cv;
 void signint_handler(int) { cv.notify_all(); }
 
 
-void on_new_message(const std::shared_ptr<nstd::net::tcp_client<>>& client, const nstd::net::tcp_client<>::read_result& res)
+void on_new_message(const std::shared_ptr<nstd::net::tcp_client>& client, const nstd::net::tcp_client::read_result& res)
 {
     if (res.success)
     {
@@ -46,7 +46,7 @@ int main()
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
 
     nstd::net::tcp_server s;
-    s.start("127.0.0.1", 3001, [](const std::shared_ptr<nstd::net::tcp_client<>>& client)
+    s.start("127.0.0.1", 3001, [](const std::shared_ptr<nstd::net::tcp_client>& client)
     {
         std::cout << "New client" << std::endl;
 
