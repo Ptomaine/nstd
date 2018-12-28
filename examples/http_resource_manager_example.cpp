@@ -143,6 +143,8 @@ int main(int argc, char *argv[])
 
         if (!processed)
         {
+            std::cout << "Resource: '" << req->resource << "'" << std::endl;
+
             bad_request.send_response(req->client);
         }
     });
