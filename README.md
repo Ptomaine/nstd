@@ -17,7 +17,7 @@ The library currently contains the following features:
    * uuid - unique id generator
    * uri - class for URI manipulations.
    * http_request_parser - a simple class to parse incoming http requests.
-   * http_resource_manager - header-only HTTP server/router that supports OpenSSL.
+   * http_resource_manager - header-only HTTP server/router.
    * sharp_tcp - header-only TCP server/client classes.
    * planar_movements_recognizer - a set of classes to track and recognize planar movements and to execute corresponding commands
    * topological_sorter - the class to sort objects with dependencies (dependency solver)
