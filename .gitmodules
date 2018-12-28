@@ -34,3 +34,12 @@
 [submodule "include/external/fifo_map"]
 	path = include/external/fifo_map
 	url = https://github.com/nlohmann/fifo_map.git
+[submodule "include/external/tiny-process-library"]
+	path = include/external/tiny-process-library
+	url = https://gitlab.com/eidheim/tiny-process-library.git
+[submodule "include/external/Simple-WebSocket-Server"]
+	path = include/external/Simple-WebSocket-Server
+	url = https://gitlab.com/eidheim/Simple-WebSocket-Server.git
+[submodule "include/external/Simple-Web-Server"]
+	path = include/external/Simple-Web-Server
+	url = https://gitlab.com/eidheim/Simple-Web-Server.git
