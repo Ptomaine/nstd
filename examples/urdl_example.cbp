@@ -43,7 +43,6 @@
 			<Add option="-static" />
 			<Add option="-m64" />
 			<Add library="ws2_32" />
-			<Add library="wsock32" />
 		</Linker>
 		<Unit filename="urdl_example.cpp" />
 		<Extensions>

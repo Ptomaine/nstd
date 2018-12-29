@@ -29,23 +29,24 @@ SOFTWARE.
 
 int main(int argc, char **argv)
 {
-    nstd::po::parser p;
-
-    p["execute"].abbreviation('E').type(nstd::po::string);
-    p["help"].abbreviation('?').callback([&p]{ std::cout << p << std::endl; });
-
-    p(argc, argv);
-
-    auto &&help = p["help"];
-    auto &&exe = p["execute"];
-
-    if (help.was_set()) return 0;
-    if (exe.was_set()) { std::cout << "executing: " << exe.get().string << std::endl; return 0; }
-
     using namespace nstd::str;
     using namespace nstd::platform;
     using namespace nstd::platform::utilities;
     using namespace nstd::utilities;
+
+    nstd::po::parser p;
+    std::string shell_cmd;
+    auto help_callback { [&p]{ std::cout << p << std::endl; } };
+
+    p["execute"].abbreviation('E').type(nstd::po::string).description("Executes the provided shell command (not actually)").bind(shell_cmd);
+    p["help"].abbreviation('?').callback(help_callback).description("Prints the help screen");
+
+    auto pres { p(argc, argv) };
+
+    auto &&exe = p["execute"];
+
+    if (argc == 1 || !pres) help_callback();
+    if (exe.was_set() && !is_empty_or_ws(shell_cmd)) { std::cout << "command to execute: " << shell_cmd << std::endl; return 0; }
 
     const std::string app_name { "pmr_example" };
     at_scope_exit execute { [&app_name]() { std::cout << std::endl << "exitting " << app_name << "..." << std::endl;} };
@@ -55,7 +56,7 @@ int main(int argc, char **argv)
     auto cmd { compose_string(if_windows ? "where" : "which", " gcc 2>&1") };
     auto res { shell_execute(cmd) };
 
-    std::cout << "shell execute: \"" << trim(res) << "\"" << std::endl << std::endl;
+    std::cout << "shell execution result: \"" << trim(res) << "\"" << std::endl << std::endl;
 
     std::cout << "Is Little Endian: "   << boolalpha[is_little_endian]  << std::endl;
     std::cout << "Is 64 bit: "          << boolalpha[is_64bit]          << std::endl;
