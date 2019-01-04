@@ -294,7 +294,14 @@ int main()
         std::this_thread::sleep_for(0.1s);
     }
 
-	std::cout << "exitting..." << std::endl;
+    struct my_scope {};
+    ss::queued_signal_scoped_set<my_scope, std::string> qsss;
+
+    cons = qsss["test"]->connect([](auto &&s) { std::cout << s << std::endl; });
+
+    qsss["test"]->emit("Hello Queued Scoped Signal Set!");
+
+    std::cout << "exitting..." << std::endl;
 
     return 0;
 }
