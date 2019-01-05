@@ -969,8 +969,8 @@ template<typename... Args> using throttled_signal_set = signal_set_base<throttle
 template<typename... Args> using throttled_signal_ex_set = signal_set_base<throttled_signal_ex, Args...>;
 template<typename... Args> using queued_signal_set = signal_set_base<queued_signal, Args...>;
 template<typename... Args> using queued_signal_ex_set = signal_set_base<queued_signal_ex, Args...>;
-template<typename... Args> using queued_signal_scoped_set = signal_set_base<queued_signal_scoped, Args...>;
-template<typename... Args> using queued_signal_ex_scoped_set = signal_set_base<queued_signal_ex_scoped, Args...>;
+template<typename scope, typename... Args> using queued_signal_scoped_set = signal_set_base<queued_signal_scoped, scope, Args...>;
+template<typename scope, typename... Args> using queued_signal_ex_scoped_set = signal_set_base<queued_signal_ex_scoped, scope, Args...>;
 template<typename... Args> using bridged_signal_set = bridged_signal_set_base<bridged_signal, Args...>;
 template<typename... Args> using bridged_signal_ex_set = bridged_signal_set_base<bridged_signal_ex, Args...>;
 
