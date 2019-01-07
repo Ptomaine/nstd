@@ -26,6 +26,7 @@ SOFTWARE.
 #include "strings.hpp"
 #include "utilities.hpp"
 #include "cmdline_options.hpp"
+#include "process.hpp"
 
 int main(int argc, char **argv)
 {
@@ -33,6 +34,11 @@ int main(int argc, char **argv)
     using namespace nstd::platform;
     using namespace nstd::platform::utilities;
     using namespace nstd::utilities;
+    using namespace nstd::process;
+
+    Process proc("echo \"Redirected output\"", "", [](auto a, auto b){ std::cout << std::endl << ">> " << std::string(a, b) << std::endl; }, [](auto a, auto b){});
+
+    (void)proc.get_exit_status();
 
     nstd::po::parser p;
     std::string shell_cmd;
