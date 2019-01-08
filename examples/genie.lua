@@ -159,7 +159,7 @@ solution "nstd_examples"
             links { "pthread" }
 
     project "pmr_example"
-        files { "pmr_example.cpp" }
+        files { "pmr_example.cpp", "../include/process.cpp" }
         configuration { "Debug" }
             objdir "obj/pmr_example/Debug"
             targetdir "bin/pmr_example/Debug"
@@ -167,6 +167,9 @@ solution "nstd_examples"
         configuration { "Release" }
             objdir "obj/pmr_example/Release"
             targetdir "bin/pmr_example/Release"
+
+        configuration "linux"
+            links { "pthread" }
 
     project "strings_example"
         files { "strings_example.cpp", "../include/external/string_id/database.cpp", "../include/external/string_id/error.cpp", "../include/external/string_id/generator.cpp", "../include/external/string_id/string_id.cpp" }
