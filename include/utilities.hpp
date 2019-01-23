@@ -99,25 +99,26 @@ auto read_file_content(const std::filesystem::path &filepath)
     return contents;
 };
 
-template<class T, class Compare = std::less<>>
-void parallel_sort(T *data, size_t size, size_t min_sortable_length, const Compare &cp = Compare())
+template<class Iterator, class Compare = std::less<>>
+void parallel_sort(Iterator begin, Iterator end, size_t min_sortable_length, const Compare &cp = Compare())
 {
-    if (size <= min_sortable_length) std::sort(data, data + size, cp);
+    auto size { std::distance(begin, end) };
+
+    if (size <= min_sortable_length) std::sort(begin, end, cp);
     else
     {
-        size_t hsize { size / 2 };
-        auto future { std::async(parallel_sort<T, Compare>, data, hsize, min_sortable_length, cp) };
+        Iterator mid { begin };
 
-        parallel_sort(data + hsize, size - hsize, min_sortable_length, cp);
+        std::advance(mid, size / 2);
+
+        auto future { std::async(parallel_sort<Iterator, Compare>, begin, mid, min_sortable_length, cp) };
+
+        parallel_sort(mid, end, min_sortable_length, cp);
+
         future.wait();
-        std::inplace_merge(data, data + hsize, data + size, cp);
-    }
-}
 
-template<class Container, class Compare = std::less<>>
-void parallel_sort(Container &container, size_t min_sortable_length, const Compare &cp = Compare())
-{
-    parallel_sort<typename Container::value_type, Compare>(std::data(container), std::size(container), min_sortable_length, cp);
+        std::inplace_merge(begin, mid, end, cp);
+    }
 }
 
 namespace fibonacci
