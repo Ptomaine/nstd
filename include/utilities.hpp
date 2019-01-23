@@ -20,10 +20,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <functional>
 #include <fstream>
+#include <future>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -35,7 +37,7 @@ class at_scope_exit
 {
 public:
 
-    at_scope_exit(const std::function<void(void)> &functor) : _functor(functor) {}
+    at_scope_exit(const std::function<void(void)> &functor) : _functor { functor } {}
 
     ~at_scope_exit()
     {
@@ -49,7 +51,7 @@ public:
     at_scope_exit &operator =(at_scope_exit&&) = delete;
 
 private:
-    std::function<void(void)> _functor;
+    const std::function<void(void)> &_functor;
 };
 
 struct case_insensitive_hash
@@ -96,6 +98,27 @@ auto read_file_content(const std::filesystem::path &filepath)
 
     return contents;
 };
+
+template<class T, class Compare = std::less<>>
+void parallel_sort(T *data, size_t size, size_t min_sortable_length, const Compare &cp = Compare())
+{
+    if (size < min_sortable_length) std::sort(data, data + size, cp);
+    else
+    {
+        size_t hsize { size / 2 };
+        auto future { std::async(parallel_sort<T, Compare>, data, hsize, min_sortable_length, cp) };
+
+        parallel_sort(data + hsize, size - hsize, min_sortable_length, cp);
+        future.wait();
+        std::inplace_merge(data, data + hsize, data + size, cp);
+    }
+}
+
+template<class Container, class Compare = std::less<>>
+void parallel_sort(Container &container, size_t min_sortable_length, const Compare &cp = Compare())
+{
+    parallel_sort<typename Container::value_type, Compare>(std::data(container), std::size(container), min_sortable_length, cp);
+}
 
 namespace fibonacci
 {

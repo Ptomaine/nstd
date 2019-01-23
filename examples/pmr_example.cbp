@@ -42,6 +42,7 @@
 			<Add option="-m64" />
 		</Linker>
 		<Unit filename="pmr_example.cpp" />
+		<Unit filename="../include/process.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
