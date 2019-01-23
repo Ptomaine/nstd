@@ -102,7 +102,7 @@ auto read_file_content(const std::filesystem::path &filepath)
 template<class T, class Compare = std::less<>>
 void parallel_sort(T *data, size_t size, size_t min_sortable_length, const Compare &cp = Compare())
 {
-    if (size < min_sortable_length) std::sort(data, data + size, cp);
+    if (size <= min_sortable_length) std::sort(data, data + size, cp);
     else
     {
         size_t hsize { size / 2 };
