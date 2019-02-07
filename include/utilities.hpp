@@ -121,6 +121,92 @@ void parallel_sort(Iterator begin, Iterator end, size_t min_sortable_length, con
     }
 }
 
+template<class Iterator>
+void reverse_inplace(Iterator begin, Iterator end)
+{
+    end = std::prev(end);
+
+    while (std::distance(begin, end) > 0)
+    {
+        std::iter_swap(begin, end);
+        
+        begin = std::next(begin);
+        end = std::prev(end);
+    }
+}
+
+template<class Iterator>
+void rotate_inplace(Iterator begin, Iterator end, int shift_amount)
+{
+    auto size { static_cast<int>(std::distance(begin, end)) };
+
+    if (!size) return;
+
+    auto index { (shift_amount % size) + ((shift_amount < 0) ? size : 0) };
+
+    Iterator mid { begin };
+
+    std::advance(mid, index);
+
+    reverse_inplace(begin, mid);
+    reverse_inplace(mid, end);
+    reverse_inplace(begin, end);
+}
+
+template<class Container>
+Container rotate(const Container &data, int shift_amount)
+{
+    Container result;
+    auto size { static_cast<int>(std::size(data)) };
+
+    if (!size) return result;
+
+    auto index { (shift_amount % size) + ((shift_amount < 0) ? size : 0) };
+    auto item { std::back_inserter(result) };
+    auto length { size };
+
+    while (--size >= 0)
+    {
+        auto current { std::begin(data) };
+
+        std::advance(current, index++ % length);
+
+        item = *current;
+    }
+
+    return result;
+}
+
+template<typename Iterator, typename Container>
+void permute(Container &result, const Iterator &begin, Iterator from, const Iterator &end)
+{
+    if (from == std::prev(end))
+    {
+        typename Container::value_type next_record;
+
+        std::copy(begin, end, std::back_inserter(next_record));
+
+        std::back_inserter(result) = std::move(next_record);
+    }
+    else
+    {
+        for (auto it{ from }; it != end; it = std::next(it))
+        {
+            std::iter_swap(from, it);
+
+            permute(result, begin, std::next(from), end);
+
+            std::iter_swap(from, it);
+        }
+    }
+}
+
+template<typename Iterator, typename Container>
+void permute(Container &result, const Iterator &begin, const Iterator &end)
+{
+    permute(result, begin, begin, end);
+}
+
 namespace fibonacci
 {
 
