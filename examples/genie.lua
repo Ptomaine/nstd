@@ -22,7 +22,7 @@ solution "nstd_examples"
         defines { "NDEBUG" }
         flags { "OptimizeSpeed" }
 
-    project "asio_example"
+    --[[project "asio_example"
         files { "asio_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         includedirs { "../include/external/json/include" }
@@ -44,7 +44,7 @@ solution "nstd_examples"
             buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
-            links { "pthread" }
+            links { "pthread" }--]]
 
     project "base64_example"
         files { "base64_example.cpp" }
@@ -137,7 +137,7 @@ solution "nstd_examples"
             configuration "not vs*"
                 buildoptions { "-Wno-unused-variable", "-Wno-unused-but-set-variable" }
 
-    project "relinx_generator_example"
+    --[[project "relinx_generator_example"
         files { "relinx_generator_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         includedirs { "../include/external/json/include" }
@@ -156,7 +156,7 @@ solution "nstd_examples"
             links { "ws2_32" }
 
         configuration "linux"
-            links { "pthread" }
+            links { "pthread" }--]]
 
     project "pmr_example"
         files { "pmr_example.cpp", "../include/process.cpp" }
@@ -221,7 +221,7 @@ solution "nstd_examples"
             objdir "obj/units_example/Release"
             targetdir "bin/units_example/Release"
 
-    project "urdl_example"
+    --[[project "urdl_example"
         files { "urdl_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         includedirs { "../include/external/json/include" }
@@ -261,7 +261,7 @@ solution "nstd_examples"
             buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
-            links { "pthread" }
+            links { "pthread" }--]]
 
     project "freetype_example"
         files { "freetype_example.cpp", "../include/external/freetype/freetype.c" }
