@@ -349,6 +349,7 @@ solution "nstd_examples"
 
     project "remote_signal_slot_example"
         files { "remote_signal_slot_example.cpp" }
+        includedirs { "../include/external/json/include" }
         configuration { "Debug" }
             objdir "obj/remote_signal_slot_example/Debug"
             targetdir "bin/remote_signal_slot_example/Debug"

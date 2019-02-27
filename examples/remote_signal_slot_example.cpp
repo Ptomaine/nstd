@@ -21,6 +21,8 @@ SOFTWARE.
 #include <iostream>
 #include <signal.h>
 #include "remote_signal_slot.hpp"
+#include "json.hpp"
+#include "uuid.hpp"
 
 std::condition_variable cv;
 
@@ -45,12 +47,20 @@ int main()
 
     cons = remote_slots.get_remote_signal("test_signal"s)->connect([&to_string](auto s, auto &&data)
     {
-        std::cout << "remote signal: "s << s->name() << ", data: "s << to_string(*data) << std::endl;
+        auto json_obj { nstd::json::json::parse(std::string { std::begin(*data), std::end(*data) }) };
+
+        std::cout << "remote signal: "s << s->name() << ", data: "s << json_obj.dump() << std::endl;
     });
 
     std::this_thread::sleep_for(30ms);
 
-    auto msg { "...testing remote signal..."s };
+    nstd::json::json json_obj;
+
+    json_obj["id"] = nstd::uuid::uuid::generate_random().to_string();
+    json_obj["client"] = "nstd::example_client"s;
+    json_obj["message"] = "...testing remote signal..."s;
+
+    auto msg { json_obj.dump() };
     remote_signals.emit_remote_signal("test_signal"s, std::vector<uint8_t> { std::begin(msg), std::end(msg) });
 
     std::mutex mtx;
