@@ -45,7 +45,7 @@ int main()
 
     cons = remote_slots.get_remote_signal("test_signal"s)->connect([&to_string](auto s, auto &&data)
     {
-        std::cout << "remote signal: "s << s->name() << ", data: "s << to_string(data) << std::endl;
+        std::cout << "remote signal: "s << s->name() << ", data: "s << to_string(*data) << std::endl;
     });
 
     std::this_thread::sleep_for(30ms);

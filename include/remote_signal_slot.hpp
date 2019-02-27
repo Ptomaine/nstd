@@ -71,17 +71,17 @@ private:
     {
         if (result.success)
         {
-            auto divider_pos { std::find(std::begin(result.buffer), std::end(result.buffer), '\0') };
+            auto begin { std::begin(result.buffer) }, end { std::end(result.buffer) }, divider_pos { std::find(begin, end, '\0') };
 
-            if (divider_pos != std::end(result.buffer))
+            if (divider_pos != end)
             {
-                std::string signal_name { std::begin(result.buffer), divider_pos };
+                std::string signal_name { begin, divider_pos };
 
                 if (_signal_queue.exists(signal_name))
                 {
-                    std::vector<uint8_t> data { ++divider_pos, std::end(result.buffer) };
+                    auto data { std::make_shared<std::vector<uint8_t>>(++divider_pos, end) };
 
-                     _signal_queue[signal_name]->emit(std::ref(data));
+                     _signal_queue[signal_name]->emit(data);
                 }
             }
 
@@ -94,7 +94,7 @@ private:
     }
 
     nstd::net::tcp_client _client {};
-    nstd::signal_slot::queued_signal_ex_set<std::vector<uint8_t>> _signal_queue {};
+    nstd::signal_slot::queued_signal_ex_set<std::shared_ptr<std::vector<uint8_t>>> _signal_queue {};
 };
 
 }
