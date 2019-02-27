@@ -20,8 +20,10 @@ SOFTWARE.
 
 #include <iostream>
 #include <signal.h>
+#include "base64.hpp"
 #include "remote_signal_slot.hpp"
 #include "json.hpp"
+#include "relinx_generator_random.hpp"
 #include "uuid.hpp"
 
 std::condition_variable cv;
@@ -47,7 +49,7 @@ int main()
 
     cons = remote_slots.get_remote_signal("test_signal"s)->connect([&to_string](auto s, auto &&data)
     {
-        auto json_obj { nstd::json::json::parse(std::string { std::begin(*data), std::end(*data) }) };
+        auto json_obj { nstd::json::json::from_cbor(*data) };
 
         std::cout << "remote signal: "s << s->name() << ", data: "s << json_obj.dump() << std::endl;
     });
@@ -56,12 +58,15 @@ int main()
 
     nstd::json::json json_obj;
 
-    json_obj["id"] = nstd::uuid::uuid::generate_random().to_string();
+    json_obj["binary_data"] = nstd::base64::base64_encode(nstd::from_random()->take(20)->to_vector());
     json_obj["client"] = "nstd::example_client"s;
+    json_obj["id"] = nstd::uuid::uuid::generate_random().to_string();
     json_obj["message"] = "...testing remote signal..."s;
+    json_obj["sequence"] = nstd::random_provider_default<uint32_t>()();
+    json_obj["success"] = true;
 
-    auto msg { json_obj.dump() };
-    remote_signals.emit_remote_signal("test_signal"s, std::vector<uint8_t> { std::begin(msg), std::end(msg) });
+    auto msg { nstd::json::json::to_cbor(json_obj) };
+    remote_signals.emit_remote_signal("test_signal"s, msg);
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
