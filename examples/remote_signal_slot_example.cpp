@@ -18,6 +18,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <iomanip>
 #include <iostream>
 #include <signal.h>
 #include "base64.hpp"
@@ -36,37 +37,49 @@ int main()
 
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
 
-    auto to_string = [](auto &&container) { return std::string { std::begin(container), std::end(container) }; };
-
     ::signal(SIGINT, &signint_handler);
 
-    nstd::remote::remote_signal_hub remote_signals {};
-    remote_signals.start();
+    const std::string host { "127.0.0.1"s }, signal_name { "remote_test_signal"s };
+    constexpr const uint32_t port { 6789u };
+
+    nstd::remote::remote_signal_hub remote_signals {}; // signal provider/server
+    remote_signals.start(host, port);
 
     nstd::signal_slot::connection_bag cons;
-    nstd::remote::remote_slot_hub remote_slots {};
-    remote_slots.connect_to_remote_signal_hub();
+    nstd::remote::remote_slot_hub local_slots {}; // remote signal subscriber/client
+    local_slots.connect_to_remote_signal_hub(host, port);
 
-    cons = remote_slots.get_remote_signal("test_signal"s)->connect([&to_string](auto s, auto &&data)
+    cons = local_slots.get_remote_signal(signal_name)->connect([](auto s, auto &&data) // defining signal processor on client side
     {
         auto json_obj { nstd::json::json::from_cbor(*data) };
 
-        std::cout << "remote signal: "s << s->name() << ", data: "s << json_obj.dump() << std::endl;
+        std::cout << "remote signal: "s << s->name() << std::endl << "data: "s << std::endl << std::setw(3) << json_obj << std::endl;
     });
 
     std::this_thread::sleep_for(30ms);
 
-    nstd::json::json json_obj;
+    auto random_base64 { [](){ return nstd::base64::base64_encode(nstd::from_random()->take(5)->to_vector()); } };
 
-    json_obj["binary_data"] = nstd::base64::base64_encode(nstd::from_random()->take(20)->to_vector());
-    json_obj["client"] = "nstd::example_client"s;
-    json_obj["id"] = nstd::uuid::uuid::generate_random().to_string();
-    json_obj["message"] = "...testing remote signal..."s;
-    json_obj["sequence"] = nstd::random_provider_default<uint32_t>()();
-    json_obj["success"] = true;
+    nstd::signal_slot::timer_signal timer { "emitter"s, 2s };
 
-    auto msg { nstd::json::json::to_cbor(json_obj) };
-    remote_signals.emit_remote_signal("test_signal"s, msg);
+    cons = timer.connect([&remote_signals, &random_base64, &signal_name](auto)
+    {
+        nstd::json::json json_obj
+        {
+            { "binary_data", random_base64() },
+            { "client", "nstd::example_client"s },
+            { "id", nstd::uuid::uuid::generate_random().to_string() },
+            { "message", "...testing remote signal..."s },
+            { "sequence", nstd::random_provider_default<uint32_t>()() },
+            { "success", true }
+        };
+
+        auto msg { nstd::json::json::to_cbor(json_obj) };
+        
+        remote_signals.emit_remote_signal(signal_name, msg); // emitting remote signal
+    });
+
+    timer.start_timer();
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);

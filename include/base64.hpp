@@ -69,7 +69,7 @@ std::string base64_encode(const void *data, size_t length)
 template<typename Container>
 std::string base64_encode(const Container &container)
 {
-    return base64_encode(std::data(container), std::size(container));
+    return base64_encode(std::data(container), std::size(container) * sizeof(typename Container::value_type));
 }
 
 template<typename ResultContainerType = std::vector<uint8_t>>

@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "external/json/include/nlohmann/json.hpp"
+#include "external/json/single_include/nlohmann/json.hpp"
 #include "fifo_map.hpp"
 
 namespace nstd
