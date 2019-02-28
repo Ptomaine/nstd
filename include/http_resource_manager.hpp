@@ -241,12 +241,6 @@ public:
         std::string http_vesion { "HTTP/1.1" };
     };
 
-#ifdef SHARP_TCP_USES_OPENSSL
-    http_resource_manager(const std::string &cert_file, const std::string &priv_key_file) : _server { cert_file, priv_key_file }
-    {
-    }
-#endif
-
     using request_ptr = std::shared_ptr<request>;
 
     void start(const std::string &host, int port)

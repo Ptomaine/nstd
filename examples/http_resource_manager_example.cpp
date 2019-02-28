@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
         throw std::runtime_error("Test exception");
     });
 
-    mgr.add_status_handler(http_resource_manager::response::http_status_codes::NotFound, [&bad_request, &not_found](auto &&req)
+    mgr.add_status_handler(S::NotFound, [&bad_request, &not_found](auto &&req)
     {
         if (req->completed) return; else req->completed = true;
 
