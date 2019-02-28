@@ -21,9 +21,9 @@ SOFTWARE.
 #include <iostream>
 #include <signal.h>
 #include "base64.hpp"
-#include "remote_signal_slot.hpp"
 #include "json.hpp"
 #include "relinx_generator_random.hpp"
+#include "remote_signal_slot.hpp"
 #include "uuid.hpp"
 
 std::condition_variable cv;
