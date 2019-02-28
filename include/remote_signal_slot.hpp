@@ -23,6 +23,11 @@ SOFTWARE.
 #include "sharp_tcp.hpp"
 #include "signal_slot.hpp"
 
+namespace
+{
+    constexpr const uint32_t pool_size { 65536 };
+}
+
 namespace nstd::remote
 {
 using namespace std::literals;
@@ -49,7 +54,7 @@ public:
     }
 
 private:
-    nstd::net::tcp_server<65536> _server {};
+    nstd::net::tcp_server<pool_size> _server {};
 };
 
 class remote_slot_hub
@@ -58,7 +63,7 @@ public:
     void connect_to_remote_signal_hub(const std::string &remote_host = "127.0.0.1"s, std::uint32_t remote_port = 8)
     {
         _client.connect(remote_host, remote_port);
-        _client.async_read({65536, [this](auto &&result) { on_remote_signal(result); } });
+        _client.async_read({pool_size, [this](auto &&result) { on_remote_signal(result); } });
     }
 
     auto &get_remote_signal(const std::string &signal_name)
@@ -85,7 +90,7 @@ private:
                 }
             }
 
-            _client.async_read({65536, [this](auto &&res) { on_remote_signal(res); } });
+            _client.async_read({pool_size, [this](auto &&res) { on_remote_signal(res); } });
         }
         else
         {
