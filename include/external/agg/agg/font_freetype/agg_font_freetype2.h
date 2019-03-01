@@ -2,8 +2,8 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// Permission to copy, use, modify, sell and distribute this software
-// is granted provided this copyright notice appears in all copies.
+// Permission to copy, use, modify, sell and distribute this software 
+// is granted provided this copyright notice appears in all copies. 
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -24,6 +24,7 @@
 #include FT_FREETYPE_H
 
 
+#include <cstddef>
 #include "agg_scanline_storage_aa.h"
 #include "agg_scanline_storage_bin.h"
 #include "agg_scanline_u.h"
@@ -31,7 +32,7 @@
 #include "agg_path_storage_integer.h"
 #include "agg_rasterizer_scanline_aa.h"
 #include "agg_conv_curve.h"
-  #include "agg_font_cache_manager.h"
+#include "agg_font_cache_manager.h"
 #include "agg_font_cache_manager2.h"
 #include "agg_trans_affine.h"
 
@@ -53,7 +54,7 @@ namespace fman {
 			double advance_x;
 			double advance_y;
 		};
-
+		
 		class loaded_face
 		{
 		public:
@@ -80,7 +81,7 @@ namespace fman {
 			unsigned num_faces() const
 			{
 				return m_ft_face->num_faces;
-			}
+			} 
 
 			const char *name() const
 			{
@@ -168,7 +169,7 @@ namespace fman {
 				glyph_rendering rendering )
 			{
 				rendering=capable_rendering(rendering);
-
+				
 				if( m_height != height ||
 					m_width != width ||
 					m_hinting != hinting ||
@@ -252,7 +253,7 @@ namespace fman {
 
 		// Load families and faces
         //--------------------------------------------------------------------
-		loaded_face *load_face(const void* buffer, size_t bytes);
+		loaded_face *load_face(const void* buffer, std::size_t bytes);
 		loaded_face *load_face_file(const char* file_name);
 		loaded_face *create_loaded_face(FT_Face ft_face); // internal
 		void unload_face(loaded_face *face);
@@ -271,7 +272,7 @@ namespace fman {
         bool            m_flag32;
         int             m_last_error;
         bool            m_library_initialized;
-		FT_Library      m_library;    // handle to library
+		FT_Library      m_library;    // handle to library    
 
         path_storage_integer<int16, 6>              m_path16;
         path_storage_integer<int32, 6>              m_path32;
@@ -288,7 +289,7 @@ namespace fman {
 
 
     //------------------------------------------------font_engine_freetype_int16
-    // This class uses values of type int16 (10.6 format) for the vector cache.
+    // This class uses values of type int16 (10.6 format) for the vector cache. 
     // The vector cache is compact, but when rendering glyphs of height
     // more that 200 there integer overflow can occur.
     //
@@ -301,13 +302,13 @@ namespace fman {
         typedef font_engine_freetype_base::scanlines_aa_type  scanlines_aa_type;
         typedef font_engine_freetype_base::scanlines_bin_type scanlines_bin_type;
 
-        font_engine_freetype_int16(void *ftMemory = 0) :
+        font_engine_freetype_int16(void *ftMemory = 0) : 
             font_engine_freetype_base(false, ftMemory) {}
     };
 
     //------------------------------------------------font_engine_freetype_int32
-    // This class uses values of type int32 (26.6 format) for the vector cache.
-    // The vector cache is twice larger than in font_engine_freetype_int16,
+    // This class uses values of type int32 (26.6 format) for the vector cache. 
+    // The vector cache is twice larger than in font_engine_freetype_int16, 
     // but it allows you to render glyphs of very large sizes.
     //
     class font_engine_freetype_int32 : public font_engine_freetype_base
@@ -319,7 +320,7 @@ namespace fman {
         typedef font_engine_freetype_base::scanlines_aa_type  scanlines_aa_type;
         typedef font_engine_freetype_base::scanlines_bin_type scanlines_bin_type;
 
-        font_engine_freetype_int32(void *ftMemory = 0) :
+        font_engine_freetype_int32(void *ftMemory = 0) : 
             font_engine_freetype_base(true, ftMemory) {}
     };
 

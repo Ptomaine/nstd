@@ -2,8 +2,8 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// Permission to copy, use, modify, sell and distribute this software
-// is granted provided this copyright notice appears in all copies.
+// Permission to copy, use, modify, sell and distribute this software 
+// is granted provided this copyright notice appears in all copies. 
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -26,20 +26,20 @@
 namespace agg
 {
 
-    // See Implementation agg_image_filters.cpp
+    // See Implementation agg_image_filters.cpp 
 
     enum image_filter_scale_e
     {
         image_filter_shift = 14,                      //----image_filter_shift
-        image_filter_scale = 1 << image_filter_shift, //----image_filter_scale
-        image_filter_mask  = image_filter_scale - 1   //----image_filter_mask
+        image_filter_scale = 1 << image_filter_shift, //----image_filter_scale 
+        image_filter_mask  = image_filter_scale - 1   //----image_filter_mask 
     };
 
     enum image_subpixel_scale_e
     {
         image_subpixel_shift = 8,                         //----image_subpixel_shift
-        image_subpixel_scale = 1 << image_subpixel_shift, //----image_subpixel_scale
-        image_subpixel_mask  = image_subpixel_scale - 1   //----image_subpixel_mask
+        image_subpixel_scale = 1 << image_subpixel_shift, //----image_subpixel_scale 
+        image_subpixel_mask  = image_subpixel_scale - 1   //----image_subpixel_mask 
     };
 
 
@@ -50,6 +50,7 @@ namespace agg
         template<class FilterF> void calculate(const FilterF& filter,
                                                bool normalization=true)
         {
+			filter; // prevent erroneous C4100 in MSVC
             double r = filter.radius();
             realloc_lut(r);
             unsigned i;
@@ -58,12 +59,12 @@ namespace agg
             {
                 double x = double(i) / double(image_subpixel_scale);
                 double y = filter.calc_weight(x);
-                m_weight_array[pivot + i] =
+                m_weight_array[pivot + i] = 
                 m_weight_array[pivot - i] = (int16)iround(y * image_filter_scale);
             }
             unsigned end = (diameter() << image_subpixel_shift) - 1;
             m_weight_array[0] = m_weight_array[end];
-            if(normalization)
+            if(normalization) 
             {
                 normalize();
             }
@@ -71,7 +72,7 @@ namespace agg
 
         image_filter_lut() : m_radius(0), m_diameter(0), m_start(0) {}
 
-        template<class FilterF> image_filter_lut(const FilterF& filter,
+        template<class FilterF> image_filter_lut(const FilterF& filter, 
                                                  bool normalization=true)
         {
             calculate(filter, normalization);
@@ -126,7 +127,7 @@ namespace agg
         static double radius() { return 1.0; }
         static double calc_weight(double x)
         {
-            return 0.5 + 0.5 * cos(pi * x);
+            return 0.5 + 0.5 * std::cos(pi * x);
         }
     };
 
@@ -137,7 +138,7 @@ namespace agg
         static double radius() { return 1.0; }
         static double calc_weight(double x)
         {
-            return 0.54 + 0.46 * cos(pi * x);
+            return 0.54 + 0.46 * std::cos(pi * x);
         }
     };
 
@@ -150,7 +151,7 @@ namespace agg
             return (2.0 * x - 3.0) * x * x + 1.0;
         }
     };
-
+   
     //------------------------------------------------image_filter_quadric
     struct image_filter_quadric
     {
@@ -177,7 +178,7 @@ namespace agg
         static double calc_weight(double x)
         {
             return
-                (1.0/6.0) *
+                (1.0/6.0) * 
                 (pow3(x + 2) - 4 * pow3(x + 1) + 6 * pow3(x) - 4 * pow3(x - 1));
         }
     };
@@ -199,7 +200,7 @@ namespace agg
         static double radius() { return 1.0; }
         double calc_weight(double x) const
         {
-            return bessel_i0(a * sqrt(1. - x * x)) * i0a;
+            return bessel_i0(a * std::sqrt(1. - x * x)) * i0a;
         }
 
     private:
@@ -211,7 +212,7 @@ namespace agg
             sum = 1.;
             y = x * x / 4.;
             t = y;
-
+        
             for(i = 2; t > epsilon; i++)
             {
                 sum += t;
@@ -298,9 +299,9 @@ namespace agg
     struct image_filter_gaussian
     {
         static double radius() { return 2.0; }
-        static double calc_weight(double x)
+        static double calc_weight(double x) 
         {
-            return exp(-2.0 * x * x) * sqrt(2.0 / pi);
+            return std::exp(-2.0 * x * x) * std::sqrt(2.0 / pi);
         }
     };
 
@@ -308,7 +309,7 @@ namespace agg
     //------------------------------------------------image_filter_bessel
     struct image_filter_bessel
     {
-        static double radius() { return 3.2383; }
+        static double radius() { return 3.2383; } 
         static double calc_weight(double x)
         {
             return (x == 0.0) ? pi / 4.0 : besj(pi * x, 1) / (2.0 * x);
@@ -326,7 +327,7 @@ namespace agg
         {
             if(x == 0.0) return 1.0;
             x *= pi;
-            return sin(x) / x;
+            return std::sin(x) / x;
         }
     private:
         double m_radius;
@@ -345,7 +346,7 @@ namespace agg
            if(x > m_radius) return 0.0;
            x *= pi;
            double xr = x / m_radius;
-           return (sin(x) / x) * (sin(xr) / xr);
+           return (std::sin(x) / x) * (std::sin(xr) / xr);
         }
     private:
         double m_radius;
@@ -364,7 +365,7 @@ namespace agg
            if(x > m_radius) return 0.0;
            x *= pi;
            double xr = x / m_radius;
-           return (sin(x) / x) * (0.42 + 0.5*cos(xr) + 0.08*cos(2*xr));
+           return (std::sin(x) / x) * (0.42 + 0.5*std::cos(xr) + 0.08*std::cos(2*xr));
         }
     private:
         double m_radius;

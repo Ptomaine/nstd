@@ -2,8 +2,8 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// Permission to copy, use, modify, sell and distribute this software
-// is granted provided this copyright notice appears in all copies.
+// Permission to copy, use, modify, sell and distribute this software 
+// is granted provided this copyright notice appears in all copies. 
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -25,20 +25,20 @@ namespace agg
 {
 
     //------------------------------------------------------------------------
-    slider_ctrl_impl::slider_ctrl_impl(double x1, double y1,
+    slider_ctrl_impl::slider_ctrl_impl(double x1, double y1, 
                                        double x2, double y2, bool flip_y) :
         ctrl(x1, y1, x2, y2, flip_y),
         m_border_width(1.0),
         m_border_extra((y2 - y1) / 2),
         m_text_thickness(1.0),
+        m_pdx(0.0),
+        m_mouse_move(false),
         m_value(0.5),
         m_preview_value(0.5),
         m_min(0.0),
         m_max(1.0),
         m_num_steps(0),
         m_descending(false),
-        m_pdx(0.0),
-        m_mouse_move(false),
         m_text_poly(m_text)
     {
         m_label[0] = 0;
@@ -81,17 +81,17 @@ namespace agg
 
     //------------------------------------------------------------------------
     void slider_ctrl_impl::border_width(double t, double extra)
-    {
-        m_border_width = t;
+    { 
+        m_border_width = t; 
         m_border_extra = extra;
-        calc_box();
+        calc_box(); 
     }
 
 
     //------------------------------------------------------------------------
-    void slider_ctrl_impl::value(double value)
-    {
-        m_preview_value = (value - m_min) / (m_max - m_min);
+    void slider_ctrl_impl::value(double value) 
+    { 
+        m_preview_value = (value - m_min) / (m_max - m_min); 
         if(m_preview_value > 1.0) m_preview_value = 1.0;
         if(m_preview_value < 0.0) m_preview_value = 0.0;
         normalize_value(true);
@@ -121,13 +121,13 @@ namespace agg
 
         case 0:                 // Background
             m_vertex = 0;
-            m_vx[0] = m_x1 - m_border_extra;
+            m_vx[0] = m_x1 - m_border_extra; 
             m_vy[0] = m_y1 - m_border_extra;
-            m_vx[1] = m_x2 + m_border_extra;
+            m_vx[1] = m_x2 + m_border_extra; 
             m_vy[1] = m_y1 - m_border_extra;
-            m_vx[2] = m_x2 + m_border_extra;
+            m_vx[2] = m_x2 + m_border_extra; 
             m_vy[2] = m_y2 + m_border_extra;
-            m_vx[3] = m_x1 - m_border_extra;
+            m_vx[3] = m_x1 - m_border_extra; 
             m_vy[3] = m_y2 + m_border_extra;
             break;
 
@@ -135,24 +135,24 @@ namespace agg
             m_vertex = 0;
             if(m_descending)
             {
-                m_vx[0] = m_x1;
+                m_vx[0] = m_x1; 
                 m_vy[0] = m_y1;
-                m_vx[1] = m_x2;
+                m_vx[1] = m_x2; 
                 m_vy[1] = m_y1;
-                m_vx[2] = m_x1;
+                m_vx[2] = m_x1; 
                 m_vy[2] = m_y2;
-                m_vx[3] = m_x1;
+                m_vx[3] = m_x1; 
                 m_vy[3] = m_y1;
             }
             else
             {
-                m_vx[0] = m_x1;
+                m_vx[0] = m_x1; 
                 m_vy[0] = m_y1;
-                m_vx[1] = m_x2;
+                m_vx[1] = m_x2; 
                 m_vy[1] = m_y1;
-                m_vx[2] = m_x2;
+                m_vx[2] = m_x2; 
                 m_vy[2] = m_y2;
-                m_vx[3] = m_x1;
+                m_vx[3] = m_x1; 
                 m_vy[3] = m_y1;
             }
             break;
@@ -177,7 +177,7 @@ namespace agg
             m_ellipse.init(m_xs1 + (m_xs2 - m_xs1) * m_preview_value,
                            (m_ys1 + m_ys2) / 2.0,
                            m_y2 - m_y1,
-                           m_y2 - m_y1,
+                           m_y2 - m_y1, 
                            32);
             break;
 
@@ -187,7 +187,7 @@ namespace agg
             m_ellipse.init(m_xs1 + (m_xs2 - m_xs1) * m_value,
                            (m_ys1 + m_ys2) / 2.0,
                            m_y2 - m_y1,
-                           m_y2 - m_y1,
+                           m_y2 - m_y1, 
                            32);
             m_ellipse.rewind(0);
             break;
@@ -326,7 +326,7 @@ namespace agg
         {
             d = 1.0 / m_num_steps;
         }
-
+        
         if(right || up)
         {
             m_preview_value += d;

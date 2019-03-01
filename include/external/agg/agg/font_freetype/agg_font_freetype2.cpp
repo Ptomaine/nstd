@@ -2,8 +2,8 @@
 // Anti-Grain Geometry - Version 2.4
 // Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
 //
-// Permission to copy, use, modify, sell and distribute this software
-// is granted provided this copyright notice appears in all copies.
+// Permission to copy, use, modify, sell and distribute this software 
+// is granted provided this copyright notice appears in all copies. 
 // This software is provided "as is" without express or implied
 // warranty, and with no claim as to its suitability for any purpose.
 //
@@ -13,7 +13,8 @@
 //          http://www.antigrain.com
 //----------------------------------------------------------------------------
 
-#include <stdio.h>
+#include <cstdio>
+#include <cstring>
 #include <freetype/ftmodapi.h>
 #include "agg_font_freetype2.h"
 #include "agg_bitset_iterator.h"
@@ -37,7 +38,7 @@ namespace fman {
     //
     //------------------------------------------------------------------------------
 
-    static const unsigned crc32tab[256] =
+    static const unsigned crc32tab[256] = 
     {
        0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
        0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
@@ -112,10 +113,10 @@ namespace fman {
     {
         unsigned crc = (unsigned)~0;
         const unsigned char* p;
-        unsigned len = 0;
+        unsigned len = 0; 
         unsigned nr = size;
 
-        for (len += nr, p = buf; nr--; ++p)
+        for (len += nr, p = buf; nr--; ++p) 
         {
             crc = (crc >> 8) ^ crc32tab[(crc ^ *p) & 0xff];
         }
@@ -147,7 +148,7 @@ namespace fman {
                               bool flip_y,
                               const trans_affine& mtx,
                               PathStorage& path)
-    {
+    {   
         typedef typename PathStorage::value_type value_type;
 
         FT_Vector   v_last;
@@ -212,7 +213,7 @@ namespace fman {
             y1 = int26p6_to_dbl(v_start.y);
             if(flip_y) y1 = -y1;
             mtx.transform(&x1, &y1);
-            path.move_to(value_type(dbl_to_int26p6(x1)),
+            path.move_to(value_type(dbl_to_int26p6(x1)), 
                          value_type(dbl_to_int26p6(y1)));
 
             while(point < limit)
@@ -229,7 +230,7 @@ namespace fman {
                         y1 = int26p6_to_dbl(point->y);
                         if(flip_y) y1 = -y1;
                         mtx.transform(&x1, &y1);
-                        path.line_to(value_type(dbl_to_int26p6(x1)),
+                        path.line_to(value_type(dbl_to_int26p6(x1)), 
                                      value_type(dbl_to_int26p6(y1)));
                         //path.line_to(conv(point->x), flip_y ? -conv(point->y) : conv(point->y));
                         continue;
@@ -262,9 +263,9 @@ namespace fman {
                                 if(flip_y) { y1 = -y1; y2 = -y2; }
                                 mtx.transform(&x1, &y1);
                                 mtx.transform(&x2, &y2);
-                                path.curve3(value_type(dbl_to_int26p6(x1)),
+                                path.curve3(value_type(dbl_to_int26p6(x1)), 
                                             value_type(dbl_to_int26p6(y1)),
-                                            value_type(dbl_to_int26p6(x2)),
+                                            value_type(dbl_to_int26p6(x2)), 
                                             value_type(dbl_to_int26p6(y2)));
                                 continue;
                             }
@@ -281,14 +282,14 @@ namespace fman {
                             if(flip_y) { y1 = -y1; y2 = -y2; }
                             mtx.transform(&x1, &y1);
                             mtx.transform(&x2, &y2);
-                            path.curve3(value_type(dbl_to_int26p6(x1)),
+                            path.curve3(value_type(dbl_to_int26p6(x1)), 
                                         value_type(dbl_to_int26p6(y1)),
-                                        value_type(dbl_to_int26p6(x2)),
+                                        value_type(dbl_to_int26p6(x2)), 
                                         value_type(dbl_to_int26p6(y2)));
 
-                            //path.curve3(conv(v_control.x),
-                            //            flip_y ? -conv(v_control.y) : conv(v_control.y),
-                            //            conv(v_middle.x),
+                            //path.curve3(conv(v_control.x), 
+                            //            flip_y ? -conv(v_control.y) : conv(v_control.y), 
+                            //            conv(v_middle.x), 
                             //            flip_y ? -conv(v_middle.y) : conv(v_middle.y));
 
                             v_control = vec;
@@ -302,14 +303,14 @@ namespace fman {
                         if(flip_y) { y1 = -y1; y2 = -y2; }
                         mtx.transform(&x1, &y1);
                         mtx.transform(&x2, &y2);
-                        path.curve3(value_type(dbl_to_int26p6(x1)),
+                        path.curve3(value_type(dbl_to_int26p6(x1)), 
                                     value_type(dbl_to_int26p6(y1)),
-                                    value_type(dbl_to_int26p6(x2)),
+                                    value_type(dbl_to_int26p6(x2)), 
                                     value_type(dbl_to_int26p6(y2)));
 
-                        //path.curve3(conv(v_control.x),
-                        //            flip_y ? -conv(v_control.y) : conv(v_control.y),
-                        //            conv(v_start.x),
+                        //path.curve3(conv(v_control.x), 
+                        //            flip_y ? -conv(v_control.y) : conv(v_control.y), 
+                        //            conv(v_start.x), 
                         //            flip_y ? -conv(v_start.y) : conv(v_start.y));
                         goto Close;
                     }
@@ -323,9 +324,9 @@ namespace fman {
                             return false;
                         }
 
-                        vec1.x = point[0].x;
+                        vec1.x = point[0].x; 
                         vec1.y = point[0].y;
-                        vec2.x = point[1].x;
+                        vec2.x = point[1].x; 
                         vec2.y = point[1].y;
 
                         point += 2;
@@ -348,18 +349,18 @@ namespace fman {
                             mtx.transform(&x1, &y1);
                             mtx.transform(&x2, &y2);
                             mtx.transform(&x3, &y3);
-                            path.curve4(value_type(dbl_to_int26p6(x1)),
+                            path.curve4(value_type(dbl_to_int26p6(x1)), 
                                         value_type(dbl_to_int26p6(y1)),
-                                        value_type(dbl_to_int26p6(x2)),
+                                        value_type(dbl_to_int26p6(x2)), 
                                         value_type(dbl_to_int26p6(y2)),
-                                        value_type(dbl_to_int26p6(x3)),
+                                        value_type(dbl_to_int26p6(x3)), 
                                         value_type(dbl_to_int26p6(y3)));
 
-                            //path.curve4(conv(vec1.x),
-                            //            flip_y ? -conv(vec1.y) : conv(vec1.y),
-                            //            conv(vec2.x),
+                            //path.curve4(conv(vec1.x), 
+                            //            flip_y ? -conv(vec1.y) : conv(vec1.y), 
+                            //            conv(vec2.x), 
                             //            flip_y ? -conv(vec2.y) : conv(vec2.y),
-                            //            conv(vec.x),
+                            //            conv(vec.x), 
                             //            flip_y ? -conv(vec.y) : conv(vec.y));
                             continue;
                         }
@@ -374,18 +375,18 @@ namespace fman {
                         mtx.transform(&x1, &y1);
                         mtx.transform(&x2, &y2);
                         mtx.transform(&x3, &y3);
-                        path.curve4(value_type(dbl_to_int26p6(x1)),
+                        path.curve4(value_type(dbl_to_int26p6(x1)), 
                                     value_type(dbl_to_int26p6(y1)),
-                                    value_type(dbl_to_int26p6(x2)),
+                                    value_type(dbl_to_int26p6(x2)), 
                                     value_type(dbl_to_int26p6(y2)),
-                                    value_type(dbl_to_int26p6(x3)),
+                                    value_type(dbl_to_int26p6(x3)), 
                                     value_type(dbl_to_int26p6(y3)));
 
-                        //path.curve4(conv(vec1.x),
-                        //            flip_y ? -conv(vec1.y) : conv(vec1.y),
-                        //            conv(vec2.x),
+                        //path.curve4(conv(vec1.x), 
+                        //            flip_y ? -conv(vec1.y) : conv(vec1.y), 
+                        //            conv(vec2.x), 
                         //            flip_y ? -conv(vec2.y) : conv(vec2.y),
-                        //            conv(v_start.x),
+                        //            conv(v_start.x), 
                         //            flip_y ? -conv(v_start.y) : conv(v_start.y));
                         goto Close;
                     }
@@ -395,7 +396,7 @@ namespace fman {
             path.close_polygon();
 
        Close:
-            first = last + 1;
+            first = last + 1; 
         }
 
         return true;
@@ -493,8 +494,8 @@ namespace fman {
 	{
 		bool success=false;
 		prepared->glyph_index = FT_Get_Char_Index(m_ft_face, glyph_code);
-		int error = FT_Load_Glyph(m_ft_face,
-			prepared->glyph_index,
+		int error = FT_Load_Glyph(m_ft_face, 
+			prepared->glyph_index, 
 			m_hinting ? FT_LOAD_DEFAULT : FT_LOAD_NO_HINTING);
 		//	m_hinting ? FT_LOAD_FORCE_AUTOHINT : FT_LOAD_NO_HINTING);
 		if(error == 0)
@@ -506,9 +507,9 @@ namespace fman {
 				error = FT_Render_Glyph(m_ft_face->glyph, FT_RENDER_MODE_MONO);
 				if(error == 0)
 				{
-					decompose_ft_bitmap_mono(m_ft_face->glyph->bitmap,
+					decompose_ft_bitmap_mono(m_ft_face->glyph->bitmap, 
 						m_ft_face->glyph->bitmap_left,
-						m_flip_y ? -m_ft_face->glyph->bitmap_top :
+						m_flip_y ? -m_ft_face->glyph->bitmap_top : 
 						m_ft_face->glyph->bitmap_top,
 						m_flip_y,
 						m_engine.m_scanline_bin,
@@ -517,7 +518,7 @@ namespace fman {
 					prepared->bounds.y1 = m_engine.m_scanlines_bin.min_y();
 					prepared->bounds.x2 = m_engine.m_scanlines_bin.max_x() + 1;
 					prepared->bounds.y2 = m_engine.m_scanlines_bin.max_y() + 1;
-					prepared->data_size = m_engine.m_scanlines_bin.byte_size();
+					prepared->data_size = m_engine.m_scanlines_bin.byte_size(); 
 					prepared->data_type = glyph_data_mono;
 					prepared->advance_x = int26p6_to_dbl(m_ft_face->glyph->advance.x);
 					prepared->advance_y = int26p6_to_dbl(m_ft_face->glyph->advance.y);
@@ -530,15 +531,15 @@ namespace fman {
 				error = FT_Render_Glyph(m_ft_face->glyph, FT_RENDER_MODE_NORMAL);
 				if(error == 0)
 				{
-					decompose_ft_bitmap_gray8(m_ft_face->glyph->bitmap,
+					decompose_ft_bitmap_gray8(m_ft_face->glyph->bitmap, 
 						m_ft_face->glyph->bitmap_left,
-						m_flip_y ? -m_ft_face->glyph->bitmap_top :
+						m_flip_y ? -m_ft_face->glyph->bitmap_top : 
 						m_ft_face->glyph->bitmap_top,
 						m_flip_y,
 						m_engine.m_rasterizer,
 						m_engine.m_scanline_aa,
 						m_engine.m_scanlines_aa);
-					prepared->data_size = m_engine.m_scanlines_aa.byte_size();
+					prepared->data_size = m_engine.m_scanlines_aa.byte_size(); 
 					prepared->data_type = glyph_data_gray8;
 					prepared->advance_x = int26p6_to_dbl(m_ft_face->glyph->advance.x);
 					prepared->advance_y = int26p6_to_dbl(m_ft_face->glyph->advance.y);
@@ -569,7 +570,7 @@ namespace fman {
 					{
 						m_engine.m_path32.remove_all();
 						if(decompose_ft_outline(m_ft_face->glyph->outline,
-							m_flip_y,
+							m_flip_y, 
 							m_affine,
 							m_engine.m_path32))
 						{
@@ -590,7 +591,7 @@ namespace fman {
 					{
 						m_engine.m_path16.remove_all();
 						if(decompose_ft_outline(m_ft_face->glyph->outline,
-							m_flip_y,
+							m_flip_y, 
 							m_affine,
 							m_engine.m_path16))
 						{
@@ -618,7 +619,7 @@ namespace fman {
 					{
 						m_engine.m_path32.remove_all();
 						decompose_ft_outline(m_ft_face->glyph->outline,
-							m_flip_y,
+							m_flip_y, 
 							m_affine,
 							m_engine.m_path32);
 						m_engine.m_rasterizer.add_path(m_engine.m_curves32);
@@ -627,18 +628,18 @@ namespace fman {
 					{
 						m_engine.m_path16.remove_all();
 						decompose_ft_outline(m_ft_face->glyph->outline,
-							m_flip_y,
+							m_flip_y, 
 							m_affine,
 							m_engine.m_path16);
 						m_engine.m_rasterizer.add_path(m_engine.m_curves16);
 					}
-					m_engine.m_scanlines_bin.prepare(); // Remove all
+					m_engine.m_scanlines_bin.prepare(); // Remove all 
 					render_scanlines(m_engine.m_rasterizer, m_engine.m_scanline_bin, m_engine.m_scanlines_bin);
 					prepared->bounds.x1 = m_engine.m_scanlines_bin.min_x();
 					prepared->bounds.y1 = m_engine.m_scanlines_bin.min_y();
 					prepared->bounds.x2 = m_engine.m_scanlines_bin.max_x() + 1;
 					prepared->bounds.y2 = m_engine.m_scanlines_bin.max_y() + 1;
-					prepared->data_size = m_engine.m_scanlines_bin.byte_size();
+					prepared->data_size = m_engine.m_scanlines_bin.byte_size(); 
 					prepared->data_type = glyph_data_mono;
 					prepared->advance_x = int26p6_to_dbl(m_ft_face->glyph->advance.x);
 					prepared->advance_y = int26p6_to_dbl(m_ft_face->glyph->advance.y);
@@ -656,7 +657,7 @@ namespace fman {
 					{
 						m_engine.m_path32.remove_all();
 						decompose_ft_outline(m_ft_face->glyph->outline,
-							m_flip_y,
+							m_flip_y, 
 							m_affine,
 							m_engine.m_path32);
 						m_engine.m_rasterizer.add_path(m_engine.m_curves32);
@@ -665,18 +666,18 @@ namespace fman {
 					{
 						m_engine.m_path16.remove_all();
 						decompose_ft_outline(m_ft_face->glyph->outline,
-							m_flip_y,
+							m_flip_y, 
 							m_affine,
 							m_engine.m_path16);
 						m_engine.m_rasterizer.add_path(m_engine.m_curves16);
 					}
-					m_engine.m_scanlines_aa.prepare(); // Remove all
+					m_engine.m_scanlines_aa.prepare(); // Remove all 
 					render_scanlines(m_engine.m_rasterizer, m_engine.m_scanline_aa, m_engine.m_scanlines_aa);
 					prepared->bounds.x1 = m_engine.m_scanlines_aa.min_x();
 					prepared->bounds.y1 = m_engine.m_scanlines_aa.min_y();
 					prepared->bounds.x2 = m_engine.m_scanlines_aa.max_x() + 1;
 					prepared->bounds.y2 = m_engine.m_scanlines_aa.max_y() + 1;
-					prepared->data_size = m_engine.m_scanlines_aa.byte_size();
+					prepared->data_size = m_engine.m_scanlines_aa.byte_size(); 
 					prepared->data_type = glyph_data_gray8;
 					prepared->advance_x = int26p6_to_dbl(m_ft_face->glyph->advance.x);
 					prepared->advance_y = int26p6_to_dbl(m_ft_face->glyph->advance.y);
@@ -699,7 +700,7 @@ namespace fman {
             default: return;
             case glyph_data_mono:    m_engine.m_scanlines_bin.serialize(data); break;
             case glyph_data_gray8:   m_engine.m_scanlines_aa.serialize(data);  break;
-            case glyph_data_outline:
+            case glyph_data_outline: 
                 if(m_engine.m_flag32)
                 {
                     m_engine.m_path32.serialize(data);
@@ -747,15 +748,15 @@ namespace fman {
 	{
 		if( !stricmp(m_ft_face->style_name,"Regular") )
 		{
-			size_t len=strlen(m_ft_face->family_name)+1;
+            std::size_t len=std::strlen(m_ft_face->family_name)+1;
 			m_face_name=new char[len];
-			strcpy(m_face_name, m_ft_face->family_name);
+            std::strcpy(m_face_name, m_ft_face->family_name);
 		}
 		else
 		{
-			size_t len=strlen(m_ft_face->family_name)+1+strlen(m_ft_face->style_name)+1;
+            std::size_t len=std::strlen(m_ft_face->family_name)+1+std::strlen(m_ft_face->style_name)+1;
 			m_face_name=new char[len];
-			sprintf( m_face_name, "%s %s", m_ft_face->family_name, m_ft_face->style_name );
+            std::sprintf( m_face_name, "%s %s", m_ft_face->family_name, m_ft_face->style_name );
 		}
 	}
 
@@ -810,17 +811,17 @@ namespace fman {
 
 	//------------------------------------------------------------------------
 	font_engine_freetype_base::loaded_face *font_engine_freetype_base::load_face(
-		const void* buffer, size_t bytes)
+		const void* buffer, std::size_t bytes)
 	{
 		loaded_face *face=0;
 		if(m_library_initialized)
 		{
 			FT_Face ft_face;
 			int error = FT_New_Memory_Face(
-				m_library,
-				(const FT_Byte*)buffer,
-				bytes,
-				0,
+				m_library, 
+				(const FT_Byte*)buffer, 
+				bytes, 
+				0, 
 				&ft_face );
 			if( error==0 )
 			{
