@@ -31,6 +31,7 @@ SOFTWARE.
 #include <sstream>
 
 #include "http_resource_manager.hpp"
+#include "strings.hpp"
 #include "utilities.hpp"
 
 using namespace std::string_literals;
@@ -57,14 +58,15 @@ int main(int argc, char *argv[])
 
     http_resource_manager mgr;
 
-    mgr.add_route(M::GET, R"(^\/services\/([^/]+)\/([^/]+))", [](auto &&req) // /services/v8/user
+    mgr.add_route(M::GET, R"(^\/services\/([^/]+)?\/([^/]+))", [](auto &&req) // /services/v8/user
     {
         if (req->completed) return; else req->completed = true;
 
         typename http_resource_manager::response resp { S::OK };
+        std::string version { req->match[1] };
         std::string service_name { req->match[2] };
 
-        resp.content << std::string("<html><body><p>Service: ") + service_name + "</p></body></html>";
+        resp.content << nstd::str::compose_string("<html><body><p>Version: ", (std::empty(version) ? "Latest" : version), "</p><p>Service: ", service_name, "</p></body></html>");
         resp.add_content_type_header("html", "utf-8").send_response(req->client);
     });
 
