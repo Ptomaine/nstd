@@ -54,28 +54,26 @@ private:
     const std::function<void(void)> &_functor;
 };
 
-struct case_insensitive_hash
+struct case_insensitive_hash_sv
 {
     size_t operator()(const std::string_view& key) const
     {
-        std::string lower { key };
+        std::size_t h { 0 };
+        std::hash<int> hash;
 
-        std::transform(std::begin(lower), std::end(lower), std::begin(lower), [](auto &&c){ return std::tolower(c); });
+        for(auto c : key) h ^= hash(std::tolower(c)) + 0x9e3779b9 + (h << 6) + (h >> 2);
 
-        return std::hash<std::string>()(lower);
+        return h;
     }
 };
 
-struct case_insensitive_equal
+struct case_insensitive_equal_sv
 {
     bool operator()(const std::string_view& left, const std::string_view& right) const
     {
-        std::string a { left }, b { right };
-
-        std::transform(std::begin(a), std::end(a), std::begin(a), [](auto &&c){ return std::tolower(c); });
-        std::transform(std::begin(b), std::end(b), std::begin(b), [](auto &&c){ return std::tolower(c); });
-
-        return a == b;
+    	return std::size(left) == std::size(right) &&
+               std::equal(std::begin(left), std::end(left), std::begin(right),
+                          [](char ca, char cb) { return std::tolower(ca) == std::tolower(cb); });
     }
 };
 
