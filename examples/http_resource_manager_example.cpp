@@ -120,9 +120,8 @@ int main(int argc, char *argv[])
 
             if (std::size(media_type) > 0 && media_type[0] == '.') media_type = media_type.substr(1);
 
-            const auto &[type_exists, it] = media_types::find(media_type);
-
-            if (fs::exists(full_path) && fs::is_regular_file(full_path) && type_exists)
+            if (const auto &[type_exists, it] = media_types::find(media_type);
+                fs::exists(full_path) && fs::is_regular_file(full_path) && type_exists)
             {
                 typename http_resource_manager::response resp { S::OK };
                 auto data { nstd::utilities::read_file_content(full_path) };
