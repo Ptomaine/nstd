@@ -29,13 +29,13 @@ SOFTWARE.
 namespace nstd::net
 {
 using namespace std::string_view_literals;
-using nstd::utilities::case_insensitive_hash_sv;
-using nstd::utilities::case_insensitive_equal_sv;
+using nstd::utilities::case_insensitive_hash;
+using nstd::utilities::case_insensitive_equal;
 
 class media_types
 {
 public:
-    using container_type = std::unordered_map<std::string_view, std::string_view, case_insensitive_hash_sv, case_insensitive_equal_sv>;
+    using container_type = std::unordered_map<std::string_view, std::string_view, case_insensitive_hash, case_insensitive_equal>;
 
     static auto get(const std::string_view key)
     {
