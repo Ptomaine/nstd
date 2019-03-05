@@ -59,18 +59,17 @@ struct case_insensitive_hash
     template<typename StringType>
     size_t operator()(const StringType& key) const
     {
+        int ch { 0 };
         std::size_t h { 0 };
-        std::hash<int> hash;
+        std::hash<int> hash_;
 
-        if constexpr (std::is_same_v<std::remove_reference_t<std::remove_cv_t<typename StringType::value_type>>, char>)
+        for(auto c : key)
         {
-            for(auto c : key) h ^= hash(std::tolower(c)) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            if constexpr (sizeof(typename StringType::value_type) == sizeof(char)) ch = std::tolower(c);
+            else ch = std::towlower(c);
+
+            h ^= hash_(ch) + 0x9e3779b9 + (h << 6) + (h >> 2);
         }
-        else if constexpr (std::is_same_v<std::remove_reference_t<std::remove_cv_t<typename StringType::value_type>>, wchar_t>)
-        {
-            for(auto c : key) h ^= hash(std::towlower(c)) + 0x9e3779b9 + (h << 6) + (h >> 2);
-        }
-        else static_assert("Unsupported char type");
 
         return h;
     }
@@ -81,25 +80,13 @@ struct case_insensitive_equal
     template<typename StringType>
     bool operator()(const StringType& left, const StringType& right) const
     {
-        if constexpr (std::is_same_v<std::remove_reference_t<std::remove_cv_t<typename StringType::value_type>>, char>)
-        {
-            return std::size(left) == std::size(right) &&
-                   std::equal(std::begin(left), std::end(left), std::begin(right),
-                                [](auto ca, auto cb)
-                                {
-                                    return std::tolower(ca) == std::tolower(cb);
-                                });
-        }
-        else if constexpr (std::is_same_v<std::remove_reference_t<std::remove_cv_t<typename StringType::value_type>>, wchar_t>)
-        {
-            return std::size(left) == std::size(right) &&
-                   std::equal(std::begin(left), std::end(left), std::begin(right),
-                                [](auto ca, auto cb)
-                                {
-                                    return std::towlower(ca) == std::towlower(cb);
-                                });
-        }
-        else static_assert("Unsupported char type");
+        return std::size(left) == std::size(right) &&
+               std::equal(std::begin(left), std::end(left), std::begin(right),
+                            [](auto ca, auto cb)
+                            {
+                                if constexpr (sizeof(typename StringType::value_type) == sizeof(char)) return std::tolower(ca) == std::tolower(cb);
+                                else return std::towlower(ca) == std::towlower(cb);
+                            });
     }
 };
 
