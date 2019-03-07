@@ -21,7 +21,6 @@ SOFTWARE.
 */
 
 #include <algorithm>
-#include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <limits>
@@ -32,10 +31,11 @@ SOFTWARE.
 #include <sstream>
 #include <regex>
 
-#include "signal_slot.hpp"
 #include "http_request_parser.hpp"
-#include "sharp_tcp.hpp"
 #include "media_types.hpp"
+#include "sharp_tcp.hpp"
+#include "signal_slot.hpp"
+#include "utilities.hpp"
 
 namespace nstd::net
 {
@@ -43,290 +43,6 @@ using namespace std::string_literals;
 using namespace std::string_view_literals;
 using namespace nstd::signal_slot;
 namespace fs = std::filesystem;
-
-static const std::unordered_map<std::string_view, uint8_t> entities_to_char
-{
-    { "&quot;"sv, 34 },
-    { "&amp;"sv, 38 },
-    { "&lt;"sv, 60 },
-    { "&gt;"sv, 62 },
-    { "&nbsp;"sv, ' ' },
-    { "&iexcl;"sv, 161 },
-    { "&cent;"sv, 162 },
-    { "&pound;"sv, 163 },
-    { "&curren;"sv, 164 },
-    { "&yen;"sv, 165 },
-    { "&brvbar;"sv, 166 },
-    { "&sect;"sv, 167 },
-    { "&uml;"sv, 168 },
-    { "&copy;"sv, 169 },
-    { "&ordf;"sv, 170 },
-    { "&laquo;"sv, 171 },
-    { "&not;"sv, 172 },
-    { "&shy;"sv, 173 },
-    { "&reg;"sv, 174 },
-    { "&macr;"sv, 175 },
-    { "&deg;"sv, 176 },
-    { "&plusmn;"sv, 177 },
-    { "&sup2;"sv, 178 },
-    { "&sup3;"sv, 179 },
-    { "&acute;"sv, 180 },
-    { "&micro;"sv, 181 },
-    { "&para;"sv, 182 },
-    { "&middot;"sv, 183 },
-    { "&cedil;"sv, 184 },
-    { "&sup1;"sv, 185 },
-    { "&ordm;"sv, 186 },
-    { "&raquo;"sv, 187 },
-    { "&frac14;"sv, 188 },
-    { "&frac12;"sv, 189 },
-    { "&frac34;"sv, 190 },
-    { "&iquest;"sv, 191 },
-    { "&Agrave;"sv, 192 },
-    { "&Aacute;"sv, 193 },
-    { "&Acirc;"sv, 194 },
-    { "&Atilde;"sv, 195 },
-    { "&Auml;"sv, 196 },
-    { "&ring;"sv, 197 },
-    { "&AElig;"sv, 198 },
-    { "&Ccedil;"sv, 199 },
-    { "&Egrave;"sv, 200 },
-    { "&Eacute;"sv, 201 },
-    { "&Ecirc;"sv, 202 },
-    { "&Euml;"sv, 203 },
-    { "&Igrave;"sv, 204 },
-    { "&Iacute;"sv, 205 },
-    { "&Icirc;"sv, 206 },
-    { "&Iuml;"sv, 207 },
-    { "&ETH;"sv, 208 },
-    { "&Ntilde;"sv, 209 },
-    { "&Ograve;"sv, 210 },
-    { "&Oacute;"sv, 211 },
-    { "&Ocirc;"sv, 212 },
-    { "&Otilde;"sv, 213 },
-    { "&Ouml;"sv, 214 },
-    { "&times;"sv, 215 },
-    { "&Oslash;"sv, 216 },
-    { "&Ugrave;"sv, 217 },
-    { "&Uacute;"sv, 218 },
-    { "&Ucirc;"sv, 219 },
-    { "&Uuml;"sv, 220 },
-    { "&Yacute;"sv, 221 },
-    { "&THORN;"sv, 222 },
-    { "&szlig;"sv, 223 },
-    { "&agrave;"sv, 224 },
-    { "&aacute;"sv, 225 },
-    { "&acirc;"sv, 226 },
-    { "&atilde;"sv, 227 },
-    { "&auml;"sv, 228 },
-    { "&aring;"sv, 229 },
-    { "&aelig;"sv, 230 },
-    { "&ccedil;"sv, 231 },
-    { "&egrave;"sv, 232 },
-    { "&eacute;"sv, 233 },
-    { "&ecirc;"sv, 234 },
-    { "&euml;"sv, 235 },
-    { "&igrave;"sv, 236 },
-    { "&iacute;"sv, 237 },
-    { "&icirc;"sv, 238 },
-    { "&iuml;"sv, 239 },
-    { "&ieth;"sv, 240 },
-    { "&ntilde;"sv, 241 },
-    { "&ograve;"sv, 242 },
-    { "&oacute;"sv, 243 },
-    { "&ocirc;"sv, 244 },
-    { "&otilde;"sv, 245 },
-    { "&ouml;"sv, 246 },
-    { "&divide;"sv, 247 },
-    { "&oslash;"sv, 248 },
-    { "&ugrave;"sv, 249 },
-    { "&uacute;"sv, 250 },
-    { "&ucirc;"sv, 251 },
-    { "&uuml;"sv, 252 },
-    { "&yacute;"sv, 253 },
-    { "&thorn;"sv, 254 },
-    { "&yuml;"sv, 255 }
-};
-
-static const std::unordered_map<uint8_t, std::string_view> char_to_entities
-{
-    { 34,  "&quot;"sv },
-    { 38,  "&amp;"sv },
-    { 60,  "&lt;"sv },
-    { 62,  "&gt;"sv },
-    { 161, "&iexcl;"sv },
-    { 162, "&cent;"sv },
-    { 163, "&pound;"sv },
-    { 164, "&curren;"sv },
-    { 165, "&yen;"sv },
-    { 166, "&brvbar;"sv },
-    { 167, "&sect;"sv },
-    { 168, "&uml;"sv },
-    { 169, "&copy;"sv },
-    { 170, "&ordf;"sv },
-    { 171, "&laquo;"sv },
-    { 172, "&not;"sv },
-    { 173, "&shy;"sv },
-    { 174, "&reg;"sv },
-    { 175, "&macr;"sv },
-    { 176, "&deg;"sv },
-    { 177, "&plusmn;"sv },
-    { 178, "&sup2;"sv },
-    { 179, "&sup3;"sv },
-    { 180, "&acute;"sv },
-    { 181, "&micro;"sv },
-    { 182, "&para;"sv },
-    { 183, "&middot;"sv },
-    { 184, "&cedil;"sv },
-    { 185, "&sup1;"sv },
-    { 186, "&ordm;"sv },
-    { 187, "&raquo;"sv },
-    { 188, "&frac14;"sv },
-    { 189, "&frac12;"sv },
-    { 190, "&frac34;"sv },
-    { 191, "&iquest;"sv },
-    { 192, "&Agrave;"sv },
-    { 193, "&Aacute;"sv },
-    { 194, "&Acirc;"sv },
-    { 195, "&Atilde;"sv },
-    { 196, "&Auml;"sv },
-    { 197, "&ring;"sv },
-    { 198, "&AElig;"sv },
-    { 199, "&Ccedil;"sv },
-    { 200, "&Egrave;"sv },
-    { 201, "&Eacute;"sv },
-    { 202, "&Ecirc;"sv },
-    { 203, "&Euml;"sv },
-    { 204, "&Igrave;"sv },
-    { 205, "&Iacute;"sv },
-    { 206, "&Icirc;"sv },
-    { 207, "&Iuml;"sv },
-    { 208, "&ETH;"sv },
-    { 209, "&Ntilde;"sv },
-    { 210, "&Ograve;"sv },
-    { 211, "&Oacute;"sv },
-    { 212, "&Ocirc;"sv },
-    { 213, "&Otilde;"sv },
-    { 214, "&Ouml;"sv },
-    { 215, "&times;"sv },
-    { 216, "&Oslash;"sv },
-    { 217, "&Ugrave;"sv },
-    { 218, "&Uacute;"sv },
-    { 219, "&Ucirc;"sv },
-    { 220, "&Uuml;"sv },
-    { 221, "&Yacute;"sv },
-    { 222, "&THORN;"sv },
-    { 223, "&szlig;"sv },
-    { 224, "&agrave;"sv },
-    { 225, "&aacute;"sv },
-    { 226, "&acirc;"sv },
-    { 227, "&atilde;"sv },
-    { 228, "&auml;"sv },
-    { 229, "&aring;"sv },
-    { 230, "&aelig;"sv },
-    { 231, "&ccedil;"sv },
-    { 232, "&egrave;"sv },
-    { 233, "&eacute;"sv },
-    { 234, "&ecirc;"sv },
-    { 235, "&euml;"sv },
-    { 236, "&igrave;"sv },
-    { 237, "&iacute;"sv },
-    { 238, "&icirc;"sv },
-    { 239, "&iuml;"sv },
-    { 240, "&ieth;"sv },
-    { 241, "&ntilde;"sv },
-    { 242, "&ograve;"sv },
-    { 243, "&oacute;"sv },
-    { 244, "&ocirc;"sv },
-    { 245, "&otilde;"sv },
-    { 246, "&ouml;"sv },
-    { 247, "&divide;"sv },
-    { 248, "&oslash;"sv },
-    { 249, "&ugrave;"sv },
-    { 250, "&uacute;"sv },
-    { 251, "&ucirc;"sv },
-    { 252, "&uuml;"sv },
-    { 253, "&yacute;"sv },
-    { 254, "&thorn;"sv },
-    { 255, "&yuml;"sv }
-};
-
-std::string html_decode(std::string_view data)
-{
-    std::ostringstream oss;
-    auto size { std::size(data) };
-
-    for (decltype(size) pos { 0 }; pos < size; ++pos)
-    {
-        if (data[pos] == '&')
-        {
-            auto end_pos { data.find(';', pos) };
-
-            if (end_pos == std::string_view::npos)
-            {
-                oss << data[pos];
-
-                continue;
-            }
-
-            if (auto length { end_pos - pos + 1 }; length > 3 && length <= 8)
-            {
-                auto entity { data.substr(pos, length) };
-
-                if (entity[1] == '#')
-                {
-                    int ch { std::atoi(std::string { entity.substr(2, length - 3) }.c_str()) }; 
-
-                    if (ch > 0 && ch <= std::numeric_limits<uint8_t>::max()) oss << static_cast<uint8_t>(ch);
-                    else
-                    {
-                        oss << data[pos];
-
-                        continue;
-                    }
-                }
-                else
-                {
-                    if (auto it { entities_to_char.find(entity) }; it != std::end(entities_to_char))
-                        oss << (*it).second;
-                    else
-                    {
-                        oss << data[pos];
-
-                        continue;
-                    }
-                }
-
-                pos += length - 1;
-            }
-            else
-            {
-                oss << data[pos];
-
-                continue;
-            }
-        }
-        else oss << data[pos];
-    }
-
-    return oss.str();
-}
-
-std::string html_encode(std::string_view data)
-{
-    std::ostringstream oss;
-
-    for (auto ch : data)
-    {
-        if (auto it { char_to_entities.find(static_cast<uint8_t>(ch)) }; it != std::end(char_to_entities))
-             oss << (*it).second;
-        else oss << ch;
-    }
-
-    return oss.str();
-}
-
-
 
 class http_resource_manager
 {
@@ -396,54 +112,54 @@ public:
             HttpVersionNotSupported = 505
         };
 
-        inline static std::unordered_map<int, std::string> http_status_code_map
+        inline static std::unordered_map<int, std::string_view> http_status_code_map
         {
-            { Continue, "Continue"s },
-            { SwitchingProtocols, "Switching Protocols"s },
-            { OK, "OK"s },
-            { Created, "Created"s },
-            { Accepted, "Accepted"s },
-            { NonAuthoritativeInformation, "Non Authoritative Information"s },
-            { NoContent, "No Content"s },
-            { ResetContent, "Reset Content"s },
-            { PartialContent, "Partial Content"s },
-            { MultipleChoices, "Multiple Choices"s },
-            { Ambiguous, "Ambiguous"s },
-            { MovedPermanently, "Moved Permanently"s },
-            { Moved, "Moved"s },
-            { Found, "Found"s },
-            { SeeOther, "SeeOther"s },
-            { RedirectMethod, "Redirect Method"s },
-            { NotModified, "Not Modified"s },
-            { UseProxy, "Use Proxy"s },
-            { Unused, "Unused"s },
-            { TemporaryRedirect, "Temporary Redirect"s },
-            { PermanentRedirect, "Permanent Redirect"s },
-            { BadRequest, "Bad Request"s },
-            { Unauthorized, "Unauthorized"s },
-            { PaymentRequired, "Payment Required"s },
-            { Forbidden, "Forbidden"s },
-            { NotFound, "Not Found"s },
-            { MethodNotAllowed, "Method Not Allowed"s },
-            { NotAcceptable, "Not Acceptable"s },
-            { ProxyAuthenticationRequired, "Proxy Authentication Required"s },
-            { RequestTimeout, "Request Timeout"s },
-            { Conflict, "Conflict"s },
-            { Gone, "Gone"s },
-            { LengthRequired, "Length Required"s },
-            { PreconditionFailed, "Precondition Failed"s },
-            { RequestEntityTooLarge, "Request Entity Too Large"s },
-            { RequestUriTooLong, "Request Uri TooLong"s },
-            { UnsupportedMediaType, "Unsupported Media Type"s },
-            { RequestedRangeNotSatisfiable, "Requested Range Not Satisfiable"s },
-            { ExpectationFailed, "Expectation Failed"s },
-            { UpgradeRequired, "Upgrade Required"s },
-            { InternalServerError, "Internal Server Error"s },
-            { NotImplemented, "Not Implemented"s },
-            { BadGateway, "Bad Gateway"s },
-            { ServiceUnavailable, "Service Unavailable"s },
-            { GatewayTimeout, "Gateway Timeout"s },
-            { HttpVersionNotSupported, "Http Version Not Supported"s }
+            { Continue, "Continue"sv },
+            { SwitchingProtocols, "Switching Protocols"sv },
+            { OK, "OK"sv },
+            { Created, "Created"sv },
+            { Accepted, "Accepted"sv },
+            { NonAuthoritativeInformation, "Non Authoritative Information"sv },
+            { NoContent, "No Content"sv },
+            { ResetContent, "Reset Content"sv },
+            { PartialContent, "Partial Content"sv },
+            { MultipleChoices, "Multiple Choices"sv },
+            { Ambiguous, "Ambiguous"sv },
+            { MovedPermanently, "Moved Permanently"sv },
+            { Moved, "Moved"sv },
+            { Found, "Found"sv },
+            { SeeOther, "SeeOther"sv },
+            { RedirectMethod, "Redirect Method"sv },
+            { NotModified, "Not Modified"sv },
+            { UseProxy, "Use Proxy"sv },
+            { Unused, "Unused"sv },
+            { TemporaryRedirect, "Temporary Redirect"sv },
+            { PermanentRedirect, "Permanent Redirect"sv },
+            { BadRequest, "Bad Request"sv },
+            { Unauthorized, "Unauthorized"sv },
+            { PaymentRequired, "Payment Required"sv },
+            { Forbidden, "Forbidden"sv },
+            { NotFound, "Not Found"sv },
+            { MethodNotAllowed, "Method Not Allowed"sv },
+            { NotAcceptable, "Not Acceptable"sv },
+            { ProxyAuthenticationRequired, "Proxy Authentication Required"sv },
+            { RequestTimeout, "Request Timeout"sv },
+            { Conflict, "Conflict"sv },
+            { Gone, "Gone"sv },
+            { LengthRequired, "Length Required"sv },
+            { PreconditionFailed, "Precondition Failed"sv },
+            { RequestEntityTooLarge, "Request Entity Too Large"sv },
+            { RequestUriTooLong, "Request Uri TooLong"sv },
+            { UnsupportedMediaType, "Unsupported Media Type"sv },
+            { RequestedRangeNotSatisfiable, "Requested Range Not Satisfiable"sv },
+            { ExpectationFailed, "Expectation Failed"sv },
+            { UpgradeRequired, "Upgrade Required"sv },
+            { InternalServerError, "Internal Server Error"sv },
+            { NotImplemented, "Not Implemented"sv },
+            { BadGateway, "Bad Gateway"sv },
+            { ServiceUnavailable, "Service Unavailable"sv },
+            { GatewayTimeout, "Gateway Timeout"sv },
+            { HttpVersionNotSupported, "Http Version Not Supported"sv }
         };
 
         const std::string NL { "\r\n"s };
@@ -618,7 +334,7 @@ protected:
                         response resp { response::InternalServerError };
 
                         resp.content << "<html><head><title>Internal Server Error</title></head><body><h1>500 Internal Server Error</h1>" <<
-                                "<p>" << html_encode(e.what()) << "</p>" <<
+                                "<p>" << nstd::utilities::net::html_encode(e.what()) << "</p>" <<
                                 "</body></html>";
                         resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(client);
                     }
