@@ -41,6 +41,26 @@ using namespace std::string_literals;
 using namespace nstd::signal_slot;
 namespace fs = std::filesystem;
 
+std::string html_encode(std::string_view data)
+{
+    std::ostringstream oss;
+
+    for (auto ch : data)
+    {
+        switch(ch)
+        {
+            case '&':  oss << "&amp;"; break;
+            case '\"': oss << "&quot;"; break;
+            case '\'': oss << "&apos;"; break;
+            case '<':  oss << "&lt;"; break;
+            case '>':  oss << "&gt;"; break;
+            default:   oss << ch;
+        }
+    }
+
+    return oss.str();
+}
+
 class http_resource_manager
 {
 public:
@@ -331,7 +351,7 @@ protected:
                         response resp { response::InternalServerError };
 
                         resp.content << "<html><head><title>Internal Server Error</title></head><body><h1>500 Internal Server Error</h1>" <<
-                                "<p>" << e.what() << "</p>" <<
+                                "<p>" << html_encode(e.what()) << "</p>" <<
                                 "</body></html>";
                         resp.add_content_type_header("html", "utf-8").add_header("Connection", "Closed").send_response(client);
                     }
