@@ -316,7 +316,7 @@ static const std::unordered_map<std::string_view, uint8_t, case_insensitive_hash
     { "&amp;"sv, 38 },
     { "&lt;"sv, 60 },
     { "&gt;"sv, 62 },
-    { "&nbsp;"sv, ' ' },
+    { "&nbsp;"sv, 32 }, //using the space char (#32) instead of the non-breaking space #160
     { "&iexcl;"sv, 161 },
     { "&cent;"sv, 162 },
     { "&pound;"sv, 163 },
@@ -420,6 +420,7 @@ static const std::unordered_map<uint8_t, std::string_view> char_to_entities
     { 38,  "&amp;"sv },
     { 60,  "&lt;"sv },
     { 62,  "&gt;"sv },
+    { 160, "&nbsp;"sv },
     { 161, "&iexcl;"sv },
     { 162, "&cent;"sv },
     { 163, "&pound;"sv },
