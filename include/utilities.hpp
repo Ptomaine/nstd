@@ -141,7 +141,7 @@ void reverse_inplace(Iterator begin, Iterator end)
     while (std::distance(begin, end) > 0)
     {
         std::iter_swap(begin, end);
-        
+
         begin = std::next(begin);
         end = std::prev(end);
     }
@@ -542,7 +542,7 @@ std::string html_decode(std::string_view data)
 
                 if (entity[1] == '#')
                 {
-                    int ch { std::atoi(std::string { entity.substr(2, length - 2) }.c_str()) }; 
+                    int ch { std::atoi(std::string { entity.substr(2, length - 2) }.c_str()) };
 
                     if (ch > 0 && ch <= std::numeric_limits<uint8_t>::max()) oss << static_cast<uint8_t>(ch);
                     else
