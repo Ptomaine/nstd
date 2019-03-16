@@ -119,29 +119,6 @@ inline std::u32string from_utf16_to_utf32(const std::u16string &s)
     return result;
 }
 
-inline std::wstring from_utf8_to_wchar(const std::string &s)
-{
-    std::wstring result;
-
-    nstd::utf8::utf8to16(std::begin(s), std::end(s), std::back_inserter(result));
-
-    return result;
-}
-
-inline std::wstring from_utf16_to_wchar(const std::u16string &s)
-{
-    return { std::begin(s), std::end(s) };
-}
-
-inline std::string from_wchar_to_utf8(const std::wstring &s)
-{
-    std::string result;
-
-    nstd::utf8::utf16to8(std::begin(s), std::end(s), std::back_inserter(result));
-
-    return result;
-}
-
 constexpr const char     *const whitespace_chars { " \t\n\v\f\r" };
 constexpr const wchar_t  *const wwhitespace_chars { L" \t\n\v\f\r" };
 constexpr const char16_t *const u16whitespace_chars { u" \t\n\v\f\r" };
