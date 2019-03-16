@@ -22,13 +22,14 @@ SOFTWARE.
 
 #include <cwctype>
 #include <cctype>
-#include <codecvt>
 #include <iomanip>
 #include <limits>
 #include <regex>
 #include <sstream>
 #include <string>
 #include <string_view>
+
+#include "utf8.hpp"
 
 namespace nstd::str
 {
@@ -62,82 +63,83 @@ inline auto trim_impl(StringViewType sv, const StringViewType chars_to_remove)
 
 inline std::string from_utf16_to_utf8(const std::u16string &s)
 {
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
+    std::string result;
 
-    return conv.to_bytes(s);
+    nstd::utf8::utf16to8(std::begin(s), std::end(s), std::back_inserter(result));
+
+    return result;
 }
 
 inline std::string from_utf32_to_utf8(const std::u32string &s)
 {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
+    std::string result;
 
-    return conv.to_bytes(s);
+    nstd::utf8::utf32to8(std::begin(s), std::end(s), std::back_inserter(result));
+
+    return result;
 }
 
 inline std::u16string from_utf8_to_utf16(const std::string &s)
 {
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
+    std::u16string result;
 
-    return conv.from_bytes(s);
+    nstd::utf8::utf8to16(std::begin(s), std::end(s), std::back_inserter(result));
+
+    return result;
 }
 
 inline std::u16string from_utf32_to_utf16(const std::u32string &s)
 {
-    std::wstring_convert<std::codecvt_utf16<char32_t>, char32_t> conv;
-    std::string bytes = conv.to_bytes(s);
+    std::string in;
+    std::u16string result;
 
-    return std::u16string(reinterpret_cast<const char16_t*>(bytes.c_str()), bytes.length() / sizeof(char16_t));
+    nstd::utf8::utf32to8(std::begin(s), std::end(s), std::back_inserter(in));
+    nstd::utf8::utf8to16(std::begin(in), std::end(in), std::back_inserter(result));
+
+    return result;
 }
 
 inline std::u32string from_utf8_to_utf32(const std::string &s)
 {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
+    std::u32string result;
 
-    return conv.from_bytes(s);
+    nstd::utf8::utf8to32(std::begin(s), std::end(s), std::back_inserter(result));
+
+    return result;
 }
 
 inline std::u32string from_utf16_to_utf32(const std::u16string &s)
 {
-    const char16_t *pData = std::data(s);
-    std::wstring_convert<std::codecvt_utf16<char32_t>, char32_t> conv;
+    std::string in;
+    std::u32string result;
 
-    return conv.from_bytes(reinterpret_cast<const char*>(pData), reinterpret_cast<const char*>(pData + s.length()));
-}
+    nstd::utf8::utf16to8(std::begin(s), std::end(s), std::back_inserter(in));
+    nstd::utf8::utf8to32(std::begin(in), std::end(in), std::back_inserter(result));
 
-inline std::wstring from_utf16_to_wchar(const std::u16string &s)
-{
-    const char16_t *pData = std::data(s);
-
-#if defined(_LITTLE_ENDIAN) \
-    || ( defined(BYTE_ORDER) && defined(LITTLE_ENDIAN) && BYTE_ORDER == LITTLE_ENDIAN ) \
-    || ( defined(_BYTE_ORDER) && defined(_LITTLE_ENDIAN) && _BYTE_ORDER == _LITTLE_ENDIAN ) \
-    || ( defined(__BYTE_ORDER) && defined(__LITTLE_ENDIAN) && __BYTE_ORDER == __LITTLE_ENDIAN ) \
-    || defined(__i386__) || defined(__alpha__) \
-    || defined(__ia64) || defined(__ia64__) \
-    || defined(_M_IX86) || defined(_M_IA64) \
-    || defined(_M_ALPHA) || defined(__amd64) \
-    || defined(__amd64__) || defined(_M_AMD64) \
-    || defined(__x86_64) || defined(__x86_64__) \
-    || defined(_M_X64)
-    std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
-    return conv.from_bytes(reinterpret_cast<const char*>(pData), reinterpret_cast<const char*>(pData + s.length()));
-#else
-    std::wstring_convert<std::codecvt_utf16<wchar_t>, wchar_t> conv;
-    return conv.from_bytes(reinterpret_cast<const char*>(pData), reinterpret_cast<const char*>(pData + s.length()));
-#endif
+    return result;
 }
 
 inline std::wstring from_utf8_to_wchar(const std::string &s)
 {
-    const char *pData = std::data(s);
-    std::wstring_convert<std::codecvt_utf8<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
+    std::wstring result;
 
-    return conv.from_bytes(reinterpret_cast<const char*>(pData), reinterpret_cast<const char*>(pData + s.length()));
+    nstd::utf8::utf8to16(std::begin(s), std::end(s), std::back_inserter(result));
+
+    return result;
+}
+
+inline std::wstring from_utf16_to_wchar(const std::u16string &s)
+{
+    return { std::begin(s), std::end(s) };
 }
 
 inline std::string from_wchar_to_utf8(const std::wstring &s)
 {
-    return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(s);
+    std::string result;
+
+    nstd::utf8::utf16to8(std::begin(s), std::end(s), std::back_inserter(result));
+
+    return result;
 }
 
 constexpr const char     *const whitespace_chars { " \t\n\v\f\r" };
