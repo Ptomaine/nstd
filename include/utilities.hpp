@@ -42,7 +42,7 @@ public:
 
     ~at_scope_exit()
     {
-        _functor();
+        if (_functor) _functor();
     }
 
     at_scope_exit() = delete;
@@ -52,7 +52,7 @@ public:
     at_scope_exit &operator =(at_scope_exit&&) = delete;
 
 private:
-    const std::function<void(void)> &_functor;
+    std::function<void(void)> _functor;
 };
 
 struct case_insensitive_hash
