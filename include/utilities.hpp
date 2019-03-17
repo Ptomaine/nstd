@@ -38,7 +38,7 @@ class at_scope_exit
 {
 public:
 
-    at_scope_exit(const std::function<void(void)> &functor) : _functor { functor } {}
+    at_scope_exit(std::function<void(void)> &&functor) : _functor { functor } {}
 
     ~at_scope_exit()
     {
