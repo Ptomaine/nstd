@@ -41,6 +41,40 @@ auto set_console_utf8()
 #endif // _WIN32
 }
 
+auto get_console_encoding()
+{
+#ifdef _WIN32
+    return std::make_pair(::GetConsoleCP(), ::GetConsoleOutputCP());
+#endif
+}
+
+class scoped_console_utf8
+{
+#ifdef _WIN32
+private:
+    std::pair<UINT, UINT> _code_pages {};
+#endif
+
+public:
+    scoped_console_utf8()
+#ifdef _WIN32
+    : _code_pages { get_console_encoding() }
+#endif
+    {
+#ifdef _WIN32
+        set_console_utf8();
+#endif
+    }
+
+    ~scoped_console_utf8()
+    {
+#ifdef _WIN32
+        ::SetConsoleCP(_code_pages.first);
+        ::SetConsoleOutputCP(_code_pages.second);
+#endif
+    }
+};
+
 auto shell_execute(const std::string_view cmd)
 {
     constexpr const std::size_t buffer_size { 1024 };
