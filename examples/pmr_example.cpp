@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     using namespace nstd::utilities;
     using namespace nstd::process;
 
-    set_console_utf8();
+    scoped_console_utf8 set_console_utf8;
 
     std::cout << u8"Консоль поддерживает UTF-8..." << std::endl;
 
