@@ -301,7 +301,7 @@ public:
     signal &operator=(signal &&other) = default;
     virtual ~signal() override = default;
 
-    virtual void emit(const Args &... args)
+    void emit(const Args &... args)
     {
         if (!_enabled) return;
 
@@ -458,6 +458,7 @@ class bridged_signal_base : public signal_type<Args...>
 {
 public:
     using base_class = signal_type<Args...>;
+    using bridged_signal_type = bridged_signal_base;
 
     bridged_signal_base() = default;
     bridged_signal_base(const std::string &name) : base_class(name) {}
@@ -466,7 +467,7 @@ public:
     bridged_signal_base &operator=(bridged_signal_base &&other) = default;
     virtual ~bridged_signal_base() override = default;
 
-    virtual void emit(const Args&... args) override
+    void emit(const Args&... args)
     {
         if (_bridge_enabled)
         {
@@ -489,7 +490,7 @@ public:
         else base_class::emit(args...);
     }
 
-    virtual void emit_sync(const Args&... args)
+    void emit_sync(const Args&... args)
     {
         base_class::emit(args...);
     }
@@ -938,7 +939,7 @@ class bridged_signal_set_base : public signal_set_base<BridgedSignalType, Args..
 public:
     using base_class = signal_set_base<BridgedSignalType, Args...>;
 
-    bridged_signal_set_base(const std::function<bool(typename base_class::signal_type::bridged_signal_base*)>& emit_functor) : base_class {}, _emit_functor { emit_functor } {}
+    bridged_signal_set_base(const std::function<bool(typename base_class::signal_type::bridged_signal_type*)>& emit_functor) : base_class {}, _emit_functor { emit_functor } {}
 
     virtual const std::unique_ptr<typename base_class::signal_type> &get_signal(const std::string &signal_name) override
     {
@@ -949,18 +950,18 @@ public:
         return signal;
     }
 
-    void set_emit_functor(const std::function<bool(typename base_class::signal_type::bridged_signal_base*)>& emit_functor)
+    void set_emit_functor(const std::function<bool(typename base_class::signal_type::bridged_signal_type*)>& emit_functor)
     {
         _emit_functor = emit_functor;
     }
 
-    const std::function<bool(typename base_class::signal_type::bridged_signal_base*)> &get_emit_functor() const
+    const std::function<bool(typename base_class::signal_type::bridged_signal_type*)> &get_emit_functor() const
     {
         return _emit_functor;
     }
 
 protected:
-    std::function<bool(typename base_class::signal_type::bridged_signal_base*)> _emit_functor { nullptr };
+    std::function<bool(typename base_class::signal_type::bridged_signal_type*)> _emit_functor { nullptr };
 };
 
 template<typename... Args> using signal_set = signal_set_base<signal, Args...>;

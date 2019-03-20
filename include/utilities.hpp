@@ -38,11 +38,11 @@ class at_scope_exit
 {
 public:
 
-    at_scope_exit(const std::function<void(void)> &functor) : _functor { functor } {}
+    at_scope_exit(std::function<void(void)> &&functor) : _functor { functor } {}
 
     ~at_scope_exit()
     {
-        _functor();
+        if (_functor) _functor();
     }
 
     at_scope_exit() = delete;
@@ -52,7 +52,7 @@ public:
     at_scope_exit &operator =(at_scope_exit&&) = delete;
 
 private:
-    const std::function<void(void)> &_functor;
+    std::function<void(void)> _functor;
 };
 
 struct case_insensitive_hash
@@ -141,7 +141,7 @@ void reverse_inplace(Iterator begin, Iterator end)
     while (std::distance(begin, end) > 0)
     {
         std::iter_swap(begin, end);
-        
+
         begin = std::next(begin);
         end = std::prev(end);
     }
@@ -544,7 +544,7 @@ std::string html_decode(std::string_view data)
 
                 if (entity[1] == '#')
                 {
-                    int ch { std::atoi(std::string { entity.substr(2, length - 2) }.c_str()) }; 
+                    int ch { std::atoi(std::string { entity.substr(2, length - 2) }.c_str()) };
 
                     if (ch > 0 && ch <= std::numeric_limits<uint8_t>::max()) oss << static_cast<uint8_t>(ch);
                     else

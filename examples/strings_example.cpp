@@ -21,16 +21,22 @@ SOFTWARE.
 #include <iostream>
 #include "strings.hpp"
 #include "string_id.hpp"
+#include "platform_utilities.hpp"
 
 int main()
 {
+    nstd::platform::utilities::scoped_console_utf8 set_console_utf8;
+
     using namespace std::string_literals;
     using namespace nstd::str;
     using namespace nstd::str::sid::literals;
 
+    std::u16string u16str(trim(u"    Hello World!      "));
+
+    std::cout << u8"Всем привет :)" << std::endl;
     std::cout << std::string(trim("    Hello World!      ")) << std::endl;
     std::wcout << trim(L"    Hello World!      ") << std::endl;
-    std::wcout << from_utf16_to_wchar(std::u16string(trim(u"    Hello World!      "))) << std::endl;
+    std::cout << from_utf16_to_utf8(u16str) << std::endl;
     std::cout << from_utf32_to_utf8(std::u32string(trim(U"    Hello World!      "))) << std::endl;
 
     std::cout << from_utf32_to_utf8(replace_all(U"good strings (UTF-32)"s, U"o"s, U"OO"s)) << std::endl;
