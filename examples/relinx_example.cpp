@@ -1063,7 +1063,7 @@ int main()
             {9, 10}
         };
 
-        auto t1_res = from(t1_data)->select_many([](auto &&v) { return v; })->to_string();
+        auto t1_res = from(t1_data)->select_many([](auto &&v) { return std::move(v); })->to_string();
 
         assert(t1_res == "12345678910"s);
 
