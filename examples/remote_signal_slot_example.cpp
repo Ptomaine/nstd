@@ -51,9 +51,12 @@ int main()
 
     cons = local_slots.get_remote_signal(signal_name)->connect([](auto s, auto &&data) // defining signal processor on client side
     {
-        auto json_obj { nstd::json::json::from_cbor(*data) };
+        if (data)
+        {
+            auto json_obj { nstd::json::json::from_cbor(*data) };
 
-        std::cout << "remote signal: "s << s->name() << std::endl << "data: "s << std::endl << std::setw(3) << json_obj << std::endl;
+            std::cout << "remote signal: "s << s->name() << std::endl << "data: "s << std::endl << std::setw(3) << json_obj << std::endl;
+        }
     });
 
     std::this_thread::sleep_for(30ms);
