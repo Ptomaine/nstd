@@ -27,6 +27,9 @@ SOFTWARE.
 #include <vector>
 
 #ifdef _WIN32
+#if defined(_MSC_VER) && !defined(NOMINMAX)
+#define NOMINMAX 1
+#endif
 #include <windows.h>
 #endif // _WIN32
 

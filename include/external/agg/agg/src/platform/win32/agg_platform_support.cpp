@@ -17,6 +17,10 @@
 //
 //----------------------------------------------------------------------------
 
+#if defined(_MSC_VER) && !defined(NOMINMAX)
+#define NOMINMAX 1
+#endif
+
 #include <windows.h>
 #include <cstring>
 #include "platform/agg_platform_support.h"

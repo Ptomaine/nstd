@@ -21,6 +21,9 @@ SOFTWARE.
 #include "external/tiny-process-library/process.cpp"
 
 #ifdef _WIN32
+#if defined(_MSC_VER) && !defined(NOMINMAX)
+#define NOMINMAX 1
+#endif
 #include "external/tiny-process-library/process_win.cpp"
 #else
 #include "external/tiny-process-library/process_unix.cpp"

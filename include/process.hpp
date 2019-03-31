@@ -20,6 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#if defined(_MSC_VER) && !defined(NOMINMAX)
+#define NOMINMAX 1
+#endif
 #include "external/tiny-process-library/process.hpp"
 
 namespace nstd::process
