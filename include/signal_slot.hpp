@@ -503,11 +503,11 @@ public:
 
         if (std::empty(_signal_queue)) return false;
 
-        auto args = std::move(_signal_queue.front());
-
-        _signal_queue.pop_front();
+        auto &args = _signal_queue.front();
 
         std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
+
+        _signal_queue.pop_front();
 
         return !std::empty(_signal_queue);
     }
@@ -607,11 +607,11 @@ public:
 
         while (!std::empty(_signal_queue))
         {
-            auto args = std::move(_signal_queue.front());
-
-            _signal_queue.pop_front();
+            auto &args = _signal_queue.front();
 
             std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+
+            _signal_queue.pop_front();
         }
     }
 
@@ -657,11 +657,11 @@ protected:
 
                 if (_cancelled || std::empty(_signal_queue)) break;
 
-                auto args = std::move(_signal_queue.front());
-
-                _signal_queue.pop_front();
+                auto &args = _signal_queue.front();
 
                 std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+
+                _signal_queue.pop_front();
 
                 if (std::empty(_signal_queue)) break;
             }
@@ -774,12 +774,11 @@ protected:
 
                 if (_cancelled || std::empty(_signal_queue)) break;
 
-                auto value = std::move(_signal_queue.front());
-                auto &[this_, args] = value;
-
-                _signal_queue.pop_front();
+                auto &[this_, args] = _signal_queue.front();
 
                 std::apply([&this_, &args](const Args&... a){ this_->base_class::emit(a...); }, args);
+
+                _signal_queue.pop_front();
 
                 if (std::empty(_signal_queue)) break;
             }
