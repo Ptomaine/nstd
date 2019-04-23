@@ -603,15 +603,18 @@ public:
 
         if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
-        std::scoped_lock lock(_emit_lock);
-
-        while (!std::empty(_signal_queue))
+        if (_dispatch_all_on_destroy)
         {
-            auto &args = _signal_queue.front();
+            std::scoped_lock lock(_emit_lock);
 
-            std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+            while (!std::empty(_signal_queue))
+            {
+                auto &args = _signal_queue.front();
 
-            _signal_queue.pop_front();
+                std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+
+                _signal_queue.pop_front();
+            }
         }
     }
 
@@ -640,13 +643,23 @@ public:
         return _throttle_ms;
     }
 
+    void set_dispatch_all_on_destroy(bool do_dispatch)
+    {
+        _dispatch_all_on_destroy = do_dispatch;
+    }
+
+    bool get_dispatch_all_on_destroy()
+    {
+        return _dispatch_all_on_destroy;
+    }
+
 protected:
     static inline std::chrono::milliseconds _default_throttle_ms { 10ms };
     std::deque<std::tuple<Args...>> _signal_queue {};
     std::mutex _emit_lock {};
     std::atomic<std::chrono::milliseconds> _throttle_ms { _default_throttle_ms };
     std::thread _dispatcher_thread {};
-    std::atomic_bool _cancelled { false }, _thread_running { false };
+    std::atomic_bool _cancelled { false }, _thread_running { false }, _dispatch_all_on_destroy { true };
 
     void queue_dispatcher()
     {

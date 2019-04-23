@@ -83,7 +83,7 @@ int main()
 	int_prop = 150;
 
 	std::cout << "...temporary disabling value_changing signal..." << std::endl;
-	cons.connections[0].signal().enabled(false);
+	cons.connections[1].signal().enabled(false);
 
 	int_prop = raw_int;
 	int_prop *= 7;
@@ -92,7 +92,7 @@ int main()
 	std::cout << "comparing int_prop == dummy_int_prop (expecting: false): " << std::boolalpha << (int_prop == dummy_int_prop) << std::endl;
 
 	std::cout << "...enabling value_changing signal again..." << std::endl;
-	cons.connections[0].signal().enabled(true);
+	cons.connections[1].signal().enabled(true);
 
 	int_prop = dummy_int_prop;
 
@@ -131,6 +131,8 @@ int main()
             ss::throttled_signal<std::string> sg("THROTTLED"s, 50ms);
             cons = sg.connect([&sg](auto &&str){ std::cout << "throttle: " << str << "; " << sg.name() << std::endl; });
 
+            //sg.set_dispatch_all_on_destroy(false);
+
             constexpr int sg_count {10};
             for (auto idx{0}; idx < sg_count; ++idx)
                 sg.emit("throttled signal emitted..."s);
@@ -141,7 +143,7 @@ int main()
                 sg.emit("throttled signal emitted..."s);
 
             std::cout << "done..." << std::endl;
-            std::cout << "emitting the rest of queued signals..." << std::endl;
+            if (sg.get_dispatch_all_on_destroy()) std::cout << "emitting the rest of queued signals..." << std::endl;
         }
 
         ss::queued_signal<std::string> sg1("THREADED 1"s), sg2("THREADED 2"s);
