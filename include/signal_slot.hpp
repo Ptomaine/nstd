@@ -469,16 +469,10 @@ public:
 
     void emit(const Args&... args)
     {
+        if (!base_class::_enabled) return;
+
         if (_bridge_enabled)
         {
-            {
-                if (!base_class::_enabled) return;
-
-                std::scoped_lock lock(base_class::_emit_lock);
-
-                if (!base_class::_enabled) return;
-            }
-
             {
                 std::scoped_lock lock(_queue_lock);
 
@@ -550,6 +544,8 @@ public:
 
     uint64_t get_queue_size() const
     {
+        std::scoped_lock lock(_queue_lock);
+        
         return std::size(_signal_queue);
     }
 
@@ -714,25 +710,28 @@ public:
 
         if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
-        std::scoped_lock lock(_emit_lock);
-
-        auto end { std::end(_signal_queue) };
-
-        if (!std::empty(_signal_queue))
+        if (_dispatch_all_on_destroy)
         {
-            _signal_queue.erase(std::remove_if(std::begin(_signal_queue), end, [this](auto &value)
+            std::scoped_lock lock(_emit_lock);
+
+            auto end { std::end(_signal_queue) };
+
+            if (!std::empty(_signal_queue))
             {
-                auto &[this_, args] = value;
-
-                if (this_ == this)
+                _signal_queue.erase(std::remove_if(std::begin(_signal_queue), end, [this](auto &value)
                 {
-                    std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+                    auto &[this_, args] = value;
 
-                    return true;
-                }
+                    if (this_ == this)
+                    {
+                        std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
 
-                return false;
-            }), end);
+                        return true;
+                    }
+
+                    return false;
+                }), end);
+            }
         }
     }
 
@@ -771,12 +770,22 @@ public:
         return _use_delay;
     }
 
+    void set_dispatch_all_on_destroy(bool do_dispatch)
+    {
+        _dispatch_all_on_destroy = do_dispatch;
+    }
+
+    bool get_dispatch_all_on_destroy()
+    {
+        return _dispatch_all_on_destroy;
+    }
+
 protected:
     static inline std::deque<std::tuple<queued_signal_base*, std::tuple<Args...>>> _signal_queue {};
     static inline std::mutex _emit_lock {}, _destruct_lock {};
     static inline std::atomic<std::chrono::milliseconds> _delay_ms { 0ms };
     static inline std::thread _dispatcher_thread {};
-    static inline std::atomic_bool _use_delay { false }, _cancelled { false }, _thread_running { false };
+    static inline std::atomic_bool _use_delay { false }, _cancelled { false }, _thread_running { false }, _dispatch_all_on_destroy { true };
 
     static void queue_dispatcher()
     {
