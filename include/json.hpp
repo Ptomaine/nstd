@@ -21,28 +21,8 @@ SOFTWARE.
 */
 
 #include "external/json/single_include/nlohmann/json.hpp"
-#include "fifo_map.hpp"
 
-namespace nstd
+namespace nstd::json
 {
-
-namespace json
-{
-template<class Key, class T, class Ignore, class Allocator>
-using ordered_map = fifo_map<Key, T, fifo_map_compare<Key>, Allocator>;
-
 using namespace nlohmann;
-using json_ord = basic_json<ordered_map>;
-}
-
-}
-
-inline nstd::json::json_ord operator "" _json_ord(const char* s, std::size_t n)
-{
-    return nstd::json::json_ord::parse(s, s + n);
-}
-
-inline nstd::json::json_ord::json_pointer operator "" _json_ord_pointer(const char* s, std::size_t n)
-{
-    return nstd::json::json_ord::json_pointer(std::string(s, n));
 }

@@ -114,7 +114,7 @@ int main()
         std::cout << "json_data: " << json_data.value_or("null") << std::endl;
     };
 
-    auto js_o { R"({"3":null, "1":"the middle one...", "2":null})"_json_ord };
+    auto js_o { R"({"3":null, "1":"the middle one...", "2":null})"_json };
 
     std::cout << js_o << std::endl;
 
