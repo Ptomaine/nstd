@@ -217,11 +217,11 @@ public:
         _request_data_size = 0;
 
         _http_method_traits = { http_method_id::UNKNOWN, 0xffffffff };
-        _resource = nullptr;
-        _version_part = nullptr;
-        _protocol = nullptr;
-        _version = nullptr;
-        _content = nullptr;
+        _resource = decltype(_resource)();
+        _version_part = decltype(_resource)();
+        _protocol = decltype(_protocol)();
+        _version = decltype(_version)();
+        _content = decltype(_content)();
         _headers.clear();
     }
 
