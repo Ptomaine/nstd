@@ -40,8 +40,8 @@ public:
     };
 
     live_property(const std::string &name, const value_type &value = value_type()) :
-        signal_value_changing{ u8"/live_property/"s + name + u8"/signal_value_changing"s },
-        signal_value_changed{ u8"/live_property/"s + name + u8"/signal_value_changed"s },
+        signal_value_changing{ "/live_property/"s + name + "/signal_value_changing"s },
+        signal_value_changed{ "/live_property/"s + name + "/signal_value_changed"s },
         _name{ name }, _value{ value }
     {
     }
@@ -293,8 +293,8 @@ public:
     };
 
     live_property_ts(const std::string &name, const value_type &value = value_type()) :
-        signal_value_changing{ u8"/live_property_ts/"s + name + u8"/signal_value_changing"s },
-        signal_value_changed{ u8"/live_property_ts/"s + name + u8"/signal_value_changed"s },
+        signal_value_changing{ "/live_property_ts/"s + name + "/signal_value_changing"s },
+        signal_value_changed{ "/live_property_ts/"s + name + "/signal_value_changed"s },
         _name{ name }, _value{ value }
     {
     }
