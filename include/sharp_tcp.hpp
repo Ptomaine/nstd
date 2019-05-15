@@ -908,7 +908,7 @@ private:
 
         socket.is_executing_rd_callback = true;
 
-        _callback_workers << [=]
+        _callback_workers << [=, this]
         {
             rd_callback(fd);
 
@@ -937,7 +937,7 @@ private:
 
         socket.is_executing_wr_callback = true;
 
-        _callback_workers << [=]
+        _callback_workers << [=, this]
         {
             wr_callback(fd);
 
