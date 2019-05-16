@@ -909,7 +909,7 @@ private:
         socket.is_executing_rd_callback = true;
 
         _callback_workers << [=
-#if __cplusplus >= 201709L
+#if __cplusplus > 201703L
                                  , this
 #endif
                              ]
@@ -942,7 +942,7 @@ private:
         socket.is_executing_wr_callback = true;
 
         _callback_workers << [=
-#if __cplusplus >= 201709L
+#if __cplusplus > 201703L
                                  , this
 #endif
                              ]
