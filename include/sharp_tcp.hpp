@@ -908,7 +908,11 @@ private:
 
         socket.is_executing_rd_callback = true;
 
-        _callback_workers << [=, this]
+        _callback_workers << [=
+#if __cplusplus >= 201709L
+                                 , this
+#endif
+                             ]
         {
             rd_callback(fd);
 
@@ -937,7 +941,11 @@ private:
 
         socket.is_executing_wr_callback = true;
 
-        _callback_workers << [=, this]
+        _callback_workers << [=
+#if __cplusplus >= 201709L
+                                 , this
+#endif
+                             ]
         {
             wr_callback(fd);
 
