@@ -293,7 +293,7 @@ protected:
     connection_bag _cons;
     fs::path _root_folder { fs::current_path() / "www"s };
 
-    void on_new_request(const std::shared_ptr<tcp_client>& client, const typename tcp_client::read_result& res)
+    void on_new_request(const std::shared_ptr<tcp_client>& client, typename tcp_client::read_result& res)
     {
         if (res.success)
         {
@@ -326,7 +326,14 @@ protected:
                     {
                         sig.second->emit(req);
 
-                        if (completed = req->completed; !completed) continue;
+                        if (completed = req->completed; !completed)
+                        {
+                            res.buffer = std::move(req->data);
+                            p = std::move(req->parser);
+                            resource = std::move(req->resource);
+
+                            continue;
+                        }
                     }
                     catch(const std::exception &e)
                     {

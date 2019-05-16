@@ -143,8 +143,13 @@ int main(int argc, char *argv[])
         }
     });
 
-    mgr.start("127.0.0.1", 3001);
+    const std::string host { "127.0.0.1"s };
+    const int port { 3001 };
 
+    mgr.start(host, port);
+
+    std::cout << "Host:" << host << std::endl;
+    std::cout << "Port:" << port << std::endl << std::endl;
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
 
     std::signal(SIGINT, &signint_handler);

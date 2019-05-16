@@ -282,6 +282,19 @@ enum class os_family : uint8_t
     #endif
 #endif
 
+//Fallback
+#if !defined(ARCH_LITTLE_ENDIAN) && !defined(ARCH_BIG_ENDIAN)
+    #ifdef __GNUC__
+        #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+            #define ARCH_LITTLE_ENDIAN
+        #else
+            #define ARCH_BIG_ENDIAN
+        #endif
+    #else
+        #define ARCH_LITTLE_ENDIAN
+    #endif
+#endif
+
 enum class compiler : uint8_t
 {
     Unknown = 0,
