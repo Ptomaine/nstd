@@ -61,25 +61,25 @@ inline auto trim_impl(StringViewType sv, const StringViewType chars_to_remove)
 
 }
 
-inline std::string from_utf16_to_utf8(const std::u16string &s)
+inline std::u8string from_utf16_to_utf8(const std::u16string &s)
 {
-    std::string result;
+    std::u8string result;
 
     nstd::utf8::utf16to8(std::begin(s), std::end(s), std::back_inserter(result));
 
     return result;
 }
 
-inline std::string from_utf32_to_utf8(const std::u32string &s)
+inline std::u8string from_utf32_to_utf8(const std::u32string &s)
 {
-    std::string result;
+    std::u8string result;
 
     nstd::utf8::utf32to8(std::begin(s), std::end(s), std::back_inserter(result));
 
     return result;
 }
 
-inline std::u16string from_utf8_to_utf16(const std::string &s)
+inline std::u16string from_utf8_to_utf16(const std::u8string &s)
 {
     std::u16string result;
 
@@ -90,7 +90,7 @@ inline std::u16string from_utf8_to_utf16(const std::string &s)
 
 inline std::u16string from_utf32_to_utf16(const std::u32string &s)
 {
-    std::string in;
+    std::u8string in;
     std::u16string result;
 
     nstd::utf8::utf32to8(std::begin(s), std::end(s), std::back_inserter(in));
@@ -99,7 +99,7 @@ inline std::u16string from_utf32_to_utf16(const std::u32string &s)
     return result;
 }
 
-inline std::u32string from_utf8_to_utf32(const std::string &s)
+inline std::u32string from_utf8_to_utf32(const std::u8string &s)
 {
     std::u32string result;
 
@@ -110,7 +110,7 @@ inline std::u32string from_utf8_to_utf32(const std::string &s)
 
 inline std::u32string from_utf16_to_utf32(const std::u16string &s)
 {
-    std::string in;
+    std::u8string in;
     std::u32string result;
 
     nstd::utf8::utf16to8(std::begin(s), std::end(s), std::back_inserter(in));
@@ -121,25 +121,30 @@ inline std::u32string from_utf16_to_utf32(const std::u16string &s)
 
 constexpr const char     *const whitespace_chars { " \t\n\v\f\r" };
 constexpr const wchar_t  *const wwhitespace_chars { L" \t\n\v\f\r" };
+constexpr const char8_t *const u8whitespace_chars { u8" \t\n\v\f\r" };
 constexpr const char16_t *const u16whitespace_chars { u" \t\n\v\f\r" };
 constexpr const char32_t *const u32whitespace_chars { U" \t\n\v\f\r" };
 constexpr const char *const boolalpha[] = { "false", "true" };
 constexpr const wchar_t *const wboolalpha[] = { L"false", L"true" };
+constexpr const char8_t *const u8boolalpha[] = { u8"false", u8"true" };
 constexpr const char16_t *const u16boolalpha[] = { u"false", u"true" };
 constexpr const char32_t *const u32boolalpha[] = { U"false", U"true" };
 
 inline std::string_view trim_left(std::string_view sv, const std::string_view chars_to_remove = whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
 inline std::wstring_view trim_left(std::wstring_view sv, const std::wstring_view chars_to_remove = wwhitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
+inline std::u8string_view trim_left(std::u8string_view sv, const std::u8string_view chars_to_remove = u8whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
 inline std::u16string_view trim_left(std::u16string_view sv, const std::u16string_view chars_to_remove = u16whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
 inline std::u32string_view trim_left(std::u32string_view sv, const std::u32string_view chars_to_remove = u32whitespace_chars) { return trim_left_impl(sv, chars_to_remove); }
 
 inline std::string_view trim_right(std::string_view sv, const std::string_view chars_to_remove = whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
 inline std::wstring_view trim_right(std::wstring_view sv, const std::wstring_view chars_to_remove = wwhitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
+inline std::u8string_view trim_right(std::u8string_view sv, const std::u8string_view chars_to_remove = u8whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
 inline std::u16string_view trim_right(std::u16string_view sv, const std::u16string_view chars_to_remove = u16whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
 inline std::u32string_view trim_right(std::u32string_view sv, const std::u32string_view chars_to_remove = u32whitespace_chars) { return trim_right_impl(sv, chars_to_remove); }
 
 inline std::string_view trim(std::string_view sv, const std::string_view chars_to_remove = whitespace_chars) { return trim_impl(sv, chars_to_remove); }
 inline std::wstring_view trim(std::wstring_view sv, const std::wstring_view chars_to_remove = wwhitespace_chars) { return trim_impl(sv, chars_to_remove); }
+inline std::u8string_view trim(std::u8string_view sv, const std::u8string_view chars_to_remove = u8whitespace_chars) { return trim_impl(sv, chars_to_remove); }
 inline std::u16string_view trim(std::u16string_view sv, const std::u16string_view chars_to_remove = u16whitespace_chars) { return trim_impl(sv, chars_to_remove); }
 inline std::u32string_view trim(std::u32string_view sv, const std::u32string_view chars_to_remove = u32whitespace_chars) { return trim_impl(sv, chars_to_remove); }
 
