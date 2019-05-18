@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    const std::string host { "127.0.0.1"s };
+    const std::string host { "localhost"s };
     const int port { 3001 };
 
     mgr.start(host, port);
