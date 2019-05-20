@@ -3,7 +3,7 @@ solution "nstd_examples"
     userincludedirs { "../include" }
     flags { "StaticRuntime" }
     configuration "vs*"
-        buildoptions { "/std:c++17", "/EHsc", "/Wall" }
+        buildoptions { "/std:c++latest", "/EHsc", "/Wall" }
 
     configuration "not vs*"
         buildoptions_cpp { "-std=c++2a", "-fexceptions" }
