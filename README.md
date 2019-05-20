@@ -36,6 +36,9 @@ For Windows users, you can download MinGW from the following sites:
 https://gcc-mcf.lhmouse.com/ (It doesn't contain mingw32-make utility. Download it separately)
 https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/
 
+MinGW/GCC >= 9.1 is now the reqired compiler that supports some features of C++20.
+Latest MSVC was not tested.
+
 GENie can be downloaded from https://github.com/bkaradzic/GENie and genie executable should be placed to the example folder or be in path.
 
 **A simple usage on Windows using GENie and MinGW:**
