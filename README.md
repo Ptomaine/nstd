@@ -1,6 +1,6 @@
 # nstd
 
-This is a C++17 utility library. nstd stands for non-standard.
+This is a C++20 utility library. nstd stands for non-standard.
 The library currently contains the following features:
    * signal_slot    - a signal/slot implementation that is thread safe and supports auto-disconnection from slots.
    * relinx - LINQ-like data transformations
@@ -27,6 +27,7 @@ The library currently contains the following features:
    * cmdline_options - a commandline parser [https://github.com/Fytch/ProgramOptions.hxx]
    * giant - r-lyeh's tiny library to handle little/big endianness [https://github.com/r-lyeh/giant]
    * fifo_map - a FIFO-ordered associative container for C++
+   * ...and many more
 
 Many of these libraries are sub-modules. So, don't forget to update sub-modules after cloning this repository.
 
