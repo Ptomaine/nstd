@@ -63,6 +63,8 @@ int main()
 
     auto random_base64 { [](){ return nstd::base64::base64_encode(nstd::from_random()->take(5)->to_vector()); } };
 
+    nstd::uuid::uuid::init_random();
+
     nstd::signal_slot::timer_signal timer { "emitter"s, 2s };
 
     cons = timer.connect([&remote_signals, &random_base64, &signal_name](auto)

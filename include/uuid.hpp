@@ -36,28 +36,28 @@ namespace nstd::uuid
 class uuid
 {
 public:
-    uuid() : uuid_data(16, 0){}
-    uuid(const std::vector<uint8_t> &data) : uuid_data(data) { if (std::size(uuid_data) != 16) { uuid_data.~vector(); throw std::runtime_error("uuid"); } }
-    uuid(std::vector<uint8_t> &&data) : uuid_data(std::move(data)) { if (std::size(uuid_data) != 16) { uuid_data.~vector(); throw std::runtime_error("uuid"); } }
-    uuid(uuid&&) = default;
-    uuid(const uuid&) = default;
-    uuid &operator=(const uuid&) = default;
+    constexpr uuid() : uuid_data { 0 }{}
+    constexpr uuid(const std::array<uint8_t, 16> &data) : uuid_data { data } { }
+    constexpr uuid(std::array<uint8_t, 16> &&data) : uuid_data { std::move(data) } { }
+    constexpr uuid(uuid&&) = default;
+    constexpr uuid(const uuid&) = default;
+    constexpr uuid &operator=(const uuid&) = default;
 
-    bool operator ==(const uuid &other) const
+    constexpr bool operator ==(const uuid &other) const
     {
         if (std::size(uuid_data) != std::size(other.uuid_data)) return false;
 
         return std::equal(std::begin(uuid_data), std::end(uuid_data), std::begin(other.uuid_data));
     }
 
-    bool operator !=(const uuid &other) const
+    constexpr bool operator !=(const uuid &other) const
     {
         return !(operator==(other));
     }
 
     bool is_null() const
     {
-        return std::all_of(std::begin(uuid_data), std::end(uuid_data), [](auto &&i) { return i == 0; });
+        return uuid_data == null_uuid;
     }
 
     std::string to_string(bool use_dashes = true, bool use_uppercase = false, bool use_braces = false) const
@@ -79,26 +79,21 @@ public:
 
         if (use_braces)
         {
-            result.insert(std::begin(result), '{');
-            result.insert(std::end(result), '}');
+            result.insert(std::begin(result), op_brace);
+            result.insert(std::end(result), cl_brace);
         }
 
         return result;
     }
 
-    const std::vector<uint8_t> &data() const
+    constexpr const std::array<uint8_t, 16> &data() const
     {
         return uuid_data;
     }
 
-    static uuid generate_random()
+    static constexpr uuid generate_random()
     {
-        if (!seeded)
-        {
-            init_random();
-        }
-
-        union { uint8_t bytes[16]; uint64_t data[2]; } s;
+        union { uint8_t bytes[16]; uint64_t data[2]; } s { 0 };
 
         s.data[0] = xorshift128plus(seed);
         s.data[1] = xorshift128plus(seed);
@@ -106,37 +101,37 @@ public:
         s.bytes[6] = (s.bytes[6] & 0xf0) | 0x04;
         s.bytes[8] = (s.bytes[8] & 0x30) + 8;
 
-        return std::vector<uint8_t>{ s.bytes, s.bytes + 16 };
+        std::array<uint8_t, 16> arr { 0 };
+
+        for (int idx { 0 }; idx < 16; ++idx) arr[idx] = s.bytes[idx];
+
+        return arr;
     }
 
     template<typename RandomProvider = random_provider_default<uint64_t>>
-    static void init_random(RandomProvider &&random_provider = RandomProvider())
+    static constexpr void init_random(RandomProvider &&random_provider = RandomProvider())
     {
         do
         {
             seed[0] = random_provider();
             seed[1] = random_provider();
         } while (!(seed[0] && seed[1]));
-
-        seeded = true;
     }
 
-    static bool validate_uuid_string(std::string_view str, bool strict = false)
+    static constexpr bool validate_uuid_string(std::string_view str, bool strict = false)
     {
     	if (std::size(str) < 32) return false;
 
-    	if (str.front() == '{' && str.back() == '}') str = str.substr(1, std::size(str) - 2);
+    	if (str.starts_with(op_brace) && str.ends_with(cl_brace)) str = str.substr(1, std::size(str) - 2);
 
-        std::string uuid_str;
+        auto count { 0 };
 
-        std::copy_if(std::begin(str), std::end(str), std::back_inserter(uuid_str), [](auto &&i) { return std::isxdigit(i); });
+        for (auto d : str) if (is_hex_digit(d)) ++count;
 
-        if (std::size(uuid_str) != 32) return false;
+        if (count != 32) return false;
 
         if (strict)
         {
-            if (uuid_str[12] != '4') return false;
-
             if (std::any_of(std::begin(str), std::end(str), [](auto &&i) { return i == sep_char; }))
                 for (auto pos : dash_positions) if(str[pos] != sep_char) return false;
         }
@@ -144,15 +139,15 @@ public:
         return true;
     }
 
-    static uuid parse(std::string_view uuid_str, bool strict = false)
+    static constexpr uuid parse(std::string_view uuid_str, bool strict = false, bool throw_on_error = true)
     {
-        if (!validate_uuid_string(uuid_str, strict)) return {};
+        if (!validate_uuid_string(uuid_str, strict)) { if (throw_on_error) { throw std::runtime_error { "Parse error. Invalid UUID." }; } else { return {}; } }
 
-        if (uuid_str.front() == '{' && uuid_str.back() == '}') uuid_str = uuid_str.substr(1, std::size(uuid_str) - 2);
+        if (uuid_str.starts_with(op_brace) && uuid_str.ends_with(cl_brace)) uuid_str = uuid_str.substr(1, std::size(uuid_str) - 2);
 
-        auto index {0};
-        char bytes[3];
-        uint8_t uuid_bytes[16];
+        auto index { 0 };
+        char bytes[2] = { 0 };
+        std::array<uint8_t, 16> uuid_bytes { 0 };
 
         for (auto it = std::begin(uuid_str), end = std::end(uuid_str); it != end; )
         {
@@ -160,23 +155,19 @@ public:
 
             bytes[1] = *it++;
             bytes[0] = *it++;
-            bytes[2] = 0;
 
-            uuid_bytes[index++] = static_cast<uint8_t>(std::stoul(bytes, nullptr, 16));
+            uuid_bytes[index++] = parse_hex_byte(bytes);
         }
 
-        return std::vector<uint8_t>{uuid_bytes, uuid_bytes + 16};
+        return uuid_bytes;
     }
 
-    static uint64_t get_random_number()
-    {
-        return random_provider_default<uint64_t>()();
-    }
+    inline static constexpr std::array<uint8_t, 16> null_uuid { 0 };
 
 private:
-    std::vector<uint8_t> uuid_data;
+    std::array<uint8_t, 16> uuid_data;
 
-    static uint64_t xorshift128plus(uint64_t *s)
+    static constexpr uint64_t xorshift128plus(uint64_t *s)
     {
         auto s1 = s[0];
         const auto s0 = s[1];
@@ -188,11 +179,33 @@ private:
         return s[1] + s0;
     }
 
+    static constexpr bool is_hex_digit(char d)
+    {
+        return (d >= '0' && d <= '9') || (d >= 'a' && d <= 'f') || (d >= 'A' && d <= 'F');
+    }
+
+    static constexpr uint8_t parse_hex_digit(const char c)
+    {
+        return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? 10 + c - 'a' : (c >= 'A' && c <= 'F') ? 10 + c - 'A' : 0;
+    }
+
+    static constexpr uint8_t parse_hex_byte(const char ptr[2])
+    {
+        return (parse_hex_digit(ptr[0]) << 4) + parse_hex_digit(ptr[1]);
+    }
+
     inline static uint64_t seed[2] { 0 };
-    inline static bool seeded { false };
     inline static constexpr std::array<size_t, 4> dash_positions {8, 13, 18, 23};
-    inline static constexpr const char sep_char { '-' };
+    inline static constexpr const char sep_char { '-' }, op_brace { '{' }, cl_brace { '}' };
 };
+
+namespace literals
+{
+    constexpr uuid operator "" _uuid(const char *str, size_t N)
+    {
+        return uuid::parse(std::string_view { str, N });
+    }
+}
 
 }
 

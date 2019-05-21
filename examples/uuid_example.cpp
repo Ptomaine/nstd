@@ -22,9 +22,12 @@ SOFTWARE.
 #include "uuid.hpp"
 
 using namespace std::string_literals;
+using namespace nstd::uuid::literals;
 
 int main()
 {
+    nstd::uuid::uuid::init_random();
+
     auto uuid { nstd::uuid::uuid::generate_random() };
 
     std::cout << "Generated uuid (dashes/lower case, default): " << uuid.to_string() << std::endl;
@@ -33,7 +36,7 @@ int main()
     std::cout << "Generated uuid (no dashes/upper case): " << uuid.to_string(false, true) << std::endl;
     std::cout << "Generated uuid (dashes/upper case/braces): " << uuid.to_string(true, true, true) << std::endl;
 
-    auto uuid_parsed { nstd::uuid::uuid::parse("{"s + uuid.to_string(true, true) + "}"s) };
+    auto uuid_parsed { nstd::uuid::uuid::parse(uuid.to_string(true, true, true)) };
 
     if (uuid == uuid_parsed)
         std::cout << "Parsed uuid: " << uuid_parsed.to_string() << std::endl;
@@ -42,12 +45,16 @@ int main()
 
     nstd::uuid::uuid null_uuid;
 
-    if (null_uuid.is_null() && null_uuid == nstd::uuid::uuid::parse(std::string('0', 32)))
+    if (null_uuid.is_null() && null_uuid == nstd::uuid::uuid::parse(std::string(32, '0')) && null_uuid == nstd::uuid::uuid::null_uuid)
         std::cout << "Default constructed uuid: " << null_uuid.to_string() << std::endl;
     else
     {
         std::cout << "Error: the default constructed uuid should be the null value!" << std::endl;
     }
+
+    auto cuuid { "b9264043-8c55-4aa6-b69e-e754ce9368d9"_uuid };
+
+    std::cout << "Literal uuid: " << cuuid.to_string() << std::endl;
 
     std::cout << "exitting..." << std::endl;
 

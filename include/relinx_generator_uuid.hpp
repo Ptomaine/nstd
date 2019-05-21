@@ -39,7 +39,7 @@ public:
     using reference = const value_type&;
     using iterator_category = std::input_iterator_tag;
 
-    uuid_iterator_adapter() { nstd::uuid::uuid::init_random(RandomProvider()); }
+    uuid_iterator_adapter() { }
     uuid_iterator_adapter(bool begin_iterator_flag) : _uuid(begin_iterator_flag ? uuid::uuid::generate_random() : nstd::uuid::uuid()) { }
     uuid_iterator_adapter(const uuid_iterator_adapter &) = default;
     uuid_iterator_adapter(uuid_iterator_adapter &&) = default;
@@ -89,6 +89,14 @@ protected:
 template<typename RandomProvider = random_provider_default<uint64_t>>
 auto from_uuid()
 {
+    static bool is_inited { false };
+
+    if (!is_inited)
+    {
+        nstd::uuid::uuid::init_random(RandomProvider());
+        is_inited = true;
+    }
+
     return nstd::relinx::from(uuid_iterator_adapter<RandomProvider>(true), uuid_iterator_adapter<RandomProvider>());
 }
 
