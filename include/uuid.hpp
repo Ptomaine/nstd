@@ -60,7 +60,7 @@ public:
         return std::all_of(std::begin(uuid_data), std::end(uuid_data), [](auto &&i) { return i == 0; });
     }
 
-    std::string to_string(bool use_dashes = true, bool use_uppercase = false) const
+    std::string to_string(bool use_dashes = true, bool use_uppercase = false, bool use_braces = false) const
     {
         static const char *const chars[16] { "0123456789abcdef", "0123456789ABCDEF" };
         std::string result;
@@ -75,7 +75,13 @@ public:
             inserter++ = chars[use_uppercase][n];
         }
 
-        if (use_dashes) for (auto pos : dash_positions) result.insert(pos, &sep_char, 1);
+        if (use_dashes) for (auto pos : dash_positions) result.insert(pos, 1, sep_char);
+
+        if (use_braces)
+        {
+            result.insert(0, 1, '{');
+            result.insert(std::size(result), 1, '}');
+        }
 
         return result;
     }
@@ -115,8 +121,12 @@ public:
         seeded = true;
     }
 
-    static bool validate_uuid_string(const std::string &str, bool strict = false)
+    static bool validate_uuid_string(std::string_view str, bool strict = false)
     {
+    	if (std::size(str) < 32) return false;
+
+    	if (str.front() == '{' && str.back() == '}') str = str.substr(1, std::size(str) - 2);
+
         std::string uuid_str;
 
         std::copy_if(std::begin(str), std::end(str), std::back_inserter(uuid_str), [](auto &&i) { return std::isxdigit(i); });
@@ -134,9 +144,11 @@ public:
         return true;
     }
 
-    static uuid parse(const std::string &uuid_str, bool strict = false)
+    static uuid parse(std::string_view uuid_str, bool strict = false)
     {
         if (!validate_uuid_string(uuid_str, strict)) return {};
+
+        if (uuid_str.front() == '{' && uuid_str.back() == '}') uuid_str = uuid_str.substr(1, std::size(uuid_str) - 2);
 
         auto index {0};
         char bytes[3];
