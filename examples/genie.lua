@@ -240,7 +240,7 @@ solution "nstd_examples"
             buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
-            links { "pthread" }
+            links { "pthread" }--]]
 
     project "uuid_example"
         files { "uuid_example.cpp" }
@@ -261,7 +261,7 @@ solution "nstd_examples"
             buildoptions_cpp { "-fpermissive" }
 
         configuration "linux"
-            links { "pthread" }--]]
+            links { "pthread" }
 
     project "freetype_example"
         files { "freetype_example.cpp", "../include/external/freetype/freetype.c" }

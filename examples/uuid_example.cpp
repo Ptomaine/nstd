@@ -19,9 +19,9 @@ SOFTWARE.
 */
 
 #include <iostream>
-#include "random_provider_default.hpp"
-#include "random_provider_quantum.hpp"
 #include "uuid.hpp"
+
+using namespace std::string_literals;
 
 int main()
 {
@@ -31,8 +31,9 @@ int main()
     std::cout << "Generated uuid (no dashes/lower case): " << uuid.to_string(false) << std::endl;
     std::cout << "Generated uuid (dashes/upper case): " << uuid.to_string(true, true) << std::endl;
     std::cout << "Generated uuid (no dashes/upper case): " << uuid.to_string(false, true) << std::endl;
+    std::cout << "Generated uuid (dashes/upper case/braces): " << uuid.to_string(true, true, true) << std::endl;
 
-    auto uuid_parsed { nstd::uuid::uuid::parse(uuid.to_string(true, true)) };
+    auto uuid_parsed { nstd::uuid::uuid::parse("{"s + uuid.to_string(true, true) + "}"s) };
 
     if (uuid == uuid_parsed)
         std::cout << "Parsed uuid: " << uuid_parsed.to_string() << std::endl;
@@ -48,18 +49,7 @@ int main()
         std::cout << "Error: the default constructed uuid should be the null value!" << std::endl;
     }
 
-    std::cout << "Quantum random uuids:" << std::endl;
-
-    nstd::uuid::uuid::init_random(nstd::random_provider_quantum<>());
-
-    auto quuid { nstd::uuid::uuid::generate_random() };
-
-    std::cout << "Generated uuid (dashes/lower case, default): " << quuid.to_string() << std::endl;
-    std::cout << "Generated uuid (no dashes/lower case): " << quuid.to_string(false) << std::endl;
-    std::cout << "Generated uuid (dashes/upper case): " << quuid.to_string(true, true) << std::endl;
-    std::cout << "Generated uuid (no dashes/upper case): " << quuid.to_string(false, true) << std::endl;
-
-	std::cout << "exitting..." << std::endl;
+    std::cout << "exitting..." << std::endl;
 
     return 0;
 }
