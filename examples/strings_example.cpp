@@ -35,7 +35,7 @@ int main()
 
     std::u16string u16str(trim(u"    Hello World!      "));
 
-    std::cout << u8"Всем привет :)" << std::endl;
+    std::cout << u8_to_str(u8"Всем привет :)") << std::endl;
     std::cout << trim("    Hello World!      ") << std::endl;
     std::wcout << trim(L"    Hello World!      ") << std::endl;
     std::cout << u8_to_str(from_utf16_to_utf8(u16str)) << std::endl;
