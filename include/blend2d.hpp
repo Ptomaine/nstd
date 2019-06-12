@@ -20,6 +20,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#define BL_BUILD_EMBED
+#define BL_STATIC
 
 #include "external/blend2d/src/blend2d-impl.h"

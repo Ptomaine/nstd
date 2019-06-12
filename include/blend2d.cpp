@@ -18,7 +18,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#define BL_BUILD_EMBED
+#define BL_STATIC
 
 #include "external/asmjit/src/asmjit/core/arch.cpp"
 #include "external/asmjit/src/asmjit/core/assembler.cpp"
@@ -51,16 +51,6 @@ SOFTWARE.
 #include "external/asmjit/src/asmjit/core/zonestack.cpp"
 #include "external/asmjit/src/asmjit/core/zonetree.cpp"
 #include "external/asmjit/src/asmjit/core/zonevector.cpp"
-#include "external/asmjit/src/asmjit/arm/armassembler.cpp"
-#include "external/asmjit/src/asmjit/arm/armbuilder.cpp"
-#include "external/asmjit/src/asmjit/arm/armcallconv.cpp"
-#include "external/asmjit/src/asmjit/arm/armcompiler.cpp"
-#include "external/asmjit/src/asmjit/arm/armfeatures.cpp"
-#include "external/asmjit/src/asmjit/arm/arminstdb.cpp"
-#include "external/asmjit/src/asmjit/arm/arminternal.cpp"
-#include "external/asmjit/src/asmjit/arm/armlogging.cpp"
-#include "external/asmjit/src/asmjit/arm/armoperand.cpp"
-#include "external/asmjit/src/asmjit/arm/armrapass.cpp"
 #include "external/asmjit/src/asmjit/x86/x86assembler.cpp"
 #include "external/asmjit/src/asmjit/x86/x86builder.cpp"
 #include "external/asmjit/src/asmjit/x86/x86callconv.cpp"
