@@ -49,3 +49,6 @@
 [submodule "include/external/asmjit"]
 	path = include/external/asmjit
 	url = https://github.com/asmjit/asmjit.git
+[submodule "include/external/cpp-taskflow"]
+	path = include/external/cpp-taskflow
+	url = https://github.com/cpp-taskflow/cpp-taskflow.git
