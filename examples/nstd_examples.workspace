@@ -2,7 +2,7 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
 		<Project filename="agg_example.cbp" />
-		<Project filename="asio_example.cbp" />
+		<!--<Project filename="asio_example.cbp" />-->
 		<Project filename="base64_example.cbp" />
 		<Project filename="chaiscript_example.cbp" />
 		<Project filename="date_example.cbp" />
@@ -14,7 +14,7 @@
 		<Project filename="live_property_example.cbp" />
 		<Project filename="pmr_example.cbp" />
 		<Project filename="relinx_example.cbp" />
-		<Project filename="relinx_generator_example.cbp" />
+		<!--<Project filename="relinx_generator_example.cbp" />-->
 		<Project filename="remote_signal_slot_example.cbp" />
 		<Project filename="sharp_tcp_client_example.cbp" />
 		<Project filename="sharp_tcp_server_example.cbp" />
@@ -22,7 +22,7 @@
 		<Project filename="strings_example.cbp" />
 		<Project filename="topological_sorter_example.cbp" />
 		<Project filename="units_example.cbp" />
-		<Project filename="urdl_example.cbp" />
+		<!--<Project filename="urdl_example.cbp" />-->
 		<Project filename="uuid_example.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

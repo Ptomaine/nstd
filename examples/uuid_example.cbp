@@ -31,7 +31,7 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=c++17" />
+			<Add option="-std=c++2a" />
 			<Add option="-m64" />
 			<Add option="-fexceptions" />
 			<Add option="-fpermissive" />
