@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <algorithm>
 #include <deque>
+#include <stdexcept>
 
 namespace nstd
 {
@@ -46,9 +47,12 @@ private:
 	}
 
 public:
+	tailed(tailed &&) = default;
+	tailed &operator = (tailed &&) = default;
 
 	tailed() : _values(tail_limit)
 	{
+		static_assert(tail_limit > 1);
 	}
 
 	tailed(const value_type &value) : tailed()
@@ -56,8 +60,9 @@ public:
 		_values.front() = value;
 	}
 
-	tailed(const tailed<value_type, tail_limit> &copy) : _values(copy._values)
+	tailed(const tailed &copy) : _values(copy._values)
 	{
+		static_assert(tail_limit > 1);
 	}
 
 	value_type &current()
@@ -65,13 +70,11 @@ public:
 		return _values.front();
 	}
 
-	value_type &previous()
+	value_type &previous(const int shift = 1)
 	{
-		static_assert(tail_limit > 1);
+		if (shift >= tail_limit) throw std::out_of_range("The index is out of range!");
 
-		auto it { std::begin(_values) };
-
-		return std::advance(it, 1), *it;
+		return *std::next(std::begin(_values), shift);
 	}
 
 	tailed &operator = (const value_type &value)
@@ -163,11 +166,15 @@ public:
 
 	value_type &operator [](const int index)
 	{
+		if (index >= tail_limit) throw std::out_of_range("The index is out of range!");
+
 		return _values[index];
 	}
 
 	value_type operator [](const int index) const
 	{
+		if (index >= tail_limit) throw std::out_of_range("The index is out of range!");
+
 		return _values[index];
 	}
 
