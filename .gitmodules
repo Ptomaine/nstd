@@ -10,9 +10,6 @@
 [submodule "include/external/giant"]
 	path = include/external/giant
 	url = https://github.com/r-lyeh/giant.git
-[submodule "include/external/units"]
-	path = include/external/units
-	url = https://github.com/r-lyeh/units.git
 [submodule "include/external/sqlite_modern_cpp"]
 	path = include/external/sqlite_modern_cpp
 	url = https://github.com/aminroosta/sqlite_modern_cpp.git
