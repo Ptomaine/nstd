@@ -24,23 +24,25 @@ SOFTWARE.
 int main()
 {
     using namespace nstd::units;
-    using namespace nstd::units::values;
+    using namespace nstd::units::length;
+    using namespace nstd::units::temperature;
+    using namespace nstd::units::time;
 
-    km kms { 50 };
-    mile miles { kms };
-    yard yards { kms };
-    cm cantimeters { kms };
-    m meters { kms };
+    kilometer_t kms { 50 };
+    mile_t miles { kms };
+    yard_t yards { kms };
+    centimeter_t cantimeters { kms };
+    meter_t meters { kms };
 
     std::cout << kms << " = " << miles << " = " << yards << " = " << cantimeters << " = " << meters << std::endl;
 
-    Celsius c { 25.5 };
-    Fahrenheit f { c };
+    celsius_t c { 25.5 };
+    fahrenheit_t f { c };
 
     std::cout << c << " = " << f << std::endl;
 
-    auto lyrs { 300'000 };
-    km flight { constants::lightyear * lyrs };
+    double lyrs { 300'000 };
+    kilometer_t flight { lightyear_t { lyrs } };
 
     std::cout << lyrs << " light years = " << flight << std::endl;
 

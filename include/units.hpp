@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "external/units/units.hpp"
+#include "external/units2/include/units.h"
 
 namespace nstd
 {
