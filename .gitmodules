@@ -49,9 +49,6 @@
 [submodule "include/external/cpp-taskflow"]
 	path = include/external/cpp-taskflow
 	url = https://github.com/cpp-taskflow/cpp-taskflow.git
-[submodule "include/external/units2"]
-	path = include/external/units
-	url = https://github.com/nholthaus/units.git
 [submodule "include/external/units"]
 	path = include/external/units
 	url = https://github.com/nholthaus/units.git
