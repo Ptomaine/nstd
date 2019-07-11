@@ -20,9 +20,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "external/units/include/units.h"
+#include "external/CImg/CImg.h"
+#undef min
+#undef max
 
 namespace nstd
 {
-namespace units = units;
+namespace cimg = cimg_library;
 }

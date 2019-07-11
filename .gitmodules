@@ -52,3 +52,6 @@
 [submodule "include/external/units"]
 	path = include/external/units
 	url = https://github.com/nholthaus/units.git
+[submodule "include/external/CImg"]
+	path = include/external/CImg
+	url = https://github.com/dtschump/CImg.git
