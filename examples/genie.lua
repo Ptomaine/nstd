@@ -195,7 +195,7 @@ solution "nstd_examples"
         files { "sqlite_example.cpp", "../include/external/sqlite/sqlite3.c" }
         includedirs { "../include/external/sqlite", "../include/external/json/include" }
         configuration "not vs*"
-            buildoptions { "-Wno-unused-but-set-variable" }
+            buildoptions { "-Wno-unused-but-set-variable", "-DSQLITE_DQS=0" }
 
         configuration { "Debug" }
             objdir "obj/sqlite_example/Debug"
