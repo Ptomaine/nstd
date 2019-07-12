@@ -55,3 +55,6 @@
 [submodule "include/external/CImg"]
 	path = include/external/CImg
 	url = https://github.com/dtschump/CImg.git
+[submodule "include/external/quickjs"]
+	path = include/external/quickjs
+	url = https://github.com/horhof/quickjs.git
