@@ -139,32 +139,23 @@ static void parallel_for_each(Iterator begin, Iterator end, Functor func)
     const static unsigned nb_threads_hint { std::thread::hardware_concurrency() };
     const static unsigned nb_threads { (nb_threads_hint == 0u ? 8u : nb_threads_hint) };
 
+    if (begin == end) return;
+
     auto size { std::distance(begin, end) };
-
-    if (!size) return;
-
     auto slice { static_cast<decltype(size)>(double(size) / nb_threads + .5) };
 
     if (slice < 2) { std::for_each(begin, end, func); return; }
 
-    auto launchRange = [&func] (auto b, auto e) { std::for_each(b, e, func); };
-    std::vector<std::thread> thread_pool;
-    Iterator i1 { begin }, i2 { begin };
+    std::vector<std::thread> thread_pool; thread_pool.reserve(nb_threads);
+    auto it1 { begin }, it2 { begin };
 
-    if (std::distance(i2, end) > slice) std::advance(i2, slice); else i2 = end;
-
-    thread_pool.reserve(nb_threads);
-
-    while (i1 != end)
+    while (it1 != end)
     {
-        thread_pool.emplace_back(launchRange, i1, i2);
+        if (std::distance(it2, end) > slice) std::advance(it2, slice); else it2 = end;
 
-        if (std::distance(i1, end) > slice) std::advance(i1, slice); else i1 = end;
-        if (std::distance(i2, end) > slice) std::advance(i2, slice); else i2 = end;
+        thread_pool.emplace_back([&func] (auto b, auto e) { std::for_each(b, e, func); }, it1, it2), it1 = it2;
     }
 
-    if (i1 != end && std::distance(i1, end) < slice) thread_pool.emplace_back(launchRange, i1, end);
- 
     for (std::thread &t : thread_pool) if (t.joinable()) t.join();
 }
 
