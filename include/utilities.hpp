@@ -153,7 +153,7 @@ static void parallel_for_each(Iterator begin, Iterator end, Functor func)
     {
         if (std::distance(it2, end) > slice) std::advance(it2, slice); else it2 = end;
 
-        thread_pool.emplace_back([&func] (auto b, auto e) { std::for_each(b, e, func); }, it1, it2), it1 = it2;
+        thread_pool.emplace_back(std::for_each<Iterator, Functor>, it1, it2, func), it1 = it2;
     }
 
     for (std::thread &t : thread_pool) if (t.joinable()) t.join();
