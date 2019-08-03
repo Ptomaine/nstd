@@ -31,6 +31,7 @@ SOFTWARE.
 #include <thread>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace nstd::signal_slot
@@ -545,7 +546,7 @@ public:
     uint64_t get_queue_size() const
     {
         std::scoped_lock lock(_queue_lock);
-        
+
         return std::size(_signal_queue);
     }
 
@@ -607,7 +608,7 @@ public:
             {
                 auto &args = _signal_queue.front();
 
-                std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+                std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
 
                 _signal_queue.pop_front();
             }
@@ -668,7 +669,7 @@ protected:
 
                 auto &args = _signal_queue.front();
 
-                std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+                std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
 
                 _signal_queue.pop_front();
 
@@ -724,7 +725,7 @@ public:
 
                     if (this_ == this)
                     {
-                        std::apply([this, &args](const Args&... a){ base_class::emit(a...); }, args);
+                        std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
 
                         return true;
                     }
@@ -798,7 +799,7 @@ protected:
 
                 auto &[this_, args] = _signal_queue.front();
 
-                std::apply([&this_, &args](const Args&... a){ this_->base_class::emit(a...); }, args);
+                std::apply([&this_ = this_](const Args&... a){ this_->base_class::emit(a...); }, args);
 
                 _signal_queue.pop_front();
 
@@ -925,7 +926,7 @@ public:
     {
         std::unordered_set<std::string> signal_names;
 
-        for (auto &&s : _signals) signal_names.emplace(s.first);
+        for (auto &&[key, value] : _signals) signal_names.emplace(key);
 
         return signal_names;
     }
