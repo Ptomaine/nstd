@@ -306,12 +306,12 @@ public:
     {
         if (!_enabled) return;
 
-        std::scoped_lock lock(_emit_lock);
+        std::scoped_lock lock { _emit_lock };
 
         if (!_enabled) return;
 
         {
-            std::scoped_lock lock(_connect_lock);
+            std::scoped_lock lock { _connect_lock };
 
             if (!std::empty(_pending_connections))
             {
@@ -341,7 +341,7 @@ public:
         slot<Args...> new_slot(std::forward<std::function<void(Args...)>>(callable));
         connection to_return(this, new_slot);
 
-        std::scoped_lock lock(_connect_lock);
+        std::scoped_lock lock { _connect_lock };
         auto end { std::end(_pending_connections) };
 
         _pending_connections.erase(std::remove_if(std::begin(_pending_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
@@ -358,7 +358,7 @@ public:
 
     virtual void clear()
     {
-        std::scoped_lock lock(_connect_lock, _emit_lock);
+        std::scoped_lock lock { _connect_lock, _emit_lock };
 
         _pending_connections.clear();
         _slots.clear();
@@ -366,21 +366,21 @@ public:
 
     virtual size_t size() const override
     {
-        std::scoped_lock lock(_emit_lock);
+        std::scoped_lock lock { _emit_lock };
 
         return _slots.size();
     }
 
     void name(const std::string &name)
     {
-        std::scoped_lock lock(_name_lock);
+        std::scoped_lock lock { _name_lock };
 
         _name = name;
     }
 
     virtual std::string_view name() const override
     {
-        std::scoped_lock lock(_name_lock);
+        std::scoped_lock lock { _name_lock };
 
         return _name;
     }
@@ -475,7 +475,7 @@ public:
         if (_bridge_enabled)
         {
             {
-                std::scoped_lock lock(_queue_lock);
+                std::scoped_lock lock { _queue_lock };
 
                 _signal_queue.push_back(std::make_tuple(args...));
             }
@@ -494,13 +494,11 @@ public:
     {
         if (std::empty(_signal_queue)) return false;
 
-        std::scoped_lock lock(_queue_lock);
+        std::scoped_lock lock { _queue_lock };
 
         if (std::empty(_signal_queue)) return false;
 
-        auto &args = _signal_queue.front();
-
-        std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
+        std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
 
         _signal_queue.pop_front();
 
@@ -511,7 +509,7 @@ public:
     {
         if (std::empty(_signal_queue)) return;
 
-        std::scoped_lock lock(_queue_lock);
+        std::scoped_lock lock { _queue_lock };
 
         if (std::empty(_signal_queue)) return;
 
@@ -524,7 +522,7 @@ public:
     {
         if (std::empty(_signal_queue)) return;
 
-        std::scoped_lock lock(_queue_lock);
+        std::scoped_lock lock { _queue_lock };
 
         if (std::empty(_signal_queue)) return;
 
@@ -545,7 +543,7 @@ public:
 
     uint64_t get_queue_size() const
     {
-        std::scoped_lock lock(_queue_lock);
+        std::scoped_lock lock { _queue_lock };
 
         return std::size(_signal_queue);
     }
@@ -564,7 +562,7 @@ public:
     {
         if (std::empty(_signal_queue)) return;
 
-        std::scoped_lock lock(_queue_lock);
+        std::scoped_lock lock { _queue_lock };
 
         if (std::empty(_signal_queue)) return;
 
@@ -602,13 +600,11 @@ public:
 
         if (_dispatch_all_on_destroy)
         {
-            std::scoped_lock lock(_emit_lock);
+            std::scoped_lock lock { _emit_lock };
 
             while (!std::empty(_signal_queue))
             {
-                auto &args = _signal_queue.front();
-
-                std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
+                std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
 
                 _signal_queue.pop_front();
             }
@@ -617,7 +613,7 @@ public:
 
     void emit(const Args &... args)
     {
-        std::scoped_lock lock(_emit_lock);
+        std::scoped_lock lock { _emit_lock };
 
         _signal_queue.push_back(std::make_tuple(args...));
 
@@ -663,13 +659,11 @@ protected:
         while (!_cancelled)
         {
             {
-                std::unique_lock lock(_emit_lock);
+                std::scoped_lock lock { _emit_lock };
 
                 if (_cancelled || std::empty(_signal_queue)) break;
 
-                auto &args = _signal_queue.front();
-
-                std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
+                std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
 
                 _signal_queue.pop_front();
 
@@ -705,7 +699,7 @@ public:
 
     virtual ~queued_signal_base() override
     {
-        std::scoped_lock lock_(_destruct_lock);
+        std::scoped_lock lock_ { _destruct_lock };
 
         _cancelled = true;
 
@@ -713,7 +707,7 @@ public:
 
         if (_dispatch_all_on_destroy)
         {
-            std::scoped_lock lock(_emit_lock);
+            std::scoped_lock lock { _emit_lock };
 
             auto end { std::end(_signal_queue) };
 
@@ -738,7 +732,7 @@ public:
 
     void emit(const Args &... args)
     {
-        std::scoped_lock lock(_emit_lock);
+        std::scoped_lock lock { _emit_lock };
 
         _signal_queue.push_back({ this, std::make_tuple(args...) });
 
@@ -793,7 +787,7 @@ protected:
         while (!_cancelled)
         {
             {
-                std::unique_lock lock(_emit_lock);
+                std::scoped_lock lock { _emit_lock };
 
                 if (_cancelled || std::empty(_signal_queue)) break;
 
@@ -879,7 +873,7 @@ private:
         while (_timer_enabled)
         {
             {
-                std::unique_lock lock(_emit_lock);
+                std::scoped_lock lock { _emit_lock };
 
                 std::apply([&](timer_signal *s, const Args&... a){ base_class::emit(s, a...); }, _args);
 
