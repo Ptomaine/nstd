@@ -1399,7 +1399,7 @@ public:
 
         Determines whether a sequence contains a specified element by using the supplied functor as a comparer.
 
-        \param value A functor used as a comparer.
+        \param compareFunctor A functor used as a comparer.
 
         \return returns true if an element found that satisfies a condition.
 
@@ -1679,7 +1679,6 @@ public:
         Iterates over the current relinx_object elements and calls a user-defined functor for each element.
 
         \param foreachFunctor A functor that is called for each element.
-        \return The current relinx_object. This method is a proxy.
     */
     template<typename ForeachFunctor>
     auto for_each(ForeachFunctor &&foreachFunctor) const noexcept -> void
@@ -1692,7 +1691,6 @@ public:
         Iterates over the current relinx_object elements and calls a user-defined functor for each element.
 
         \param foreachFunctor A functor that is called for each element.
-        \return The current relinx_object. This method is a proxy.
     */
     template<typename ForeachFunctor>
     auto for_each_i(ForeachFunctor &&foreachFunctor) const noexcept -> void
@@ -1986,7 +1984,7 @@ public:
 
         Returns the last element of a sequence that satisfies a specified condition.
 
-        \param filterFunctor A functor to test each element for a condition.
+        \param conditionFunctor A functor to test each element for a condition.
 
         \return The last element in the sequence that passes the test in the specified predicate functor.
 
@@ -2034,7 +2032,7 @@ public:
 
         Returns the last element of a sequence that satisfies a condition or a default value if no such element is found.
 
-        \param filterFunctor A functor to test each element for a condition.
+        \param conditionFunctor A functor to test each element for a condition.
         \param default_value A default value to return if the sequence is empty or if no elements pass the test in the predicate functor.
 
         \return default_value if the sequence is empty or if no elements pass the test in the predicate functor; otherwise, the last element that passes the test in the predicate functor.
@@ -2800,15 +2798,16 @@ public:
         return _indexer = 0, where([this, &filterFunctor](auto &&v) { return filterFunctor(v, _indexer++); });
     }
 
-    /** \brief
+    /** \brief The method merges each element of the first sequence with an element that has the same index in the second sequence.
 
+         The method merges each element of the first sequence with an element that has the same index in the second sequence. If the sequences do not have the same number of elements, the method merges sequences until it reaches the end of one of them. For example, if one sequence has three elements and the other one has four, the result sequence will have only three elements.
 
-
-        \param
+        \param container A container with sequence to merge to.
+        \param resultFunctor A functor that gets two elements as input and specifies how to merge two elements from two sequences. Usually, the return type of a functor is the std::pair of two elements.
 
         \note This method produces a lazy evaluation relinx_object.
 
-        \return
+     \return A new merged sequence of elements of type what the resultFunctor return type is.
     */
     template<typename Container, typename ResultFunctor>
     auto zip(Container &&container, ResultFunctor &&resultFunctor) noexcept
