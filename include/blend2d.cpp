@@ -61,7 +61,6 @@ SOFTWARE.
 #include "external/asmjit/src/asmjit/x86/x86logging.cpp"
 #include "external/asmjit/src/asmjit/x86/x86operand.cpp"
 #include "external/asmjit/src/asmjit/x86/x86rapass.cpp"
-#include "external/asmjit/src/asmjit/x86/x86ssetoavx.cpp"
 #include "external/blend2d/src/blend2d/blapi-nocxx.cpp"
 #include "external/blend2d/src/blend2d/blarray.cpp"
 #include "external/blend2d/src/blend2d/blarrayops.cpp"
