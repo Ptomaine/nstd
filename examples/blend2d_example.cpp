@@ -58,7 +58,11 @@ int main()
     BLPoint p { 20, 190 + fm.ascent };
     const char* text = "Hello Blend2D!\n"
                        "I'm a simple multiline text example\n"
-                       "that uses BLGlyphBuffer and fillGlyphRun!";
+                       "that uses BLGlyphBuffer and fillGlyphRun!\n\n"
+                       "Sanskrit: ﻿काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥\n"
+                       "Russian: Я могу есть стекло, оно мне не вредит.\n"
+                       "Polska / Polish: Mogę jeść szkło i mi nie szkodzi."
+                       ;
     while(true)
     {
         const char* end = strchr(text, '\n');
