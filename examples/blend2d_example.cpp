@@ -73,7 +73,7 @@ int main()
         sp.x += 1;
         sp.y += 1;
 
-        ctx.setFillStyle(BLRgba32(0xFF000000));
+        ctx.setFillStyle(BLRgba32(0xFF888888));
         ctx.fillGlyphRun(sp, font, gb.glyphRun());
 
         ctx.setFillStyle(BLRgba32(0xFFFFFFFF));
