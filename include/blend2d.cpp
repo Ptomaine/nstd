@@ -56,11 +56,13 @@ SOFTWARE.
 #include "external/asmjit/src/asmjit/x86/x86callconv.cpp"
 #include "external/asmjit/src/asmjit/x86/x86compiler.cpp"
 #include "external/asmjit/src/asmjit/x86/x86features.cpp"
-#include "external/asmjit/src/asmjit/x86/x86instdb.cpp"
 #include "external/asmjit/src/asmjit/x86/x86internal.cpp"
+#include "external/asmjit/src/asmjit/x86/x86instdb.cpp"
+#include "external/asmjit/src/asmjit/x86/x86instapi.cpp"
 #include "external/asmjit/src/asmjit/x86/x86logging.cpp"
 #include "external/asmjit/src/asmjit/x86/x86operand.cpp"
 #include "external/asmjit/src/asmjit/x86/x86rapass.cpp"
+
 #include "external/blend2d/src/blend2d/blapi-nocxx.cpp"
 #include "external/blend2d/src/blend2d/blarray.cpp"
 #include "external/blend2d/src/blend2d/blarrayops.cpp"
@@ -107,6 +109,7 @@ SOFTWARE.
 #include "external/blend2d/src/blend2d/blzoneallocator.cpp"
 #include "external/blend2d/src/blend2d/blzonelist.cpp"
 #include "external/blend2d/src/blend2d/blzonetree.cpp"
+
 #include "external/blend2d/src/blend2d/codec/blbmpcodec.cpp"
 #include "external/blend2d/src/blend2d/codec/bldeflate.cpp"
 #include "external/blend2d/src/blend2d/codec/bljpegcodec.cpp"
@@ -116,7 +119,9 @@ SOFTWARE.
 #include "external/blend2d/src/blend2d/codec/blpngcodec.cpp"
 #include "external/blend2d/src/blend2d/codec/blpngops.cpp"
 #include "external/blend2d/src/blend2d/codec/blpngops_sse2.cpp"
+
 #include "external/blend2d/src/blend2d/fixedpipe/blfixedpiperuntime.cpp"
+
 #include "external/blend2d/src/blend2d/opentype/blotcff.cpp"
 #include "external/blend2d/src/blend2d/opentype/blotcmap.cpp"
 #include "external/blend2d/src/blend2d/opentype/blotcore.cpp"
@@ -126,6 +131,7 @@ SOFTWARE.
 #include "external/blend2d/src/blend2d/opentype/blotlayout.cpp"
 #include "external/blend2d/src/blend2d/opentype/blotmetrics.cpp"
 #include "external/blend2d/src/blend2d/opentype/blotname.cpp"
+
 #include "external/blend2d/src/blend2d/pipegen/blcompoppart.cpp"
 #include "external/blend2d/src/blend2d/pipegen/blfetchgradientpart.cpp"
 #include "external/blend2d/src/blend2d/pipegen/blfetchpart.cpp"
@@ -136,8 +142,9 @@ SOFTWARE.
 #include "external/blend2d/src/blend2d/pipegen/blfillpart.cpp"
 #include "external/blend2d/src/blend2d/pipegen/blpipecompiler.cpp"
 #include "external/blend2d/src/blend2d/pipegen/blpipegencore.cpp"
-#include "external/blend2d/src/blend2d/pipegen/blpipepart.cpp"
 #include "external/blend2d/src/blend2d/pipegen/blpipegenruntime.cpp"
+#include "external/blend2d/src/blend2d/pipegen/blpipepart.cpp"
+
 #include "external/blend2d/src/blend2d/raster/blrastercontext.cpp"
 #include "external/blend2d/src/blend2d/raster/blrasterfiller.cpp"
 #include "external/blend2d/src/blend2d/raster/blrasterworker.cpp"
