@@ -6,6 +6,7 @@
 		<Project filename="base64_example.cbp" />
 		<Project filename="chaiscript_example.cbp" />
 		<Project filename="date_example.cbp" />
+		<Project filename="blend2d_example.cbp" />
 		<Project filename="expiry_cache_example.cbp" />
 		<Project filename="freetype_example.cbp" />
 		<Project filename="giant_example.cbp" />

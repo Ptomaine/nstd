@@ -80,6 +80,27 @@ solution "nstd_examples"
             objdir "obj/date_example/Release"
             targetdir "bin/date_example/Release"
 
+    project "blend2d_example"
+        files { "blend2d_example.cpp", "../include/blend2d.cpp" }
+        includedirs { "../include/external/asmjit/src" }
+
+        postbuildcmd = "copy ../resources/example_resources/blend2d_example/fonts/*.ttf ./bin/blend2d_example/"
+
+        configuration { "Debug" }
+            objdir "obj/blend2d_example/Debug"
+            targetdir "bin/blend2d_example/Debug"
+	    cmd = postbuildcmd .. "Debug"
+   	    postbuildcommands { iif(os.is("windows"), string.gsub(cmd, "/", "\\"), string.gsub(cmd, "copy ", "cp "))  }
+
+        configuration { "Release" }
+            objdir "obj/blend2d_example/Release"
+            targetdir "bin/blend2d_example/Release"
+	    cmd = postbuildcmd .. "Release"
+   	    postbuildcommands { iif(os.is("windows"), string.gsub(cmd, "/", "\\"), string.gsub(cmd, "copy ", "cp "))  }
+
+        configuration "not vs*"
+            buildoptions { "-Wno-all" }
+
     project "giant_example"
         files { "giant_example.cpp" }
         configuration "not vs*"
