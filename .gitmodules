@@ -58,3 +58,6 @@
 [submodule "include/external/quickjs"]
 	path = include/external/quickjs
 	url = https://github.com/horhof/quickjs.git
+[submodule "include/external/avir"]
+	path = include/external/avir
+	url = https://github.com/avaneev/avir.git
