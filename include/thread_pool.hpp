@@ -33,17 +33,19 @@ SOFTWARE.
 namespace nstd
 {
 
-class simple_thread_pool
+class thread_pool_lite
 {
 public:
-    simple_thread_pool(size_t queue_size)
+    thread_pool_lite(long num_threads = std::max(std::thread::hardware_concurrency(), 2u) - 1u)
     {
-    	while (--queue_size >= 0)
-    	{
-    		_worker_threads.emplace_back([this]
-    		{
-    			while (true)
-    			{
+        if (num_threads < 1) num_threads = 1;
+
+        while (--num_threads >= 0)
+        {
+            _worker_threads.emplace_back([this]
+            {
+                while (true)
+                {
                     std::function<void()> new_task;
 
                     {
@@ -59,43 +61,45 @@ public:
                     }
 
                     new_task();
-    			}
-    		});
-    	}
+                }
+            });
+        }
     }
 
     template<class Functor, class... Args>
     auto enqueue(Functor&& functor, Args&&... args)
     {
-	    using return_type = std::result_of_t<Functor(Args...)>;
+        using return_type = std::result_of_t<Functor(Args...)>;
 
-	    auto new_task { std::make_shared<std::packaged_task<return_type()>>(std::bind(std::forward<Functor>(functor), std::forward<Args>(args)...)) };
-	        
-	    std::future<return_type> res = new_task->get_future();
+        auto new_task { std::make_shared<std::packaged_task<return_type()>>(std::bind(std::forward<Functor>(functor), std::forward<Args>(args)...)) };
+            
+        std::future<return_type> result = new_task->get_future();
 
-	    {
-	        std::scoped_lock lock { _queue_mutex };
+        {
+            std::scoped_lock lock { _queue_mutex };
 
-	        if(_cancelled) throw std::runtime_error("enqueue on stopped thread_pool");
+            if(_cancelled) throw std::runtime_error("Enqueueing on cancelled thread_pool is not allowed!");
 
-	        _tasks.emplace([new_task = std::move(new_task)](){ (*new_task)(); });
-	    }
+            _tasks.emplace([new_task = std::move(new_task)](){ (*new_task)(); });
+        }
 
-	    _condition.notify_one();
+        _condition.notify_one();
 
-	    return res;
+        return result;
     }
 
-    ~simple_thread_pool()
+    auto size() const { return std::size(_worker_threads); }
+
+    ~thread_pool_lite()
     {
-	    {
-	        std::scoped_lock lock { _queue_mutex };
-	        _cancelled = true;
-	    }
+        {
+            std::scoped_lock lock { _queue_mutex };
+            _cancelled = true;
+        }
 
-	    _condition.notify_all();
+        _condition.notify_all();
 
-	    for(auto &worker: _worker_threads) worker.join();
+        for(auto &worker: _worker_threads) worker.join();
     }
 
 private:
@@ -179,12 +183,13 @@ public:
 
     bool is_valid() const
     {
-        std::lock_guard<std::mutex> lock{_mutex};
+        std::scoped_lock lock{ _mutex };
+
         return _valid;
     }
 
 private:
-    std::atomic_bool _valid{true};
+    std::atomic_bool _valid { true };
     mutable std::mutex _mutex;
     std::queue<T> _queue;
     std::condition_variable _condition;
@@ -193,20 +198,20 @@ private:
 class thread_pool
 {
 private:
-    class i_thread_task
+    class thread_task_base
     {
     public:
-        i_thread_task() = default;
-        virtual ~i_thread_task() = default;
-        i_thread_task(const i_thread_task& rhs) = delete;
-        i_thread_task& operator=(const i_thread_task& rhs) = delete;
-        i_thread_task(i_thread_task&& other) = default;
-        i_thread_task& operator=(i_thread_task&& other) = default;
+        thread_task_base() = default;
+        virtual ~thread_task_base() = default;
+        thread_task_base(const thread_task_base& rhs) = delete;
+        thread_task_base& operator=(const thread_task_base& rhs) = delete;
+        thread_task_base(thread_task_base&& other) = default;
+        thread_task_base& operator=(thread_task_base&& other) = default;
         virtual void execute() = 0;
     };
 
     template <typename Functor>
-    class thread_task: public i_thread_task
+    class thread_task: public thread_task_base
     {
     public:
         thread_task(Functor&& functor) :_functor { std::move(functor) } { }
@@ -233,21 +238,20 @@ public:
         task_future& operator=(task_future&& other) = default;
         ~task_future() { if(_future.valid()) _future.get(); }
         auto get() { return _future.get(); }
+        void wait() { _future.wait(); }
 
     private:
         std::future<T> _future;
     };
 
 public:
-    thread_pool() : thread_pool { std::max(std::thread::hardware_concurrency(), 2u) - 1u } { }
-    explicit thread_pool(const std::uint32_t numThreads) : _completed { false }, _work_queue{}, _threads{}
+    explicit thread_pool(long num_threads = std::max(std::thread::hardware_concurrency(), 2u) - 1u) : _completed { false }, _task_queue{}, _worker_threads{}
     {
+        if (num_threads < 1) num_threads = 1;
+
         try
         {
-            for(std::uint32_t i = 0u; i < numThreads; ++i)
-            {
-                _threads.emplace_back(&thread_pool::worker, this);
-            }
+            while (--num_threads >= 0) _worker_threads.emplace_back(&thread_pool::worker, this);
         }
         catch(...)
         {
@@ -261,29 +265,31 @@ public:
     ~thread_pool() { destroy(); }
 
     template <typename Functor, typename... Args>
-    auto submit(Functor&& functor, Args&&... args)
+    auto enqueue(Functor&& functor, Args&&... args)
     {
         auto bound_task = std::bind(std::forward<Functor>(functor), std::forward<Args>(args)...);
         using result_type = std::result_of_t<decltype(bound_task)()>;
         using packaged_task = std::packaged_task<result_type()>;
         using task_type = thread_task<packaged_task>;
         
-        packaged_task task{std::move(bound_task)};
-        task_future<result_type> result{task.get_future()};
+        packaged_task task{ std::move(bound_task) };
+        task_future<result_type> result { task.get_future() };
 
-        _work_queue.push(std::make_unique<task_type>(std::move(task)));
+        _task_queue.push(std::make_unique<task_type>(std::move(task)));
 
         return result;
     }
+
+    auto size() const { return std::size(_worker_threads); }
 
 private:
     void worker()
     {
         while(!_completed)
         {
-            std::unique_ptr<i_thread_task> task { nullptr };
+            std::unique_ptr<thread_task_base> task { nullptr };
 
-            if(_work_queue.wait_pop(task)) task->execute();
+            if(_task_queue.wait_pop(task)) task->execute();
         }
     }
 
@@ -291,9 +297,9 @@ private:
     {
         _completed = true;
 
-        _work_queue.invalidate();
+        _task_queue.invalidate();
 
-        for(auto& thread : _threads)
+        for(auto& thread : _worker_threads)
         {
             if(thread.joinable())
             {
@@ -304,22 +310,23 @@ private:
 
 private:
     std::atomic_bool _completed;
-    thread_safe_queue<std::unique_ptr<i_thread_task>> _work_queue;
-    std::vector<std::thread> _threads;
+    thread_safe_queue<std::unique_ptr<thread_task_base>> _task_queue;
+    std::deque<std::thread> _worker_threads;
 };
 
-namespace default_thread_pool
+namespace global_thread_pool
 {
     inline thread_pool& get_thread_pool()
     {
-        static thread_pool defaultPool;
-        return defaultPool;
+        static thread_pool static_thread_pool;
+
+        return static_thread_pool;
     }
 
     template <typename Functor, typename... Args>
-    inline auto submit_job(Functor&& functor, Args&&... args)
+    inline auto enqueue(Functor&& functor, Args&&... args)
     {
-        return get_thread_pool().submit(std::forward<Functor>(functor), std::forward<Args>(args)...);
+        return get_thread_pool().enqueue(std::forward<Functor>(functor), std::forward<Args>(args)...);
     }
 }
 
