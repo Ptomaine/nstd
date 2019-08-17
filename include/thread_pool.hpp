@@ -245,7 +245,7 @@ public:
     };
 
 public:
-    explicit thread_pool(long num_threads = std::max(std::thread::hardware_concurrency(), 2u) - 1u) : _completed { false }, _task_queue{}, _worker_threads{}
+    explicit thread_pool(long num_threads = std::max(std::thread::hardware_concurrency(), 2u) - 1u) : _cancelled { false }, _task_queue{}, _worker_threads{}
     {
         if (num_threads < 1) num_threads = 1;
 
@@ -285,7 +285,7 @@ public:
 private:
     void worker()
     {
-        while(!_completed)
+        while(!_cancelled)
         {
             std::unique_ptr<thread_task_base> task { nullptr };
 
@@ -295,7 +295,7 @@ private:
 
     void destroy()
     {
-        _completed = true;
+        _cancelled = true;
 
         _task_queue.invalidate();
 
@@ -309,7 +309,7 @@ private:
     }
 
 private:
-    std::atomic_bool _completed;
+    std::atomic_bool _cancelled;
     thread_safe_queue<std::unique_ptr<thread_task_base>> _task_queue;
     std::deque<std::thread> _worker_threads;
 };
