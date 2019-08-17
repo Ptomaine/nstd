@@ -11,7 +11,7 @@ The library currently contains the following features:
    * asio - boost's networking library, but no dependancy on boost [http://think-async.com/]
    * urdl - the library to download web content (depends on asio) [https://github.com/chriskohlhoff/urdl]
    * date - the date and time manipulations library created by Howard Hinnant [https://github.com/HowardHinnant/date]
-   * units - r-lyeh's library to provide numerical quantities with units [https://github.com/r-lyeh/units]
+   * units - a compile-time, header-only, dimensional analysis and unit conversion library built on c++14 with no dependencies. [https://github.com/nholthaus/units]
    * base64, crc32 - base64 encoding/decoding, CRC32/constexpr CRC32.
    * string_id - A small C++ library to handle hashed strings serving as identifiers (see notes at the end of this page) [https://github.com/foonathan/string_id]
    * uuid - unique id generator
