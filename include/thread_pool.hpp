@@ -167,7 +167,9 @@ public:
     {
         std::scoped_lock lock { _mutex };
 
-        while(!_queue.empty()) _queue.pop();
+        decltype(_queue) empty;
+        
+        std::swap(_queue, empty);
 
         _condition.notify_all();
     }
@@ -299,13 +301,7 @@ private:
 
         _task_queue.invalidate();
 
-        for(auto& thread : _worker_threads)
-        {
-            if(thread.joinable())
-            {
-                thread.join();
-            }
-        }
+        for(auto& thread : _worker_threads) if(thread.joinable()) thread.join();
     }
 
 private:
