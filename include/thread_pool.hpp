@@ -103,8 +103,8 @@ public:
     }
 
 private:
-    std::deque<std::thread> _worker_threads;
-    std::queue<std::function<void()>> _tasks;
+    std::deque<std::thread> _worker_threads {};
+    std::queue<std::function<void()>> _tasks {};
     
     std::mutex _queue_mutex {};
     std::condition_variable _condition {};
@@ -192,9 +192,9 @@ public:
 
 private:
     std::atomic_bool _valid { true };
-    mutable std::mutex _mutex;
-    std::queue<T> _queue;
-    std::condition_variable _condition;
+    mutable std::mutex _mutex {};
+    std::queue<T> _queue {};
+    std::condition_variable _condition {};
 };
 
 class thread_pool
@@ -229,25 +229,7 @@ private:
     };
 
 public:
-    template <typename T>
-    class task_future
-    {
-    public:
-        task_future(std::future<T>&& future) : _future{ std::move(future) } { }
-        task_future(const task_future& rhs) = delete;
-        task_future& operator=(const task_future& rhs) = delete;
-        task_future(task_future&& other) = default;
-        task_future& operator=(task_future&& other) = default;
-        ~task_future() { if(_future.valid()) _future.get(); }
-        auto get() { return _future.get(); }
-        void wait() { _future.wait(); }
-
-    private:
-        std::future<T> _future;
-    };
-
-public:
-    explicit thread_pool(long num_threads = std::max(std::thread::hardware_concurrency(), 2u) - 1u) : _cancelled { false }, _task_queue{}, _worker_threads{}
+    explicit thread_pool(long num_threads = std::max(std::thread::hardware_concurrency(), 2u) - 1u)
     {
         if (num_threads < 1) num_threads = 1;
 
@@ -275,7 +257,7 @@ public:
         using task_type = thread_task<packaged_task>;
         
         packaged_task task{ std::move(bound_task) };
-        task_future<result_type> result { task.get_future() };
+        std::future<result_type> result { task.get_future() };
 
         _task_queue.push(std::make_unique<task_type>(std::move(task)));
 
@@ -305,9 +287,9 @@ private:
     }
 
 private:
-    std::atomic_bool _cancelled;
-    thread_safe_queue<std::unique_ptr<thread_task_base>> _task_queue;
-    std::deque<std::thread> _worker_threads;
+    std::atomic_bool _cancelled { false };
+    thread_safe_queue<std::unique_ptr<thread_task_base>> _task_queue {};
+    std::deque<std::thread> _worker_threads {};
 };
 
 namespace global_thread_pool
