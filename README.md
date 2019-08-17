@@ -33,7 +33,8 @@ Many of these libraries are sub-modules. So, don't forget to update sub-modules 
 
 For Windows users, you can download MinGW from the following sites:
 
-https://gcc-mcf.lhmouse.com/
+https://gcc-mcf.lhmouse.com/ (recommended! After extraction from the archive file, to install it, just put its /bin folder into the PATH environment variable)
+or
 https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/
 
 MinGW/GCC >= 9.1 is now the reqired compiler that supports some features of C++20.
