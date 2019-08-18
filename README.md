@@ -11,7 +11,7 @@ The library currently contains the following features:
    * asio - boost's networking library, but no dependancy on boost [http://think-async.com/]
    * urdl - the library to download web content (depends on asio) [https://github.com/chriskohlhoff/urdl]
    * date - the date and time manipulations library created by Howard Hinnant [https://github.com/HowardHinnant/date]
-   * units - r-lyeh's library to provide numerical quantities with units [https://github.com/r-lyeh/units]
+   * units - a compile-time, header-only, dimensional analysis and unit conversion library built on c++14 with no dependencies. [https://github.com/nholthaus/units]
    * base64, crc32 - base64 encoding/decoding, CRC32/constexpr CRC32.
    * string_id - A small C++ library to handle hashed strings serving as identifiers (see notes at the end of this page) [https://github.com/foonathan/string_id]
    * uuid - unique id generator
@@ -33,11 +33,12 @@ Many of these libraries are sub-modules. So, don't forget to update sub-modules 
 
 For Windows users, you can download MinGW from the following sites:
 
-https://gcc-mcf.lhmouse.com/ (It doesn't contain mingw32-make utility. Download it separately)
+https://gcc-mcf.lhmouse.com/ (recommended! After extraction from the archive file, to install it, just put its /bin folder into the PATH environment variable)
+or
 https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/
 
 MinGW/GCC >= 9.1 is now the reqired compiler that supports some features of C++20.
-Latest MSVC was not tested.
+Latest MSVC 2019 and Clang were tested successfully.
 
 GENie can be downloaded from https://github.com/bkaradzic/GENie and genie executable should be placed to the example folder or be in path.
 
