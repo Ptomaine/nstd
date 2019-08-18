@@ -101,6 +101,27 @@ solution "nstd_examples"
         configuration "not vs*"
             buildoptions { "-Wno-all" }
 
+    project "avir_example"
+        files { "avir_example.cpp", "../include/blend2d.cpp" }
+        includedirs { "../include/external/asmjit/src" }
+
+        postbuildcmd = "copy ../resources/example_resources/avir_example/images/* ./bin/avir_example/"
+
+        configuration { "Debug" }
+            objdir "obj/avir_example/Debug"
+            targetdir "bin/avir_example/Debug"
+	    cmd = postbuildcmd .. "Debug"
+   	    postbuildcommands { iif(os.is("windows"), string.gsub(cmd, "/", "\\"), string.gsub(cmd, "copy ", "cp "))  }
+
+        configuration { "Release" }
+            objdir "obj/avir_example/Release"
+            targetdir "bin/avir_example/Release"
+	    cmd = postbuildcmd .. "Release"
+   	    postbuildcommands { iif(os.is("windows"), string.gsub(cmd, "/", "\\"), string.gsub(cmd, "copy ", "cp "))  }
+
+        configuration "not vs*"
+            buildoptions { "-Wno-all" }
+
     project "giant_example"
         files { "giant_example.cpp" }
         configuration "not vs*"
