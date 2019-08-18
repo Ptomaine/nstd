@@ -33,6 +33,7 @@ SOFTWARE.
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace nstd::signal_slot
 {
