@@ -58,3 +58,6 @@
 [submodule "include/external/avir"]
 	path = include/external/avir
 	url = https://github.com/avaneev/avir.git
+[submodule "include/external/units"]
+	path = include/external/units
+	url = https://github.com/nholthaus/units.git
