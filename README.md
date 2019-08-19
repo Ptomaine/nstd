@@ -29,7 +29,7 @@ The library currently contains the following features:
    * fifo_map - a FIFO-ordered associative container for C++
    * ...and many more
 
-Many of these libraries are sub-modules. So, don't forget to update sub-modules after cloning this repository.
+Many of these libraries are sub-modules. So, don't forget to initialize and update sub-modules after cloning this repository. Also, make sure all submodules are switched to their master branch.
 
 For Windows users, you can download MinGW from the following sites:
 
