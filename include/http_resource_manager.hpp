@@ -262,7 +262,7 @@ public:
 
         _regexes.emplace(pattern, std::regex(pattern, std::regex_constants::ECMAScript | std::regex_constants::icase | std::regex_constants::optimize));
 
-        _cons = _signals[method][pattern]->connect(std::move(callback));
+        _cons = _signals[method][std::u8string { std::begin(pattern), std::end(pattern) }]->connect(std::move(callback));
     }
 
     void add_status_handler(typename response::http_status_codes status_code, std::function<void(request_ptr)> callback)
@@ -306,7 +306,7 @@ protected:
 
             for (const auto &sig : _signals[p.get_method()])
             {
-                std::string pattern { sig.first };
+                std::string pattern { std::string { std::begin(sig.first), std::end(sig.first) } };
                 std::smatch sm;
                 const std::regex &reg { _regexes.find(pattern)->second };
 

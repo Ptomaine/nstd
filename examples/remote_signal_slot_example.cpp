@@ -35,11 +35,14 @@ int main()
 {
     using namespace std::literals;
 
+    auto to_char = [](auto &&u8str) { return reinterpret_cast<const char*>(std::u8string(u8str).c_str()); };
+
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
 
     ::signal(SIGINT, &signint_handler);
 
-    const std::string host { "127.0.0.1"s }, signal_name { "remote_test_signal"s };
+    const std::string host { "127.0.0.1"s };
+    const std::u8string signal_name { u8"remote_test_signal"s };
     constexpr const uint32_t port { 6789u };
 
     nstd::remote::remote_signal_hub remote_signals {}; // signal provider/server
@@ -49,13 +52,13 @@ int main()
     nstd::remote::remote_slot_hub local_slots {}; // remote signal subscriber/client
     local_slots.connect_to_remote_signal_hub(host, port);
 
-    cons = local_slots.get_remote_signal(signal_name)->connect([](auto s, auto &&data) // defining signal processor on client side
+    cons = local_slots.get_remote_signal(signal_name)->connect([&to_char](auto s, auto &&data) // defining signal processor on client side
     {
         if (data)
         {
             auto json_obj { nstd::json::json::from_cbor(*data) };
 
-            std::cout << "remote signal: "s << s->name() << std::endl << "data: "s << std::endl << std::setw(3) << json_obj << std::endl;
+            std::cout << "remote signal: "s << to_char(s->name()) << std::endl << "data: "s << std::endl << std::setw(3) << json_obj << std::endl;
         }
     });
 
@@ -65,7 +68,7 @@ int main()
 
     nstd::uuid::uuid::init_random();
 
-    nstd::signal_slot::timer_signal timer { "emitter"s, 2s };
+    nstd::signal_slot::timer_signal timer { u8"emitter"s, 2s };
 
     cons = timer.connect([&remote_signals, &random_base64, &signal_name](auto)
     {

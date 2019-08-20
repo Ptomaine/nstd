@@ -20,6 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#ifdef __cpp_lib_endian
+    #include <bit>
+#endif
+
 namespace nstd::platform
 {
 
@@ -365,8 +369,7 @@ inline constexpr const compiler current_compiler =
 
 inline constexpr bool is_64bit = sizeof(void*) == sizeof(long long);
 
-#if __cplusplus > 201703L
-    #include <type_traits>
+#ifdef __cpp_lib_endian
     inline constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 #else
     inline constexpr bool is_little_endian =
