@@ -225,7 +225,7 @@ class signal_base
 {
 public:
     virtual ~signal_base() = default;
-    virtual std::string_view name() const = 0;
+    virtual std::u8string_view name() const = 0;
     virtual bool enabled() const = 0;
     virtual void enabled(bool) const = 0;
     virtual size_t size() const = 0;
@@ -298,7 +298,7 @@ class signal : public signal_base
 {
 public:
     signal() = default;
-    signal(const std::string &name) : _name{ name } {}
+    signal(const std::u8string &name) : _name{ name } {}
     signal(signal &&other) = default;
     signal &operator=(signal &&other) = default;
     virtual ~signal() override = default;
@@ -372,14 +372,14 @@ public:
         return _slots.size();
     }
 
-    void name(const std::string &name)
+    void name(const std::u8string &name)
     {
         std::scoped_lock lock { _name_lock };
 
         _name = name;
     }
 
-    virtual std::string_view name() const override
+    virtual std::u8string_view name() const override
     {
         std::scoped_lock lock { _name_lock };
 
@@ -430,7 +430,7 @@ public:
     }
 
 protected:
-    std::string _name {};
+    std::u8string _name {};
     std::vector<slot<Args...>> _slots {}, _pending_connections {};
     mutable std::mutex _connect_lock {}, _emit_lock {}, _name_lock {};
     mutable std::atomic_bool _enabled { true };
@@ -444,7 +444,7 @@ public:
     using base_class = signal<signal_base*, Args...>;
 
     signal_ex() = default;
-    signal_ex(const std::string &name) : base_class(name) {}
+    signal_ex(const std::u8string &name) : base_class(name) {}
     signal_ex(signal_ex &&other) = default;
     signal_ex &operator=(signal_ex &&other) = default;
     virtual ~signal_ex() override = default;
@@ -463,8 +463,8 @@ public:
     using bridged_signal_type = bridged_signal_base;
 
     bridged_signal_base() = default;
-    bridged_signal_base(const std::string &name) : base_class(name) {}
-    bridged_signal_base(const std::string &name, const std::function<bool(bridged_signal_base*)>& emit_functor) : base_class(name), _emit_functor { emit_functor } {}
+    bridged_signal_base(const std::u8string &name) : base_class(name) {}
+    bridged_signal_base(const std::u8string &name, const std::function<bool(bridged_signal_base*)>& emit_functor) : base_class(name), _emit_functor { emit_functor } {}
     bridged_signal_base(bridged_signal_base &&other) = default;
     bridged_signal_base &operator=(bridged_signal_base &&other) = default;
     virtual ~bridged_signal_base() override = default;
@@ -588,8 +588,8 @@ public:
 
     throttled_signal_base() = default;
     template<typename Duration>
-    throttled_signal_base(const std::string &name, const Duration &throttle_ms = throttled_signal_base::_default_throttle_ms) : base_class{ name }, _throttle_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms) } {}
-    throttled_signal_base(const std::string &name) : base_class{ name } {}
+    throttled_signal_base(const std::u8string &name, const Duration &throttle_ms = throttled_signal_base::_default_throttle_ms) : base_class{ name }, _throttle_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms) } {}
+    throttled_signal_base(const std::u8string &name) : base_class{ name } {}
     throttled_signal_base(throttled_signal_base &&other) = default;
     throttled_signal_base &operator=(throttled_signal_base &&other) = default;
 
@@ -691,8 +691,8 @@ public:
 
     queued_signal_base() = default;
     template<typename Duration>
-    queued_signal_base(const std::string &name, const Duration &throttle_ms = queued_signal_base::_default_throttle_ms) : base_class{ name } {}
-    queued_signal_base(const std::string &name) : base_class{ name } {}
+    queued_signal_base(const std::u8string &name, const Duration &throttle_ms = queued_signal_base::_default_throttle_ms) : base_class{ name } {}
+    queued_signal_base(const std::u8string &name) : base_class{ name } {}
     queued_signal_base(queued_signal_base &&other) = default;
     queued_signal_base &operator=(queued_signal_base &&other) = default;
     queued_signal_base(const queued_signal_base &other) = delete;
@@ -821,7 +821,7 @@ public:
 
     timer_signal() = default;
     template<typename Duration>
-    timer_signal(const std::string &name, const Duration &timer_ms = 1s) : base_class{ name }, _timer_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(timer_ms) } {}
+    timer_signal(const std::u8string &name, const Duration &timer_ms = 1s) : base_class{ name }, _timer_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(timer_ms) } {}
     timer_signal(timer_signal &&other) = default;
     timer_signal &operator=(timer_signal &&other) = default;
 
@@ -903,7 +903,7 @@ public:
         for (auto &&s : _signals) s.second->emit(args...);
     }
 
-    virtual const std::unique_ptr<signal_type> &get_signal(const std::string &signal_name)
+    virtual const std::unique_ptr<signal_type> &get_signal(const std::u8string &signal_name)
     {
         auto signal { _signals.find(signal_name) };
 
@@ -912,14 +912,14 @@ public:
         return _signals.emplace(signal_name, std::make_unique<signal_type>(signal_name)).first->second;
     }
 
-    bool exists(const std::string &signal_name) const
+    bool exists(const std::u8string &signal_name) const
     {
         return _signals.find(signal_name) != _signals.end();
     }
 
-    std::unordered_set<std::string> get_signal_names() const
+    std::unordered_set<std::u8string> get_signal_names() const
     {
-        std::unordered_set<std::string> signal_names;
+        std::unordered_set<std::u8string> signal_names;
 
         for (auto &&[key, value] : _signals) signal_names.emplace(key);
 
@@ -931,7 +931,7 @@ public:
         return std::size(_signals);
     }
 
-    const std::unique_ptr<signal_type> &operator[](const std::string &signal_name)
+    const std::unique_ptr<signal_type> &operator[](const std::u8string &signal_name)
     {
         return get_signal(signal_name);
     }
@@ -947,7 +947,7 @@ public:
     }
 
 protected:
-    std::unordered_map<std::string, std::unique_ptr<signal_type>> _signals {};
+    std::unordered_map<std::u8string, std::unique_ptr<signal_type>> _signals {};
 };
 
 template<template <typename...> typename BridgedSignalType, typename... Args>
@@ -958,7 +958,7 @@ public:
 
     bridged_signal_set_base(const std::function<bool(typename base_class::signal_type::bridged_signal_type*)>& emit_functor) : base_class {}, _emit_functor { emit_functor } {}
 
-    virtual const std::unique_ptr<typename base_class::signal_type> &get_signal(const std::string &signal_name) override
+    virtual const std::unique_ptr<typename base_class::signal_type> &get_signal(const std::u8string &signal_name) override
     {
         auto &signal { base_class::get_signal(signal_name) };
 
@@ -1008,7 +1008,7 @@ namespace std
     {
         size_t operator()(const std::shared_ptr<nstd::signal_slot::signal<Args...>> &s) const
         {
-            return std::hash<std::string_view>()(s->name());
+            return std::hash<std::u8string_view>()(s->name());
         }
     };
 }

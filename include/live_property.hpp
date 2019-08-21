@@ -25,6 +25,7 @@ SOFTWARE.
 namespace nstd
 {
 using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 template<typename T>
 class live_property
@@ -39,9 +40,9 @@ public:
         bool cancel = false;
     };
 
-    live_property(const std::string &name, const value_type &value = value_type()) :
-        signal_value_changing{ "/live_property/"s + name + "/signal_value_changing"s },
-        signal_value_changed{ "/live_property/"s + name + "/signal_value_changed"s },
+    live_property(const std::u8string &name, const value_type &value = value_type()) :
+        signal_value_changing{ u8"/live_property/"s + name + u8"/signal_value_changing"s },
+        signal_value_changed{ u8"/live_property/"s + name + u8"/signal_value_changed"s },
         _name{ name }, _value{ value }
     {
     }
@@ -76,7 +77,7 @@ public:
         return assign_value(value);
     }
 
-    std::string_view name() const
+    std::u8string_view name() const
     {
         return _name;
     }
@@ -275,7 +276,7 @@ private:
         signal_value_changed.emit(*this);
     }
 
-    std::string _name {};
+    std::u8string _name {};
     value_type _value {};
 };
 
@@ -292,9 +293,9 @@ public:
         bool cancel = false;
     };
 
-    live_property_ts(const std::string &name, const value_type &value = value_type()) :
-        signal_value_changing{ "/live_property_ts/"s + name + "/signal_value_changing"s },
-        signal_value_changed{ "/live_property_ts/"s + name + "/signal_value_changed"s },
+    live_property_ts(const std::u8string &name, const value_type &value = value_type()) :
+        signal_value_changing{ u8"/live_property_ts/"s + name + u8"/signal_value_changing"s },
+        signal_value_changed{ u8"/live_property_ts/"s + name + u8"/signal_value_changed"s },
         _name{ name }, _value{ value }
     {
     }
@@ -337,7 +338,7 @@ public:
         return assign_value(value);
     }
 
-    std::string_view name() const
+    std::u8string_view name() const
     {
         std::scoped_lock lock { _lock };
 
@@ -590,7 +591,7 @@ private:
         signal_value_changed.emit(*this);
     }
 
-    std::string _name {};
+    std::u8string _name {};
     value_type _value {};
     mutable std::recursive_mutex _lock {};
 };

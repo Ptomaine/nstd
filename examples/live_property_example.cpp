@@ -32,23 +32,25 @@ int main()
     using namespace std::literals;
     namespace ss = nstd::signal_slot;
 
+    auto to_char = [](auto &&u8str) { return reinterpret_cast<const char*>(std::u8string(u8str).c_str()); };
+
     ss::connection_bag cons;
-    ss::bridged_signal_set<std::string> two_step_signal_set([](auto&& s) { std::cout << "signal: '" << s->name() << "' pushed..." << std::endl; return true; });
+    ss::bridged_signal_set<std::string> two_step_signal_set([&to_char](auto&& s) { std::cout << "signal: '" << to_char(s->name()) << "' pushed..." << std::endl; return true; });
 
     using live_int = nstd::live_property<int>;
     using live_string = nstd::live_property<std::string>;
 
-	live_int int_prop{ "integer property for tests"s }, dummy_int_prop{ "dummy"s };
+	live_int int_prop{ u8"integer property for tests"s }, dummy_int_prop{ u8"dummy"s };
 
-    cons = two_step_signal_set["tss"]->connect([](auto &&data)
+    cons = two_step_signal_set[u8"tss"]->connect([](auto &&data)
     {
         std::cout << "TSS: '" << data << "'" << std::endl;
     });
-    two_step_signal_set["tss"]->emit("this is two step signal");
+    two_step_signal_set[u8"tss"]->emit("this is two step signal");
 
-    auto changing_callback = [](auto &&ctx)
+    auto changing_callback = [&to_char](auto &&ctx)
     {
-        std::cout << "The property '" << ctx.property.name() << "' changing: from [" << ctx.property.value() << "] to [" << ctx.new_value << "]" << std::endl;
+        std::cout << "The property '" << to_char(ctx.property.name()) << "' changing: from [" << ctx.property.value() << "] to [" << ctx.new_value << "]" << std::endl;
 
         using value_type = typename std::decay<decltype(ctx.property.value())>::type;
 
@@ -67,15 +69,15 @@ int main()
             }
         }
     };
-	auto changed_callback = [](auto &&property)
+	auto changed_callback = [&to_char](auto &&property)
     {
-        std::cout << "The property '" << property.name() << "' changed to: " << property.value() << std::endl;
+        std::cout << "The property '" << to_char(property.name()) << "' changed to: " << property.value() << std::endl;
     };
 
 	cons = int_prop.signal_value_changing.connect(changing_callback);
 	cons = int_prop.signal_value_changed.connect(changed_callback);
 
-	for (auto &&c : cons.connections) std::cout << "connection name: '" << c.signal().name() << "'" << std::endl;
+	for (auto &&c : cons.connections) std::cout << "connection name: '" << to_char(c.signal().name()) << "'" << std::endl;
 
 	int raw_int = 50;
 	dummy_int_prop = 222;
@@ -107,7 +109,7 @@ int main()
     --int_prop;
     int_prop--;
 
-    two_step_signal_set["tss"]->invoke_all();
+    two_step_signal_set[u8"tss"]->invoke_all();
 
 	cons.connections.clear(); //auto-disconnect from all slots
     std::cout << "no slots are called from now on since we destroied all connections..." << std::endl << "...setting int_prop to -1 should not be restricted now..." << std::endl;
@@ -116,7 +118,7 @@ int main()
 
     std::cout << "int_prop = " << int_prop << std::endl;
 
-    live_string str_prop{ "string property for tests"s, "___"s }, dummy_string_prop{ "dummy"s };
+    live_string str_prop{ u8"string property for tests"s, "___"s }, dummy_string_prop{ u8"dummy"s };
 
 	cons = str_prop.signal_value_changing.connect(changing_callback);
 	cons = str_prop.signal_value_changed.connect(changed_callback);
@@ -128,8 +130,8 @@ int main()
 
     {
         {
-            ss::throttled_signal<std::string> sg("THROTTLED"s, 50ms);
-            cons = sg.connect([&sg](auto &&str){ std::cout << "throttle: " << str << "; " << sg.name() << std::endl; });
+            ss::throttled_signal<std::string> sg(u8"THROTTLED"s, 50ms);
+            cons = sg.connect([&sg, &to_char](auto &&str){ std::cout << "throttle: " << str << "; " << to_char(sg.name()) << std::endl; });
 
             //sg.set_dispatch_all_on_destroy(false);
 
@@ -146,7 +148,7 @@ int main()
             if (sg.get_dispatch_all_on_destroy()) std::cout << "emitting the rest of queued signals..." << std::endl;
         }
 
-        ss::queued_signal<std::string> sg1("THREADED 1"s), sg2("THREADED 2"s);
+        ss::queued_signal<std::string> sg1(u8"THREADED 1"s), sg2(u8"THREADED 2"s);
         cons = sg1.connect([](auto &&s) { std::cout << "threaded 1: " << s << std::endl; });
         cons = sg2.connect([](auto &&s) { std::cout << "threaded 2: " << s << std::endl; });
 
@@ -163,13 +165,13 @@ int main()
 
 	std::this_thread::sleep_for(1s);
 
-	ss::timer_signal<live_string*> timer("My timer"s, 500ms);
+	ss::timer_signal<live_string*> timer(u8"My timer"s, 500ms);
 	using payload_t = std::function<void(const int&)>;
 	timer.payload() = payload_t { [](auto &&data){ std::cout << "payload...: " << data << std::endl; } };
 	int idx { 0 };
-	cons = timer.connect([&idx](auto &&s, auto &&p)
+	cons = timer.connect([&idx, &to_char](auto &&s, auto &&p)
     {
-        std::cout << "timer: "s << s->name() << std::endl;
+        std::cout << "timer: "s << to_char(s->name()) << std::endl;
         *p = std::to_string(++idx) + " tick..."s;
 
         if (idx == 2)
@@ -197,7 +199,7 @@ int main()
 
 	std::this_thread::sleep_for(2s);
 
-	ss::signal<std::string> jsig("JSON signal"s);
+	ss::signal<std::string> jsig(u8"JSON signal"s);
 
 	cons = jsig.connect([](auto &&jstr)
     {
@@ -207,8 +209,8 @@ int main()
         std::cout << "JSON property: " << j["JSONObject"]["property"] <<std::endl;
     });
 
-    ss::signal_ex sex { "Extended signal" };
-    cons = sex.connect([](auto &&sg){ std::cout << sg->name() << " was emitted!" << std::endl; });
+    ss::signal_ex sex { u8"Extended signal" };
+    cons = sex.connect([&to_char](auto &&sg){ std::cout << to_char(sg->name()) << " was emitted!" << std::endl; });
     sex.emit();
 
     nstd::json::json params, rj = {{"JSONObject"s, {{"property"s, "This is the super JSON property..."s}, {"One_more_property"s, 888}, {"Niels Lohmann does amazing json for cpp", true}}}};
@@ -227,25 +229,25 @@ int main()
 
     //signal_set<throttled_signal<std::string>> ss;
     ss::signal_set<const std::string&> sss;
-    cons = sss["/mainwindow/button/ok"s]->connect([](auto &&s){ std::cout << s << std::endl; });
-    cons = sss["/new/channel"s]->connect([](auto &&s){ std::cout << s << std::endl; });
-    cons = sss["/other/channel"s]->connect([&cs](auto &&s) { cs.call_me(s); });
-    cons = sss["/broadcast/channel"s]->connect(&cs, &CallableSet::call_me); // the same way to connect as in the previous line
-    cons = sss["/broadcast/channel"s]->connect([](auto &&) { std::cout << "/broadcast/channel..." << std::endl; });
-    for (auto &&sn : sss.get_signal_names()) std::cout << "signal name: " << sn << std::endl;
-    if (sss.exists("/broadcast/channel"s)) std::cout << "/broadcast/channel is created..." << std::endl;
+    cons = sss[u8"/mainwindow/button/ok"s]->connect([](auto &&s){ std::cout << s << std::endl; });
+    cons = sss[u8"/new/channel"s]->connect([](auto &&s){ std::cout << s << std::endl; });
+    cons = sss[u8"/other/channel"s]->connect([&cs](auto &&s) { cs.call_me(s); });
+    cons = sss[u8"/broadcast/channel"s]->connect(&cs, &CallableSet::call_me); // the same way to connect as in the previous line
+    cons = sss[u8"/broadcast/channel"s]->connect([](auto &&) { std::cout << "/broadcast/channel..." << std::endl; });
+    for (auto &&sn : sss.get_signal_names()) std::cout << "signal name: " << to_char(sn) << std::endl;
+    if (sss.exists(u8"/broadcast/channel"s)) std::cout << "/broadcast/channel is created..." << std::endl;
     sss.emit("hello..."s); //broadcasting a signal to all slots of the set
 
     ss::signal_ex_set<const std::string&> sssx;
-    cons = sssx["key_down"s]->connect([](auto &&s, auto &&v){ std::cout << "signal name: " << s->name() << "; value: " << v << std::endl; });
-    cons = sssx["key_up"s]->connect([](auto &&s, auto &&v){ std::cout << "signal name: " << s->name() << "; value: " << v << std::endl; });
+    cons = sssx[u8"key_down"s]->connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
+    cons = sssx[u8"key_up"s]->connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
     sssx.emit("smart signal..."s);
 
     ss::queued_signal_ex_set<std::string> super_signal_set;
-    auto executor { [](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << s->name() << "; value: " << v << std::endl; } };
-    cons = super_signal_set["super signal 1"s]->connect(executor);
-    cons = super_signal_set["super signal 2"s]->connect(executor);
-    cons = super_signal_set["super signal 3"s]->connect(executor);
+    auto executor { [&to_char](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << to_char(s->name()) << "; value: " << v << std::endl; } };
+    cons = super_signal_set[u8"super signal 1"s]->connect(executor);
+    cons = super_signal_set[u8"super signal 2"s]->connect(executor);
+    cons = super_signal_set[u8"super signal 3"s]->connect(executor);
 
     std::cout << "broadcasting event to all signals in the set..." << std::endl;
 
@@ -260,26 +262,26 @@ int main()
 
         ss::queued_signal_ex_set<event_data> ss2;
 
-        cons = ss2["mouse_move"]->connect([](auto &&s, auto &&ev)
+        cons = ss2[u8"mouse_move"]->connect([&to_char](auto &&s, auto &&ev)
         {
             if (ev.event_data.type() == typeid(mouse_event))
             {
                 auto data { std::any_cast<mouse_event>(ev.event_data) };
 
-                std::cout << "signal: " << s->name() << "; event hash index: " << ev.event_data_type_index.hash_code() << "; x: " << data.x << "; y: " << data.y << std::endl;
+                std::cout << "signal: " << to_char(s->name()) << "; event hash index: " << ev.event_data_type_index.hash_code() << "; x: " << data.x << "; y: " << data.y << std::endl;
             }
             else
             {
                 std::cout << "unsupported event type. expected 'mouse_event [" << std::type_index(typeid(mouse_event)).hash_code() << "]' but got " << ev.event_data_type_index.hash_code() << std::endl;
             }
         });
-        cons = ss2["key_down"]->connect([](auto &&s, auto &&ev)
+        cons = ss2[u8"key_down"]->connect([&to_char](auto &&s, auto &&ev)
         {
             if (ev.event_data.type() == typeid(keyboard_event))
             {
                 auto data { std::any_cast<keyboard_event>(ev.event_data) };
 
-                std::cout << "signal: " << s->name() << "; event hash index: " << ev.event_data_type_index.hash_code() << "; key code: " << data.key_code << "; mods: " << data.modifiers << std::endl;
+                std::cout << "signal: " << to_char(s->name()) << "; event hash index: " << ev.event_data_type_index.hash_code() << "; key code: " << data.key_code << "; mods: " << data.modifiers << std::endl;
             }
             else
             {
@@ -289,9 +291,9 @@ int main()
 
         auto make_event = [](auto &&ed) { return event_data { typeid(ed), std::forward<decltype(ed)>(ed) }; };
 
-        ss2["mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
-        ss2["key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
-        ss2["key_down"]->emit(make_event(mouse_event { 200, 200 })); // this event is supposed to be ignored
+        ss2[u8"mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
+        ss2[u8"key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
+        ss2[u8"key_down"]->emit(make_event(mouse_event { 200, 200 })); // this event is supposed to be ignored
 
         std::this_thread::sleep_for(0.1s);
     }
@@ -299,9 +301,9 @@ int main()
     struct my_scope {};
     ss::queued_signal_scoped_set<my_scope, std::string> qsss;
 
-    cons = qsss["test"]->connect([](auto &&s) { std::cout << s << std::endl; });
+    cons = qsss[u8"test"]->connect([](auto &&s) { std::cout << s << std::endl; });
 
-    qsss["test"]->emit("Hello Queued Scoped Signal Set!");
+    qsss[u8"test"]->emit("Hello Queued Scoped Signal Set!");
 
     std::cout << "exitting..." << std::endl;
 

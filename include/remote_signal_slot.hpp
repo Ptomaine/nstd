@@ -40,7 +40,7 @@ public:
         _server.start(host, port);
     }
 
-    void emit_remote_signal(const std::string &signal_name, const std::vector<uint8_t> &message)
+    void emit_remote_signal(const std::u8string &signal_name, const std::vector<uint8_t> &message)
     {
         std::vector<uint8_t> msg { std::begin(signal_name), std::end(signal_name) };
 
@@ -67,7 +67,7 @@ public:
         _client.async_read({pool_size, [this](auto &&result) { on_remote_signal(result); } });
     }
 
-    auto &get_remote_signal(const std::string &signal_name)
+    auto &get_remote_signal(const std::u8string &signal_name)
     {
         return _signal_queue[signal_name];
     }
@@ -81,7 +81,7 @@ private:
 
             if (divider_pos != end)
             {
-                std::string signal_name { begin, divider_pos };
+                std::u8string signal_name { begin, divider_pos };
 
                 if (_signal_queue.exists(signal_name))
                 {

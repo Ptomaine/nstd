@@ -61,7 +61,7 @@ inline auto trim_impl(StringViewType sv, const StringViewType chars_to_remove)
 
 }
 
-inline std::u8string from_utf16_to_utf8(const std::u16string &s)
+inline std::u8string from_utf16_to_utf8(const std::u16string_view s)
 {
     std::u8string result;
 
@@ -70,7 +70,7 @@ inline std::u8string from_utf16_to_utf8(const std::u16string &s)
     return result;
 }
 
-inline std::u8string from_utf32_to_utf8(const std::u32string &s)
+inline std::u8string from_utf32_to_utf8(const std::u32string_view s)
 {
     std::u8string result;
 
@@ -79,7 +79,7 @@ inline std::u8string from_utf32_to_utf8(const std::u32string &s)
     return result;
 }
 
-inline std::u16string from_utf8_to_utf16(const std::u8string &s)
+inline std::u16string from_utf8_to_utf16(const std::u8string_view s)
 {
     std::u16string result;
 
@@ -88,7 +88,7 @@ inline std::u16string from_utf8_to_utf16(const std::u8string &s)
     return result;
 }
 
-inline std::u16string from_utf32_to_utf16(const std::u32string &s)
+inline std::u16string from_utf32_to_utf16(const std::u32string_view s)
 {
     std::u8string in;
     std::u16string result;
@@ -99,7 +99,7 @@ inline std::u16string from_utf32_to_utf16(const std::u32string &s)
     return result;
 }
 
-inline std::u32string from_utf8_to_utf32(const std::u8string &s)
+inline std::u32string from_utf8_to_utf32(const std::u8string_view s)
 {
     std::u32string result;
 
@@ -108,7 +108,7 @@ inline std::u32string from_utf8_to_utf32(const std::u8string &s)
     return result;
 }
 
-inline std::u32string from_utf16_to_utf32(const std::u16string &s)
+inline std::u32string from_utf16_to_utf32(const std::u16string_view s)
 {
     std::u8string in;
     std::u32string result;
