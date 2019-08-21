@@ -20,15 +20,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "external/avir/avir.h"
 #ifdef AVIR_AVX
 #include "external/avir/avir_float8_avx.h"
 #elif defined (AVIR_SSE)
 #include "external/avir/avir_float4_sse.h"
-#else
-#include "external/avir/avir.h"
 #endif
-
-#include "external/avir/avir_dil.h"
 #include "external/avir/lancir.h"
 #include "thread_pool.hpp"
 
