@@ -22,4 +22,4 @@ SOFTWARE.
 
 #define BL_STATIC
 
-#include "external/blend2d/src/blend2d-impl.h"
+#include "external/blend2d/src/blend2d.h"
