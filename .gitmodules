@@ -1,63 +1,84 @@
 [submodule "include/external/json"]
 	path = include/external/json
 	url = https://github.com/nlohmann/json.git
+	branch = master
 [submodule "include/external/asio"]
 	path = include/external/asio
 	url = https://github.com/chriskohlhoff/asio.git
+	branch = master
 [submodule "include/external/date"]
 	path = include/external/date
 	url = https://github.com/HowardHinnant/date.git
+	branch = master
 [submodule "include/external/giant"]
 	path = include/external/giant
 	url = https://github.com/r-lyeh/giant.git
+	branch = master
 [submodule "include/external/sqlite_modern_cpp"]
 	path = include/external/sqlite_modern_cpp
 	url = https://github.com/aminroosta/sqlite_modern_cpp.git
+	branch = master
 [submodule "include/external/freetype/freetype2"]
 	path = include/external/freetype/freetype2
 	url = http://git.savannah.nongnu.org/r/freetype/freetype2.git
+	branch = master
 [submodule "include/external/cmdline_options"]
 	path = include/external/cmdline_options
 	url = https://github.com/Fytch/ProgramOptions.hxx.git
+	branch = master
 [submodule "include/external/lodepng"]
 	path = include/external/lodepng
 	url = https://github.com/lvandeve/lodepng.git
+	branch = master
 [submodule "include/external/ChaiScript"]
 	path = include/external/ChaiScript
 	url = https://github.com/ChaiScript/ChaiScript.git
+	branch = master
 [submodule "include/external/string_id"]
 	path = include/external/string_id
 	url = https://github.com/foonathan/string_id.git
+	branch = master
 [submodule "include/external/fifo_map"]
 	path = include/external/fifo_map
 	url = https://github.com/nlohmann/fifo_map.git
+	branch = master
 [submodule "include/external/tiny-process-library"]
 	path = include/external/tiny-process-library
 	url = https://gitlab.com/eidheim/tiny-process-library.git
+	branch = master
 [submodule "include/external/Simple-WebSocket-Server"]
 	path = include/external/Simple-WebSocket-Server
 	url = https://gitlab.com/eidheim/Simple-WebSocket-Server.git
+	branch = master
 [submodule "include/external/Simple-Web-Server"]
 	path = include/external/Simple-Web-Server
 	url = https://gitlab.com/eidheim/Simple-Web-Server.git
+	branch = master
 [submodule "include/external/blend2d"]
 	path = include/external/blend2d
 	url = https://github.com/blend2d/blend2d.git
+	branch = master
 [submodule "include/external/asmjit"]
 	path = include/external/asmjit
 	url = https://github.com/asmjit/asmjit.git
+	branch = master
 [submodule "include/external/cpp-taskflow"]
 	path = include/external/cpp-taskflow
 	url = https://github.com/cpp-taskflow/cpp-taskflow.git
+	branch = master
 [submodule "include/external/CImg"]
 	path = include/external/CImg
 	url = https://github.com/dtschump/CImg.git
+	branch = master
 [submodule "include/external/quickjs"]
 	path = include/external/quickjs
 	url = https://github.com/horhof/quickjs.git
+	branch = master
 [submodule "include/external/avir"]
 	path = include/external/avir
 	url = https://github.com/avaneev/avir.git
+	branch = master
 [submodule "include/external/units"]
 	path = include/external/units
 	url = https://github.com/nholthaus/units.git
+	branch = master
