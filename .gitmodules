@@ -82,3 +82,7 @@
 	path = include/external/units
 	url = https://github.com/nholthaus/units.git
 	branch = master
+[submodule "include/external/freetype/brotli"]
+	path = include/external/freetype/brotli
+	url = https://github.com/google/brotli.git
+	branch = master

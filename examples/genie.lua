@@ -307,7 +307,7 @@ solution "nstd_examples"
 
     project "freetype_example"
         files { "freetype_example.cpp", "../include/external/freetype/freetype.c" }
-        includedirs { "../include/external/freetype/freetype2/include" }
+        includedirs { "../include/external/freetype/freetype2/include", "../include/external/freetype/brotli/c/include" }
         configuration "not vs*"
             buildoptions { "-Wno-maybe-uninitialized", "-Wno-multichar" }
 
@@ -332,7 +332,7 @@ solution "nstd_examples"
 		"../include/external/agg/agg/src/agg_trans_affine.cpp",
 		"../include/external/agg/agg/src/agg_vcgen_contour.cpp",
 		"../include/external/agg/agg/src/agg_vcgen_stroke.cpp" }
-        includedirs { "../include/external/freetype/freetype2/include" }
+        includedirs { "../include/external/freetype/freetype2/include", "../include/external/freetype/brotli/c/include" }
         userincludedirs { "../include/external/agg/agg/include", "../include/external/agg/agg/font_freetype" }
         configuration "not vs*"
             buildoptions { "-Wno-maybe-uninitialized", "-Wno-unused-result" }

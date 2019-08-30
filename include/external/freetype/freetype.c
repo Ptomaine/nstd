@@ -26,6 +26,18 @@
 #endif
 #endif
 
+/*
+ BROTLI
+*/
+
+#include "brotli/c/common/dictionary.c"
+#include "brotli/c/common/transform.c"
+#include "brotli/c/dec/bit_reader.c"
+#include "brotli/c/dec/huffman.c"
+#include "brotli/c/dec/state.c"
+#include "brotli/c/dec/decode.c"
+#include "brotli/c/fuzz/decode_fuzzer.c"
+
 /*#define FT_CONFIG_OPTION_PIC*/
 
 /*
