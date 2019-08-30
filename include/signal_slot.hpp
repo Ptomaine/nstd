@@ -463,8 +463,11 @@ public:
     using bridged_signal_type = bridged_signal_base;
 
     bridged_signal_base() = default;
-    bridged_signal_base(const std::u8string &name) : base_class(name) {}
-    bridged_signal_base(const std::u8string &name, const std::function<bool(bridged_signal_base*)>& emit_functor) : base_class(name), _emit_functor { emit_functor } {}
+    bridged_signal_base(const std::u8string &name) : base_class { name } {}
+    bridged_signal_base(const std::u8string &name, const std::function<bool(bridged_signal_base*)>& emit_functor) : base_class { name }, _emit_functor { emit_functor } {}
+    bridged_signal_base(const std::function<bool(bridged_signal_base*)>& emit_functor) : bridged_signal_base { std::u8string {}, emit_functor } {}
+    bridged_signal_base(const std::u8string &name, bool bridge_enabled) : base_class { name }, _bridge_enabled { bridge_enabled } {}
+    bridged_signal_base(bool bridge_enabled) : _bridge_enabled { std::u8string {}, bridge_enabled } {}
     bridged_signal_base(bridged_signal_base &&other) = default;
     bridged_signal_base &operator=(bridged_signal_base &&other) = default;
     virtual ~bridged_signal_base() override = default;
