@@ -150,7 +150,7 @@ namespace nstd::thread
 		static int init_unix_named_mem(char *&result_mem, size_t &start_pos, const char *prefix, const char *name, size_t size)
         {
             int result{ -1 };
-            result_mem{ nullptr };
+            result_mem = nullptr;
             start_pos = (name != nullptr ? align_unix_size(1) + align_unix_size(sizeof(pthread_mutex_t)) + align_unix_size(sizeof(uint32_t)) : 0);
 
             size += start_pos;
@@ -358,16 +358,16 @@ namespace nstd::thread
 
 		static void get_unix_semaphore(unix_semaphore_wrapper& result, char *memory)
         {
-            result._mutex = reinterpret_cast<pthread_mutex_t *>(mem);
-            mem += align_unix_size(sizeof(pthread_mutex_t));
+            result._mutex = reinterpret_cast<pthread_mutex_t *>(memory);
+            memory += align_unix_size(sizeof(pthread_mutex_t));
 
-            result._count = reinterpret_cast<uint32_t *>(mem);
-            mem += align_unix_size(sizeof(uint32_t));
+            result._count = reinterpret_cast<uint32_t *>(memory);
+            memory += align_unix_size(sizeof(uint32_t));
 
-            result._max = reinterpret_cast<uint32_t *>(mem);
-            mem += align_unix_size(sizeof(uint32_t));
+            result._max = reinterpret_cast<uint32_t *>(memory);
+            memory += align_unix_size(sizeof(uint32_t));
 
-            result._condition = reinterpret_cast<pthread_cond_t *>(mem);
+            result._condition = reinterpret_cast<pthread_cond_t *>(memory);
         }
 
 		static void init_unix_semaphore(unix_semaphore_wrapper& unix_semaphore, bool shared, uint32_t start, uint32_t max)
@@ -394,9 +394,9 @@ namespace nstd::thread
             pthread_mutexattr_destroy(&mutex_attr);
         }
 
-		static bool wait_for_unix_semaphore(unix_semaphore_wrapper& unix_semaphore, uint32_t wait_ms = WaitInfinitely)
+		static bool wait_for_unix_semaphore(unix_semaphore_wrapper& unix_semaphore, uint32_t wait_ms = helper::WaitInfinitely)
         {
-            if (wait == 0)
+            if (wait_ms == 0)
             {
                 if (pthread_mutex_trylock(unix_semaphore._mutex) != 0)  return false;
             }
@@ -413,7 +413,7 @@ namespace nstd::thread
 
                 result = true;
             }
-            else if (wait == WaitInfinitely)
+            else if (wait_ms == helper::WaitInfinitely)
             {
                 int result2;
                 do
@@ -429,14 +429,14 @@ namespace nstd::thread
                     result = true;
                 }
             }
-            else if (wait == 0) { /* skip */ }
+            else if (wait_ms == 0) { /* skip */ }
             else
             {
                 struct timespec temp_time;
 
                 if (__csgx__clock_get_time_realtime(&temp_time) == -1)  return false;
-                temp_time.tv_sec += wait / 1000;
-                temp_time.tv_nsec += (wait % 1000) * 1000000;
+                temp_time.tv_sec += wait_ms / 1000;
+                temp_time.tv_nsec += (wait_ms % 1000) * 1000000;
                 temp_time.tv_sec += temp_time.tv_nsec / 1000000000;
                 temp_time.tv_nsec = temp_time.tv_nsec % 1000000000;
 
@@ -498,17 +498,17 @@ namespace nstd::thread
 
 		static void get_unix_event(unix_event_wrapper& result, char *memory)
         {
-            result._mutex = reinterpret_cast<pthread_mutex_t *>(mem);
-            mem += align_unix_size(sizeof(pthread_mutex_t));
+            result._mutex = reinterpret_cast<pthread_mutex_t *>(memory);
+            memory += align_unix_size(sizeof(pthread_mutex_t));
 
-            result._manual = mem;
-            result._signaled = mem + 1;
-            mem += align_unix_size(2);
+            result._manual = memory;
+            result._signaled = memory + 1;
+            memory += align_unix_size(2);
 
-            result._waiting = reinterpret_cast<uint32_t *>(mem);
-            mem += align_unix_size(sizeof(uint32_t));
+            result._waiting = reinterpret_cast<uint32_t *>(memory);
+            memory += align_unix_size(sizeof(uint32_t));
 
-            result._condition = reinterpret_cast<pthread_cond_t *>(mem);
+            result._condition = reinterpret_cast<pthread_cond_t *>(memory);
         }
 
 		static void init_unix_event(unix_event_wrapper& unix_event, bool shared, bool manual, bool signaled = false)
@@ -537,7 +537,7 @@ namespace nstd::thread
 
 		static bool wait_for_unix_event(unix_event_wrapper& unix_event, uint32_t wait_ms = WaitInfinitely)
         {
-            if (wait == 0)
+            if (wait_ms == 0)
             {
                 if (pthread_mutex_trylock(unix_event._mutex) != 0)  return false;
             }
@@ -554,7 +554,7 @@ namespace nstd::thread
 
                 result = true;
             }
-            else if (wait == INFINITE)
+            else if (wait_ms == helper::WaitInfinitely)
             {
                 unix_event._waiting[0]++;
 
@@ -574,7 +574,7 @@ namespace nstd::thread
                     result = true;
                 }
             }
-            else if (wait == 0) { /* skip */ }
+            else if (wait_ms == 0) { /* skip */ }
             else
             {
                 struct timespec temp_time;
@@ -586,8 +586,8 @@ namespace nstd::thread
                     return false;
                 }
 
-                temp_time.tv_sec += wait / 1000;
-                temp_time.tv_nsec += (wait % 1000) * 1000000;
+                temp_time.tv_sec += wait_ms / 1000;
+                temp_time.tv_nsec += (wait_ms % 1000) * 1000000;
                 temp_time.tv_sec += temp_time.tv_nsec / 1000000000;
                 temp_time.tv_nsec = temp_time.tv_nsec % 1000000000;
 
@@ -673,10 +673,10 @@ namespace nstd::thread
 
             if (_mutex_memory != nullptr)
             {
-                if (_named)  util::unmap_unix_named_mem(_mutex_memory, util::get_unix_semaphore_size());
+                if (_named)  helper::unmap_unix_named_mem(_mutex_memory, helper::get_unix_semaphore_size());
                 else
                 {
-                    util::FreeUnixSemaphore(_thread_mutex);
+                    helper::free_unix_semaphore(_thread_mutex);
 
                     delete[] _mutex_memory;
                 }
@@ -732,12 +732,12 @@ namespace nstd::thread
 
             if (_count > 0)
             {
-                if (_owner_id == util::get_current_thread_id())
+                if (_owner_id == helper::get_current_thread_id())
                 {
-                    if (_named)  util::unmap_unix_named_mem(_mutex_memory, util::get_unix_semaphore_size());
+                    if (_named)  helper::unmap_unix_named_mem(_mutex_memory, helper::get_unix_semaphore_size());
                     else
                     {
-                        util::free_unix_semaphore(_thread_mutex);
+                        helper::free_unix_semaphore(_thread_mutex);
 
                         delete[] _mutex_memory;
                     }
@@ -755,9 +755,9 @@ namespace nstd::thread
                 }
             }
 
-            size_t pos, temp_size = util::get_unix_semaphore_size();
+            size_t pos, temp_size = helper::get_unix_semaphore_size();
             _named = name != nullptr;
-            int result = util::unmap_unix_named_mem(_mutex_memory, pos, "/Sync_Mutex", name, temp_size);
+            int result = helper::init_unix_named_mem(_mutex_memory, pos, "/Sync_Mutex", name, temp_size);
 
             if (result < 0)
             {
@@ -766,13 +766,13 @@ namespace nstd::thread
                 return false;
             }
 
-            util::get_unix_semaphore(_thread_mutex, _mutex_memory + pos);
+            helper::get_unix_semaphore(_thread_mutex, _mutex_memory + pos);
 
             if (result == 0)
             {
-                util::init_unix_semaphore(_thread_mutex, _named, 1, 1);
+                helper::init_unix_semaphore(_thread_mutex, _named, 1, 1);
 
-                if (_named)  util::unix_named_mem_ready(_mutex_memory);
+                if (_named)  helper::unix_named_mem_ready(_mutex_memory);
             }
 
             pthread_mutex_unlock(&_critical_section);
@@ -815,7 +815,7 @@ namespace nstd::thread
 #else
             if (pthread_mutex_lock(&_critical_section) != 0)  return false;
 
-            if (_owner_id == util::get_current_thread_id())
+            if (_owner_id == helper::get_current_thread_id())
             {
                 _count++;
                 pthread_mutex_unlock(&_critical_section);
@@ -825,10 +825,10 @@ namespace nstd::thread
 
             pthread_mutex_unlock(&_critical_section);
 
-            if (!util::wait_for_unix_semaphore(_thread_mutex, wait))  return false;
+            if (!helper::wait_for_unix_semaphore(_thread_mutex, wait_ms))  return false;
 
             pthread_mutex_lock(&_critical_section);
-            _owner_id = util::get_current_thread_id();
+            _owner_id = helper::get_current_thread_id();
             _count = 1;
             pthread_mutex_unlock(&_critical_section);
 
@@ -863,7 +863,7 @@ namespace nstd::thread
 #else
         if (pthread_mutex_lock(&_critical_section) != 0)  return false;
 
-            if (_owner_id != util::get_current_thread_id())
+            if (_owner_id != helper::get_current_thread_id())
             {
                 pthread_mutex_unlock(&_critical_section);
 
@@ -877,7 +877,7 @@ namespace nstd::thread
                 _owner_id = 0;
 
                 // Release the mutex.
-                util::release_unix_semaphore(_thread_mutex, NULL);
+                helper::release_unix_semaphore(_thread_mutex, NULL);
             }
 
             pthread_mutex_unlock(&_critical_section);
@@ -917,7 +917,7 @@ namespace nstd::thread
 		char* _mutex_memory { nullptr };
 		bool _named { false };
 		pthread_mutex_t _critical_section;
-		util::unix_semaphore_wrapper _thread_mutex { 0 };
+		helper::unix_semaphore_wrapper _thread_mutex { 0 };
 #endif
 
 		volatile thread_id_type _owner_id { 0 };
