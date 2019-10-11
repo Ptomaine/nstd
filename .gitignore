@@ -1,0 +1,5 @@
+examples/bin
+examples/obj
+*.make
+examples/genie
+examples/Makefile
