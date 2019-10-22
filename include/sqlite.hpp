@@ -99,7 +99,7 @@ struct object_records
     object_records(std::size_t preallocate) { records.reserve(preallocate); }
     ~object_records() = default;
 
-    void operator()(ConstructorArgs... args)
+    void operator()(ConstructorArgs&&... args)
     {
         records.emplace_back(std::forward<ConstructorArgs>(args)...);
     };
@@ -120,7 +120,7 @@ struct tuple_records
     tuple_records(std::size_t preallocate) { records.reserve(preallocate); }
     ~tuple_records() = default;
 
-    void operator()(ColTypes... args)
+    void operator()(ColTypes&&... args)
     {
         records.emplace_back(std::forward_as_tuple(std::move(args)...));
     };
