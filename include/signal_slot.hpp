@@ -337,6 +337,11 @@ public:
         }
     }
 
+    void operator() (const Args &... args)
+    {
+        emit(args...);
+    }
+
     virtual connection connect(std::function<void(Args...)> &&callable)
     {
         slot<Args...> new_slot(std::forward<std::function<void(Args...)>>(callable));
@@ -453,6 +458,11 @@ public:
     {
         base_class::emit(this, args...);
     }
+
+    void operator() (const Args&... args)
+    {
+        emit(args...);
+    }
 };
 
 template<template <typename...> typename signal_type, typename... Args>
@@ -487,6 +497,11 @@ public:
             if (!_emit_functor || !_emit_functor(this)) invoke_next();
         }
         else base_class::emit(args...);
+    }
+
+    void operator() (const Args&... args)
+    {
+        emit(args...);
     }
 
     void emit_sync(const Args&... args)
@@ -629,6 +644,11 @@ public:
         }
     }
 
+    void operator() (const Args &... args)
+    {
+        emit(args...);
+    }
+
     template<typename Duration>
     void throttle_ms(const Duration &duration)
     {
@@ -746,6 +766,11 @@ public:
 
             _dispatcher_thread = std::thread(&queue_dispatcher);
         }
+    }
+
+    void operator() (const Args &... args)
+    {
+        emit(args...);
     }
 
     template<typename Duration>
@@ -904,6 +929,11 @@ public:
     void emit(const Args &... args) const
     {
         for (auto &&s : _signals) s.second->emit(args...);
+    }
+
+    void operator() (const Args &... args) const
+    {
+        emit(args...);
     }
 
     virtual const std::unique_ptr<signal_type> &get_signal(const std::u8string &signal_name)
