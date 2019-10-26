@@ -356,6 +356,11 @@ public:
         return to_return;
     }
 
+    virtual connection operator += (std::function<void(Args...)> &&callable)
+    {
+        return connect(std::forward<std::function<void(Args...)>>(callable));
+    }
+
     template<typename T>
     connection connect(T *instance, void (T::*member_function)(Args...))
     {
