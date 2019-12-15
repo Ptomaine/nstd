@@ -22,6 +22,7 @@ SOFTWARE.
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -327,6 +328,15 @@ struct compile_time_fibonacci<2>
         value = 1
     };
 };
+
+constexpr uint64_t binets_fibonacci(const uint64_t n)
+{
+    constexpr auto sqrt_5 { std::sqrt(5) };
+
+    if (n < 2) return n;
+
+    return static_cast<uint64_t>((std::pow(1 + sqrt_5, n) - std::pow(1 - sqrt_5, n)) / (std::pow(2, n) * sqrt_5));
+}
 
 }
 
