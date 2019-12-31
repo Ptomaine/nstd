@@ -101,6 +101,9 @@ solution "nstd_examples"
         configuration "not vs*"
             buildoptions { "-Wno-all" }
 
+        configuration "linux"
+            links { "pthread", "rt" }
+
     project "avir_example"
         files { "avir_example.cpp", "../include/blend2d.cpp" }
         includedirs { "../include/external/asmjit/src" }
@@ -121,6 +124,9 @@ solution "nstd_examples"
 
         configuration "not vs*"
             buildoptions { "-Wno-all" }
+
+        configuration "linux"
+            links { "pthread", "rt" }
 
     project "giant_example"
         files { "giant_example.cpp" }
