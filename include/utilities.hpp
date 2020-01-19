@@ -39,7 +39,7 @@ class at_scope_exit
 {
 public:
 
-    at_scope_exit(std::function<void(void)> &&functor) : _functor { functor } {}
+    at_scope_exit(std::function<void(void)> &&functor) : _functor { std::forward<std::function<void(void)>>(functor) } {}
 
     ~at_scope_exit()
     {
@@ -51,6 +51,8 @@ public:
     at_scope_exit(at_scope_exit&&) = delete;
     at_scope_exit &operator =(const at_scope_exit&) = delete;
     at_scope_exit &operator =(at_scope_exit&&) = delete;
+
+    void reset(std::function<void(void)> &&functor = nullptr) { _functor = std::forward<std::function<void(void)>>(functor); }
 
 private:
     std::function<void(void)> _functor;
