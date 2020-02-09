@@ -827,7 +827,7 @@ protected:
 
                 auto &[this_, args] = _signal_queue.front();
 
-                std::apply([&this_ = this_](const Args&... a){ this_->base_class::emit(a...); }, args);
+                std::apply([&this_](const Args&... a){ this_->base_class::emit(a...); }, args);
 
                 _signal_queue.pop_front();
 
