@@ -176,6 +176,10 @@ inline constexpr bool is_posix_supported()
     return current_os_family == os_family::Unix || current_os_family == os_family::BeOS;
 }
 
+#if defined(OS_FAMILY_UNIX) || defined(OS_FAMILY_BEOS)
+	#define POSIX_COMPATIBLE_OS
+#endif
+
 #if defined(__BYTE_ORDER__)
     #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
         #define ARCH_LITTLE_ENDIAN
