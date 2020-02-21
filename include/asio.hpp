@@ -23,6 +23,9 @@ SOFTWARE.
 #define ASIO_STANDALONE
 #define ASIO_HAS_STD_CHRONO
 #define ASIO_NO_DEPRECATED
+#if defined(_WIN32) && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0601
+#endif
 
 #include "external/asio/asio/include/asio.hpp"
 

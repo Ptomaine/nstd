@@ -909,7 +909,7 @@ private:
             {
                 std::scoped_lock lock { _emit_lock };
 
-                std::apply([&](timer_signal *s, const Args&... a){ base_class::emit(s, a...); }, _args);
+                std::apply([this](timer_signal *s, const Args&... a){ base_class::emit(s, a...); }, _args);
 
                 if (!_timer_enabled) return;
             }

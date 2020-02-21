@@ -102,6 +102,11 @@ public:
         for(auto &worker: _worker_threads) worker.join();
     }
 
+    operator bool ()
+    {
+        return !_cancelled;
+    }
+
 private:
     std::deque<std::thread> _worker_threads {};
     std::queue<std::function<void()>> _tasks {};
@@ -265,6 +270,11 @@ public:
     }
 
     auto size() const { return std::size(_worker_threads); }
+
+    operator bool ()
+    {
+        return !_cancelled;
+    }
 
 private:
     void worker()
