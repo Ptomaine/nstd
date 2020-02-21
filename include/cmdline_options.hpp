@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "external/cmdline_options/ProgramOptions.hxx"
+#include "external/cmdline_options/include/ProgramOptions.hxx"
 
 namespace nstd
 {

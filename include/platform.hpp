@@ -48,7 +48,8 @@ enum class os_type : uint8_t
     Unix,
     WindowsCE,
     WindowsNT,
-    VMS
+    VMS,
+    Haiku
 };
 
 enum class os_family : uint8_t
@@ -57,7 +58,8 @@ enum class os_family : uint8_t
     Unix,
     UnixBSD,
     Windows,
-    VMS
+    VMS,
+    BeOS
 };
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
@@ -159,8 +161,23 @@ enum class os_family : uint8_t
 	#define OS_VMS
 	inline constexpr const os_type current_os_type = os_type::VMS;
 	inline constexpr const os_family current_os_family = os_family::VMS;
+#elif defined(__HAIKU__)
+	#define OS_FAMILY_UNIX
+	#define OS_FAMILY_BEOS
+	#define OS_HAIKU
+	inline constexpr const os_type current_os_type = os_type::Haiku;
+	inline constexpr const os_family current_os_family = os_family::BeOS;
 #else
 	#error "Unknown Platform!"
+#endif
+
+inline constexpr bool is_posix_supported()
+{
+    return current_os_family == os_family::Unix || current_os_family == os_family::BeOS;
+}
+
+#if defined(OS_FAMILY_UNIX) || defined(OS_FAMILY_BEOS)
+	#define POSIX_COMPATIBLE_OS
 #endif
 
 #if defined(__BYTE_ORDER__)
@@ -402,6 +419,7 @@ inline constexpr const char *get_current_os_type_name()
     else if constexpr (current_os_type == os_type::WindowsCE)   return "Windows CE";
     else if constexpr (current_os_type == os_type::WindowsNT)   return "Windows NT";
     else if constexpr (current_os_type == os_type::VMS)         return "VMS";
+    else if constexpr (current_os_type == os_type::Haiku)       return "Haiku";
     else                                                        return "Unknown";
 }
 
