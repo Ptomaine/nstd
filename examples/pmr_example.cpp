@@ -37,8 +37,9 @@ int main(int argc, char **argv)
     using namespace nstd::process;
 
     scoped_console_utf8 set_console_utf8;
+    const std::u8string_view str { u8"Консоль поддерживает UTF-8..." };
 
-    std::cout << u8"Консоль поддерживает UTF-8..." << std::endl;
+    std::cout << std::string(std::begin(str), std::end(str))  << std::endl;
 
     Process proc("echo \"Redirected output\"", "", [](auto a, auto b){ std::cout << std::endl << ">> " << std::string(a, b) << std::endl; }, [](auto a, auto b){});
 
