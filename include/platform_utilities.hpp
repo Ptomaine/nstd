@@ -47,7 +47,7 @@ auto set_console_utf8()
 auto get_console_encoding()
 {
 #ifdef _WIN32
-    return std::make_pair(::GetConsoleCP(), ::GetConsoleOutputCP());
+    return std::make_tuple(::GetConsoleCP(), ::GetConsoleOutputCP());
 #endif
 }
 
@@ -55,7 +55,7 @@ class scoped_console_utf8
 {
 #ifdef _WIN32
 private:
-    std::pair<UINT, UINT> _code_pages {};
+    std::tuple<UINT, UINT> _code_pages {};
 #endif
 
 public:
@@ -72,8 +72,10 @@ public:
     ~scoped_console_utf8()
     {
 #ifdef _WIN32
-        ::SetConsoleCP(_code_pages.first);
-        ::SetConsoleOutputCP(_code_pages.second);
+    	const auto&[console_cp, console_output_cp] = _code_pages;
+
+        ::SetConsoleCP(console_cp);
+        ::SetConsoleOutputCP(console_output_cp);
 #endif
     }
 };
