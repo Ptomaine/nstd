@@ -23,7 +23,7 @@ SOFTWARE.
 
 int main()
 {
-    auto width { 800 }, height { 600 };
+    auto width { 2560 }, height { 1440 };
 
     BLImage img { width, height, BL_FORMAT_PRGB32 };
     BLContext ctx { img };
@@ -49,13 +49,13 @@ int main()
 
     BLFont font;
 
-    font.createFromFace(face, 28.0f);
+    font.createFromFace(face, 72.0f);
 
     BLFontMetrics fm { font.metrics() };
     BLTextMetrics tm;
     BLGlyphBuffer gb;
 
-    BLPoint p { 20, 190 + fm.ascent };
+    BLPoint p { 20, 390 + fm.ascent };
     const char* text = "Hello Blend2D!\n"
                        "I'm a simple multiline text example\n"
                        "that uses BLGlyphBuffer and fillGlyphRun!\n\n"
@@ -77,7 +77,7 @@ int main()
         sp.x += 1;
         sp.y += 1;
 
-        ctx.setFillStyle(BLRgba32(0xFF888888));
+        ctx.setFillStyle(BLRgba32(0xFF333333));
         ctx.fillGlyphRun(sp, font, gb.glyphRun());
 
         ctx.setFillStyle(BLRgba32(0xFFFFFFFF));

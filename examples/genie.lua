@@ -5,12 +5,12 @@ solution "nstd_examples"
     configuration "vs*"
         buildoptions { "/std:c++latest", "/EHsc", "/Wall" }
 
-    configuration "not vs*"
+    configuration "gcc"
         buildoptions_cpp { "-std=c++2a", "-fexceptions" }
         buildoptions "-Wall"
 
     language "C++"
-    configuration { "windows", "not vs*" }
+    configuration { "windows", "gcc" }
         linkoptions { "-static" }
 
     configuration { "Debug" }
@@ -34,16 +34,13 @@ solution "nstd_examples"
             objdir "obj/asio_example/Release"
             targetdir "bin/asio_example/Release"
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions_cpp { "-fpermissive" }
 
         configuration { "windows" }
             links { "ws2_32" }
 
-        configuration "not vs*"
-            buildoptions_cpp { "-fpermissive" }
-
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }--]]
 
     project "base64_example"
@@ -67,7 +64,7 @@ solution "nstd_examples"
             objdir "obj/chaiscript_example/Release"
             targetdir "bin/chaiscript_example/Release"
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread", "dl" }
 
     project "date_example"
@@ -98,10 +95,10 @@ solution "nstd_examples"
 	    cmd = postbuildcmd .. "Release"
    	    postbuildcommands { iif(os.is("windows"), string.gsub(cmd, "/", "\\"), string.gsub(cmd, "copy ", "cp "))  }
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions { "-Wno-all" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread", "rt" }
 
     project "avir_example"
@@ -122,15 +119,15 @@ solution "nstd_examples"
 	    cmd = postbuildcmd .. "Release"
    	    postbuildcommands { iif(os.is("windows"), string.gsub(cmd, "/", "\\"), string.gsub(cmd, "copy ", "cp "))  }
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions { "-Wno-all" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread", "rt" }
 
     project "giant_example"
         files { "giant_example.cpp" }
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions { "-Wno-unused-variable" }
 
         configuration { "Debug" }
@@ -152,7 +149,7 @@ solution "nstd_examples"
             objdir "obj/expiry_cache_example/Release"
             targetdir "bin/expiry_cache_example/Release"
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }
 
     project "live_property_example"
@@ -166,10 +163,10 @@ solution "nstd_examples"
             objdir "obj/live_property_example/Release"
             targetdir "bin/live_property_example/Release"
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions_cpp { "-fpermissive" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }
 
     project "relinx_example"
@@ -182,7 +179,7 @@ solution "nstd_examples"
             objdir "obj/relinx_example/Release"
             targetdir "bin/relinx_example/Release"
 
-            configuration "not vs*"
+            configuration "gcc"
                 buildoptions { "-Wno-unused-variable", "-Wno-unused-but-set-variable" }
 
     --[[project "relinx_generator_example"
@@ -197,13 +194,13 @@ solution "nstd_examples"
             objdir "obj/relinx_generator_example/Release"
             targetdir "bin/relinx_generator_example/Release"
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions_cpp { "-fpermissive" }
 
         configuration "windows"
             links { "ws2_32" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }--]]
 
     project "pmr_example"
@@ -216,7 +213,7 @@ solution "nstd_examples"
             objdir "obj/pmr_example/Release"
             targetdir "bin/pmr_example/Release"
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }
 
     project "strings_example"
@@ -242,7 +239,7 @@ solution "nstd_examples"
     project "sqlite_example"
         files { "sqlite_example.cpp", "../include/external/sqlite/sqlite3.c" }
         includedirs { "../include/external/sqlite", "../include/external/json/include" }
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions { "-Wno-unused-but-set-variable", "-DSQLITE_DQS=0" }
 
         configuration { "Debug" }
@@ -253,10 +250,10 @@ solution "nstd_examples"
             objdir "obj/sqlite_example/Release"
             targetdir "bin/sqlite_example/Release"
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions_cpp { "-fpermissive" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread", "dl" }
 
     project "units_example"
@@ -284,10 +281,10 @@ solution "nstd_examples"
         configuration "windows"
             links { "ws2_32" }
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions_cpp { "-fpermissive" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }--]]
 
     project "uuid_example"
@@ -305,16 +302,16 @@ solution "nstd_examples"
         configuration "windows"
             links { "ws2_32" }
 
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions_cpp { "-fpermissive" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }
 
     project "freetype_example"
         files { "freetype_example.cpp", "../include/external/freetype/freetype.c" }
         includedirs { "../include/external/freetype/freetype2/include", "../include/external/freetype/brotli/c/include" }
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions { "-Wno-maybe-uninitialized", "-Wno-multichar" }
 
         configuration { "Debug" }
@@ -340,7 +337,7 @@ solution "nstd_examples"
 		"../include/external/agg/agg/src/agg_vcgen_stroke.cpp" }
         includedirs { "../include/external/freetype/freetype2/include", "../include/external/freetype/brotli/c/include" }
         userincludedirs { "../include/external/agg/agg/include", "../include/external/agg/agg/font_freetype" }
-        configuration "not vs*"
+        configuration "gcc"
             buildoptions { "-Wno-maybe-uninitialized", "-Wno-unused-result" }
 
         postbuildcmd = "copy ../resources/example_resources/agg_example/fonts/*.ttf ./bin/agg_example/"
@@ -360,7 +357,7 @@ solution "nstd_examples"
         configuration "windows"
             links { "gdi32" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "X11" }
 
     project "sharp_tcp_server_example"
@@ -376,7 +373,7 @@ solution "nstd_examples"
         configuration { "windows" }
             links { "ws2_32" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }
 
     project "sharp_tcp_client_example"
@@ -392,7 +389,7 @@ solution "nstd_examples"
         configuration { "windows" }
             links { "ws2_32" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }
 
     project "remote_signal_slot_example"
@@ -409,7 +406,7 @@ solution "nstd_examples"
         configuration { "windows" }
             links { "ws2_32" }
 
-        configuration "linux"
+        configuration "linux or macosx or bsd"
             links { "pthread" }
 
     project "http_request_parser_example"
@@ -433,7 +430,10 @@ solution "nstd_examples"
             targetdir "bin/http_resource_manager_example/Release"
 
         configuration { "windows" }
-            links { "ws2_32", "stdc++fs" }
+            links { "ws2_32" }
 
-        configuration "linux"
-            links { "pthread", "stdc++fs" }
+        configuration "linux or macosx or bsd"
+            links { "pthread" }
+
+        configuration "gcc"
+            links { "stdc++fs" }
