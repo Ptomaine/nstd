@@ -147,10 +147,14 @@ SOFTWARE.
 #include "external/blend2d/src/blend2d/pipegen/pipegenruntime.cpp"
 #include "external/blend2d/src/blend2d/pipegen/pipepart.cpp"
 
+#include "external/blend2d/src/blend2d/raster/analyticrasterizer.cpp"
 #include "external/blend2d/src/blend2d/raster/rastercontext.cpp"
-#include "external/blend2d/src/blend2d/raster/rasterfiller.cpp"
-#include "external/blend2d/src/blend2d/raster/rasterworkercontext.cpp"
+#include "external/blend2d/src/blend2d/raster/rastercontextops.cpp"
+#include "external/blend2d/src/blend2d/raster/rasterfetchdata.cpp"
+#include "external/blend2d/src/blend2d/raster/rasterworkdata.cpp"
 #include "external/blend2d/src/blend2d/raster/rasterworkermanager.cpp"
+#include "external/blend2d/src/blend2d/raster/rasterworkproc.cpp"
+#include "external/blend2d/src/blend2d/raster/rasterworksynchronization.cpp"
 
 #include "external/blend2d/src/blend2d/threading/thread.cpp"
 #include "external/blend2d/src/blend2d/threading/threadpool.cpp"
