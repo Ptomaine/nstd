@@ -101,6 +101,7 @@ SOFTWARE.
 #include "external/blend2d/src/blend2d/runtime.cpp"
 #include "external/blend2d/src/blend2d/scopedallocator.cpp"
 #include "external/blend2d/src/blend2d/string.cpp"
+#include "external/blend2d/src/blend2d/style.cpp"
 #include "external/blend2d/src/blend2d/support.cpp"
 #include "external/blend2d/src/blend2d/tables.cpp"
 #include "external/blend2d/src/blend2d/trace.cpp"
