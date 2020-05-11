@@ -125,6 +125,15 @@ private:
 	handle _coro;
 };
 
+template<typename Container>
+generator<typename Container::value_type> co_from(Container &&container)
+{
+	auto begin { std::begin(container) };
+	auto end { std::end(container) };
+
+	while (begin != end) { co_yield *begin; ++begin; }
+}
+
 template<typename Iterator>
 generator<typename Iterator::value_type> co_from(Iterator begin, Iterator end)
 {
@@ -166,6 +175,44 @@ generator<CoroType> co_filter_i(generator<CoroType> &&gen, Functor func)
 
 		if (func(cv, index++)) co_yield cv;
 	}
+}
+
+template<typename CoroType>
+generator<CoroType> co_reverse(generator<CoroType> &&gen)
+{
+	std::deque<CoroType> v;
+
+	while (gen.move_next()) v.push_back(gen.current_value());
+
+	auto begin { std::rbegin(v) };
+	auto end { std::rend(v) };
+
+	while (begin != end)
+	{
+		co_yield *begin;
+
+		++begin;
+	}
+}
+
+template<typename CoroType>
+generator<CoroType> co_skip(generator<CoroType> &&gen, size_t count)
+{
+	bool good { true };
+
+	if (count > 0)  { while ((good = gen.move_next()) && --count > 0) ; }
+
+	if (good) { while (gen.move_next()) co_yield gen.current_value(); }
+}
+
+template<typename CoroType, typename Functor>
+generator<CoroType> co_skip_while(generator<CoroType> &&gen, Functor func)
+{
+	bool good { true };
+
+	while ((good = gen.move_next()) && func(gen.current_value())) ;
+
+	if (good) do { co_yield gen.current_value(); } while (gen.move_next());
 }
 
 template<typename CoroType, typename Functor>
@@ -267,8 +314,32 @@ auto co_select_many_i(generator<CoroType> &&gen, Functor func) -> generator<decl
 	}
 }
 
-template<typename CoroType, typename ExceptIterator, typename Functor>
-generator<CoroType> co_except(generator<CoroType> &&gen, ExceptIterator begin, ExceptIterator end, Functor func)
+template<typename CoroType, typename Functor>
+generator<CoroType> co_except(generator<CoroType> &&gen1, generator<CoroType> &&gen2, Functor func)
+{
+	std::unordered_set<CoroType> processed;
+	std::deque<CoroType> provided;
+
+	while (gen2.move_next()) provided.push_back(gen2.current_value());
+
+	while (gen1.move_next())
+	{
+		const auto value { gen1.current_value() };
+
+		if (processed.contains(value)) continue;
+
+		auto end { std::end(provided) };
+
+		if (std::find_if(std::begin(provided), end, [&value, &func](auto &&b) { return func(value, b); } ) != end) continue;
+
+		co_yield value;
+
+		processed.insert(value);
+	}
+}
+
+template<typename CoroType, typename Iterator, typename Functor>
+generator<CoroType> co_except(generator<CoroType> &&gen, Iterator begin, Iterator end, Functor func)
 {
 	std::unordered_set<CoroType> processed;
 
@@ -280,14 +351,38 @@ generator<CoroType> co_except(generator<CoroType> &&gen, ExceptIterator begin, E
 
 		if (std::find_if(begin, end, [&value, &func](auto &&b) { return func(value, b); } ) != end) continue;
 
-		processed.insert(value);
-
 		co_yield value;
+
+		processed.insert(value);
 	}
 }
 
-template<typename CoroType, typename IntersectIterator, typename Functor>
-generator<CoroType> co_intersect(generator<CoroType> &&gen, IntersectIterator begin, IntersectIterator end, Functor func)
+template<typename CoroType, typename Functor>
+generator<CoroType> co_intersect(generator<CoroType> &&gen1, generator<CoroType> &&gen2, Functor func)
+{
+	std::unordered_set<CoroType> processed;
+	std::deque<CoroType> provided;
+
+	while (gen2.move_next()) provided.push_back(gen2.current_value());
+
+	while (gen1.move_next())
+	{
+		const auto value { gen1.current_value() };
+
+		if (processed.contains(value)) continue;
+
+		auto end { std::end(provided) };
+
+		if (std::find_if(std::begin(provided), end, [&value, &func](auto &&b) { return func(value, b); } ) == end) continue;
+
+		co_yield value;
+
+		processed.insert(value);
+	}
+}
+
+template<typename CoroType, typename Iterator, typename Functor>
+generator<CoroType> co_intersect(generator<CoroType> &&gen, Iterator begin, Iterator end, Functor func)
 {
 	std::unordered_set<CoroType> processed;
 
@@ -299,9 +394,9 @@ generator<CoroType> co_intersect(generator<CoroType> &&gen, IntersectIterator be
 
 		if (std::find_if(begin, end, [&value, &func](auto &&b) { return func(value, b); } ) == end) continue;
 
-		processed.insert(value);
-
 		co_yield value;
+
+		processed.insert(value);
 	}
 }
 
@@ -421,7 +516,10 @@ public:
 
 	    iterator(co_relinx_object *object) : _co_relinx_object { object }
 	    {
-	        if (!_co_relinx_object->_moved) _co_relinx_object->move_next();
+	        if (!_co_relinx_object->_moved)
+	        {
+	        	if (!_co_relinx_object->move_next()) _co_relinx_object = nullptr;
+	        }
 	    }
 
 	    auto operator==(const self_type &s) const
@@ -481,18 +579,6 @@ public:
 		return iterator{};
 	}
 
-	bool move_next()
-	{
-		_moved = _generator.move_next();
-
-		return *_moved;
-	}
-
-	CoroType current_value()
-	{
-		return _generator.current_value();
-	}
-
     template<typename AggregateFunctor>
     auto aggregate(AggregateFunctor &&aggregateFunctor)
     {
@@ -528,33 +614,21 @@ public:
         return resultSelector(aggregate(std::forward<SeedType>(seed), std::forward<AggregateFunctor>(aggregateFunctor)));
     }
 
-    template<typename ConditionFunctor>
-    auto all(ConditionFunctor &&conditionFunctor)
-    {
-        auto begin { iterator { this } };
-        auto end { iterator {} };
-
-        return std::all_of(begin, end, std::forward<ConditionFunctor>(conditionFunctor));
-    }
-
-    template<typename ConditionFunctor>
-    auto any(ConditionFunctor &&conditionFunctor)
-    {
-        return std::any_of(begin, end, std::forward<ConditionFunctor>(conditionFunctor));
-    }
-
-    auto any()
-    {
-        auto begin { iterator { this } };
-        auto end { iterator {} };
-
-        return !(begin == end);
-    }
-
     template<typename Container>
     auto concat(const Container &container)
     {
     	return co_relinx_object<CoroType>(co_concat(std::move(_generator), co_from(container)));
+    }
+
+    template<typename Container>
+    auto concat(Container &&container)
+    {
+    	return co_relinx_object<CoroType>(co_concat(std::move(_generator), co_from(std::forward<Container>(container))));
+    }
+
+    auto concat(std::initializer_list<CoroType> &&container)
+    {
+    	return co_relinx_object<CoroType>(co_concat(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType>>(container))));
     }
 
     auto cycle(int count = -1)
@@ -573,11 +647,63 @@ public:
     	return co_relinx_object<CoroType>(co_distinct(std::move(_generator), func));
     }
 
-	template<typename Functor>
-	auto where(Functor func)
-	{
-		return co_relinx_object<CoroType>(co_filter(std::move(_generator), func));
-	}
+    template<typename Container>
+    auto except(const Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    {
+    	return co_relinx_object<CoroType>(co_except(std::move(_generator), std::begin(container), std::end(container), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
+    }    
+
+    template<typename Container>
+    auto except(Container &&container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    {
+    	return co_relinx_object<CoroType>(co_except(std::move(_generator), co_from(std::forward<Container>(container)), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
+    }    
+
+    auto except(std::initializer_list<CoroType> &&container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    {
+    	return co_relinx_object<CoroType>(co_except(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType>>(container)), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
+    }    
+
+    template<typename Container>
+    auto intersect_with(const Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    {
+    	return co_relinx_object<CoroType>(co_intersect(std::move(_generator), std::begin(container), std::end(container), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
+    }    
+
+    template<typename Container>
+    auto intersect_with(Container &&container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    {
+    	return co_relinx_object<CoroType>(co_intersect(std::move(_generator), co_from(std::forward<Container>(container)), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
+    }    
+
+    auto intersect_with(std::initializer_list<CoroType> &&container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    {
+    	return co_relinx_object<CoroType>(co_intersect(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType>>(container)), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
+    }    
+
+    template<typename ForeachFunctor>
+    void for_each(ForeachFunctor &&foreachFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        std::for_each(begin, end, std::forward<ForeachFunctor>(foreachFunctor));
+    }
+
+    template<typename ForeachFunctor>
+    void for_each_i(ForeachFunctor &&foreachFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+        uint64_t indexer = 0;
+
+        std::for_each(begin, end, [&foreachFunctor, &indexer](auto &&v) { foreachFunctor(v, indexer++); });
+    }
+
+    auto reverse()
+    {
+    	return co_relinx_object<CoroType>(co_reverse(std::move(_generator)));
+    }
 
 	template<typename Selector>
 	auto select(Selector func)
@@ -603,7 +729,125 @@ public:
 		return co_relinx_object<decltype(func(typename CoroType::value_type(), 0UL))>(co_select_many_i(std::move(_generator), func));
 	}
 
-	auto take(size_t limit)
+	template<typename Container, typename CompareFunctor>
+    auto sequence_equal(Container &&container, CompareFunctor &&compareFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        return std::equal(begin, end, std::begin(container), std::forward<CompareFunctor>(compareFunctor));
+    }
+
+	template<typename Container>
+    auto sequence_equal(Container &&container)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        return std::equal(begin, end, std::begin(container));
+    }
+
+    template<typename ConditionFunctor>
+    auto single(ConditionFunctor &&conditionFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        if (begin == end) throw no_elements("single"s);
+
+        auto i = std::find_if(begin, end, conditionFunctor);
+
+        if (i == end) throw not_found("single"s);
+
+        auto result { *i };
+        auto n = std::find_if(++i, end, conditionFunctor);
+
+        if (n != end) throw invalid_operation("single"s);
+
+        return result;
+    }
+
+    auto single()
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        if (begin == end) throw no_elements("single"s);
+
+        auto result { *begin };
+
+        if (++begin != end) throw invalid_operation("single"s);
+
+        return result;
+    }
+
+    template<typename ConditionFunctor>
+    auto single_or_default(ConditionFunctor &&conditionFunctor, CoroType defaultValue = CoroType())
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+        auto i = std::find_if(begin, end, conditionFunctor);
+
+        if (i == end) return defaultValue;
+
+        auto result { *i };
+        auto n = std::find_if(++i, end, conditionFunctor);
+
+        if (n != end) throw invalid_operation("single_or_default"s);
+
+        return result;
+    }
+
+    auto single_or_default(CoroType defaultValue = CoroType())
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        if (begin == end) return defaultValue;
+
+        auto result { *begin };
+
+        if (++begin != end) throw invalid_operation("single_or_default"s);
+
+        return result;
+    }
+
+    auto skip(size_t skip)
+    {
+        return co_relinx_object<CoroType>(co_skip(std::move(_generator), skip));
+    }    
+
+    template<typename SkipFunctor>
+    auto skip_while(SkipFunctor &&skipFunctor)
+    {
+        return co_relinx_object<CoroType>(co_skip_while(std::move(_generator), skipFunctor));
+    }
+
+    template<typename SkipFunctor>
+    auto skip_while_i(SkipFunctor &&skipFunctor)
+    {
+    	uint64_t index { 0 };
+
+  		while (move_next() && skipFunctor(current_value(), index++)) ;
+
+        return co_relinx_object<CoroType>(std::move(_generator), true);
+    }
+
+    template<typename SelectFunctor>
+    auto sum(SelectFunctor &&selectFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        return std::accumulate(begin, end, decltype(selectFunctor(CoroType()))(), [&selectFunctor](auto &&sum, auto &&v) { return sum + selectFunctor(v); });
+    }    
+
+    auto sum()
+    {
+        return sum([](auto &&v){ return v; });
+    }
+
+    auto take(size_t limit)
 	{
 		return co_relinx_object<CoroType>(co_take(std::move(_generator), limit));
 	}
@@ -619,6 +863,12 @@ public:
 	{
 		return co_relinx_object<CoroType>(co_limit_i(std::move(_generator), func));
 	}
+
+    template<typename TeeFunctor>
+    auto tee(TeeFunctor &&teeFunctor)
+    {
+    	return co_relinx_object<CoroType>(co_tee(std::move(_generator), teeFunctor));
+    }	
 
 	template<typename AnyContainerType>
     auto to_container()
@@ -637,6 +887,38 @@ public:
     auto to_list()
     {
         return to_container<std::list<CoroType>>();
+    }
+
+    template<   typename KeySelectorFunctor,
+                typename ValueSelectorFunctor = std::function<CoroType(const CoroType&)>,
+                template <typename, typename> class MapType = std::unordered_map>
+    auto to_map(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const CoroType &v) { return v; })
+    {
+        using key_type = typename std::decay<decltype(keySelectorFunctor(CoroType()))>::type;
+        using new_value_type = typename std::decay<decltype(valueSelectorFunctor(CoroType()))>::type;
+
+        MapType<key_type, new_value_type> result;
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        while (begin != end)
+        {
+            result.emplace(keySelectorFunctor(*begin), valueSelectorFunctor(*begin));
+
+            ++begin;
+        }
+
+        return result;
+    }
+
+    template<   typename KeySelectorFunctor,
+                typename ValueSelectorFunctor = std::function<CoroType(const CoroType&)>,
+                template <typename, typename> class MultimapType = std::unordered_multimap>
+    auto to_multimap(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const CoroType &v) { return v; })
+    {
+        return to_map<  KeySelectorFunctor,
+                        ValueSelectorFunctor,
+                        MultimapType>(std::forward<KeySelectorFunctor>(keySelectorFunctor), std::forward<ValueSelectorFunctor>(valueSelectorFunctor));
     }
 
 	auto to_string(const std::string &delimiter = std::string())
@@ -661,21 +943,81 @@ public:
     	return concat(container).distinct(func);
     }
 
+    template<typename Container, typename Functor = std::function<CoroType(const CoroType&)>>
+    auto union_with(Container &&container, Functor func = [](auto &&v) { return v; })
+    {
+    	return concat(std::forward<Container>(container)).distinct(func);
+    }
+
+    template<typename Functor = std::function<CoroType(const CoroType&)>>
+    auto union_with(std::initializer_list<CoroType> &&container, Functor func = [](auto &&v) { return v; })
+    {
+    	return concat(std::forward<std::initializer_list<CoroType>>(container)).distinct(func);
+    }
+
+	template<typename Functor>
+	auto where(Functor func)
+	{
+		return co_relinx_object<CoroType>(co_filter(std::move(_generator), func));
+	}
+
+	template<typename Functor>
+	auto where_i(Functor func)
+	{
+		return co_relinx_object<CoroType>(co_filter_i(std::move(_generator), func));
+	}
+
 	template<typename Container, typename Functor>
 	auto zip(const Container &container, Functor func)
 	{
 		return co_relinx_object<decltype(func(CoroType(), typename Container::value_type()))>(co_zip(std::move(_generator), co_from(container), func));
 	}
 
+	template<typename Container, typename Functor>
+	auto zip(Container &&container, Functor func)
+	{
+		return co_relinx_object<decltype(func(CoroType(), typename Container::value_type()))>(co_zip(std::move(_generator), co_from(std::forward<Container>(container)), func));
+	}
+
+	template<typename CoroType1, typename Functor>
+	auto zip(std::initializer_list<CoroType1> &&container, Functor func)
+	{
+		return co_relinx_object<decltype(func(CoroType(), CoroType1()))>(co_zip(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType1>>(container)), func));
+	}
+
 private:
 	generator<CoroType> _generator;
 	std::optional<bool> _moved {};
+
+	bool move_next()
+	{
+		_moved = _generator.move_next();
+
+		return *_moved;
+	}
+
+	CoroType current_value()
+	{
+		return _generator.current_value();
+	}
 };
 
 template<typename Iterator>
 auto from(Iterator begin, Iterator end)
 {
 	return co_relinx_object<typename Iterator::value_type>(co_from(begin, end));
+}
+
+template<typename Container>
+auto from(Container &&container)
+{
+	return co_relinx_object<typename Container::value_type>(co_from(std::forward<Container>(container)));
+}
+
+template<typename CoroType>
+auto from(std::initializer_list<CoroType> &&container)
+{
+	return co_relinx_object<CoroType>(co_from(std::forward<std::initializer_list<CoroType>>(container)));
 }
 
 template<typename Container>
