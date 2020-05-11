@@ -141,7 +141,7 @@ generator<typename Iterator::value_type> co_from(Iterator begin, Iterator end)
 }
 
 template<typename Container>
-generator<typename Container::value_type> co_from(const Container &container)
+generator<typename Container::value_type> co_from(Container &container)
 {
 	return co_from(std::begin(container), std::end(container));
 }
@@ -496,6 +496,8 @@ template<typename CoroType>
 class co_relinx_object
 {
 public:
+	using value_type = CoroType;
+
 	friend class iterator;
 
 	class iterator
