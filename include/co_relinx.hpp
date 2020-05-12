@@ -593,7 +593,20 @@ auto co_group_join(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, Thi
     }
 }
 
+template<typename CoroType, typename Functor>
+auto co_group(generator<CoroType> &&gen, Functor func) -> generator<std::pair<decltype(func(CoroType())), std::deque<CoroType>>>
+{
+	std::unordered_map<decltype(func(CoroType())), std::deque<CoroType>> groups;
 
+	while (gen.move_next())
+	{
+		auto value { gen.current_value() };
+
+		groups[func(value)].push_back(value);
+	}
+
+	for (const auto &group : groups) co_yield group;
+}
 
 
 
@@ -827,6 +840,12 @@ public:
         uint64_t indexer = 0;
 
         std::for_each(begin, end, [&foreachFunctor, &indexer](auto &&v) { foreachFunctor(v, indexer++); });
+    }
+
+    template<typename Functor>
+    auto group_by(Functor &&func)
+    {
+    	return co_relinx_object<std::pair<decltype(func(CoroType())), std::deque<CoroType>>>(co_group(std::move(_generator), std::forward<Functor>(func)));
     }
 
     template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
