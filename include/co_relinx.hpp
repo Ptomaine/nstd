@@ -134,16 +134,16 @@ generator<typename Container::value_type> co_from(Container &&container)
 	while (begin != end) { co_yield *begin; ++begin; }
 }
 
-template<typename Iterator>
-generator<typename Iterator::value_type> co_from(Iterator begin, Iterator end)
-{
-	while (begin != end) { co_yield *begin; ++begin; }
-}
-
 template<typename Container>
 generator<typename Container::value_type> co_from(Container &container)
 {
 	return co_from(std::begin(container), std::end(container));
+}
+
+template<typename Iterator>
+generator<typename Iterator::value_type> co_from(Iterator begin, Iterator end)
+{
+	while (begin != end) { co_yield *begin; ++begin; }
 }
 
 template<typename CoroType>
@@ -485,6 +485,115 @@ generator<CoroType> co_repeat(CoroType value, size_t count)
 	while (count--) co_yield value;
 }
 
+template<typename CoroType, typename JoinIterator, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+auto co_join(generator<CoroType> &&gen, JoinIterator begin, JoinIterator end, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(thisKeyFunctor(CoroType()), otherKeyFunctor(typename JoinIterator::value_type())))>
+{
+    using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType()))>::type;
+    using joinValueType = typename JoinIterator::value_type;
+
+    while (gen.move_next())
+    {
+    	auto value { gen.current_value() };
+        auto thisKey = thisKeyFunctor(value);
+        auto match = std::find_if(begin, end, [&thisKey, &compareFunctor, &otherKeyFunctor](auto &&v) { return compareFunctor(thisKey, otherKeyFunctor(v)); });
+        auto join_value { match == end ? joinValueType() : *match };
+
+        if (match == end && !leftJoin) continue;
+
+        co_yield resultFunctor(value, join_value);
+    }
+}
+
+template<typename CoroType1, typename CoroType2, typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+auto co_join(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(thisKeyFunctor(CoroType1()), otherKeyFunctor(CoroType2())))>
+{
+    using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType1()))>::type;
+
+	std::deque<CoroType2> provided;
+
+	while (gen2.move_next()) provided.push_back(gen2.current_value());
+
+	auto begin { std::begin(provided) };
+	auto end { std::end(provided) };
+
+    while (gen1.move_next())
+    {
+    	auto value { gen1.current_value() };
+        auto thisKey = thisKeyFunctor(value);
+        auto match = std::find_if(begin, end, [&thisKey, &compareFunctor, &otherKeyFunctor](auto &&v) { return compareFunctor(thisKey, otherKeyFunctor(v)); });
+        auto join_value { match == end ? CoroType2() : *match };
+
+        if (match == end && !leftJoin) continue;
+
+        co_yield resultFunctor(value, join_value);
+    }
+}
+
+template<typename CoroType, typename JoinIterator, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+auto co_group_join(generator<CoroType> &&gen, JoinIterator begin, JoinIterator end, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(CoroType(), std::deque<typename JoinIterator::value_type>()))>
+{
+    using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType()))>::type;
+    using joinValueType = typename JoinIterator::value_type;
+
+    while (gen.move_next())
+    {
+    	std::deque<joinValueType> group;
+    	auto value { gen.current_value() };
+        auto thisKey = thisKeyFunctor(value);
+
+        auto current { begin };
+
+        while (current != end)
+        {
+        	auto join_value { *current };
+
+        	if (compareFunctor(thisKey, otherKeyFunctor(join_value))) group.emplace_back(join_value);
+
+        	++current;
+        }
+
+        if (std::empty(group) && !leftJoin) continue;
+
+        co_yield resultFunctor(value, group);
+    }
+}
+
+template<typename CoroType1, typename CoroType2, typename JoinIterator, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+auto co_group_join(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(CoroType1(), std::deque<CoroType2>()))>
+{
+    using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType1()))>::type;
+
+	std::deque<CoroType2> provided;
+
+	while (gen2.move_next()) provided.push_back(gen2.current_value());
+
+	auto begin { std::begin(provided) };
+	auto end { std::end(provided) };
+
+    while (gen1.move_next())
+    {
+    	std::deque<CoroType2> group;
+    	auto value { gen1.current_value() };
+        auto thisKey = thisKeyFunctor(value);
+
+        auto current { begin };
+
+        while (current != end)
+        {
+        	auto join_value { *current };
+
+        	if (compareFunctor(thisKey, otherKeyFunctor(join_value))) group.emplace_back(join_value);
+
+        	++current;
+        }
+
+        if (std::empty(group) && !leftJoin) continue;
+
+        co_yield resultFunctor(value, group);
+    }
+}
+
+
 
 
 
@@ -617,7 +726,7 @@ public:
     }
 
     template<typename Container>
-    auto concat(const Container &container)
+    auto concat(Container &container)
     {
     	return co_relinx_object<CoroType>(co_concat(std::move(_generator), co_from(container)));
     }
@@ -650,7 +759,7 @@ public:
     }
 
     template<typename Container>
-    auto except(const Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    auto except(Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
     {
     	return co_relinx_object<CoroType>(co_except(std::move(_generator), std::begin(container), std::end(container), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
     }    
@@ -667,7 +776,7 @@ public:
     }    
 
     template<typename Container>
-    auto intersect_with(const Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    auto intersect_with(Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
     {
     	return co_relinx_object<CoroType>(co_intersect(std::move(_generator), std::begin(container), std::end(container), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
     }    
@@ -682,6 +791,24 @@ public:
     {
     	return co_relinx_object<CoroType>(co_intersect(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType>>(container)), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
     }    
+
+    template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+    auto join(Container &container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false)
+    {
+    	return co_relinx_object<decltype(resultFunctor(thisKeyFunctor(CoroType()), otherKeyFunctor(typename Container::value_type())))>(co_join(std::move(_generator), std::begin(container), std::end(container), std::forward<ThisKeyFunctor>(thisKeyFunctor), std::forward<OtherKeyFunctor>(otherKeyFunctor), std::forward<ResultFunctor>(resultFunctor), std::forward<CompareFunctor>(compareFunctor), leftJoin));
+    }
+
+    template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+    auto join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false)
+    {
+    	return co_relinx_object<decltype(resultFunctor(thisKeyFunctor(CoroType()), otherKeyFunctor(typename Container::value_type())))>(co_join(std::move(_generator), co_from(std::forward<Container>(container)), std::forward<ThisKeyFunctor>(thisKeyFunctor), std::forward<OtherKeyFunctor>(otherKeyFunctor), std::forward<ResultFunctor>(resultFunctor), std::forward<CompareFunctor>(compareFunctor), leftJoin));
+    }
+
+    template<typename CoroType1, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+    auto join(std::initializer_list<CoroType1> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false)
+    {
+    	return co_relinx_object<decltype(resultFunctor(thisKeyFunctor(CoroType()), otherKeyFunctor(CoroType1())))>(co_join(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType1>>(container)), std::forward<ThisKeyFunctor>(thisKeyFunctor), std::forward<OtherKeyFunctor>(otherKeyFunctor), std::forward<ResultFunctor>(resultFunctor), std::forward<CompareFunctor>(compareFunctor), leftJoin));
+    }
 
     template<typename ForeachFunctor>
     void for_each(ForeachFunctor &&foreachFunctor)
@@ -700,6 +827,24 @@ public:
         uint64_t indexer = 0;
 
         std::for_each(begin, end, [&foreachFunctor, &indexer](auto &&v) { foreachFunctor(v, indexer++); });
+    }
+
+    template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+    auto group_join(Container &container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false)
+    {
+    	return co_relinx_object<decltype(resultFunctor(CoroType(), std::deque<typename Container::value_type>()))>(co_group_join(std::move(_generator), std::begin(container), std::end(container), std::forward<ThisKeyFunctor>(thisKeyFunctor), std::forward<OtherKeyFunctor>(otherKeyFunctor), std::forward<ResultFunctor>(resultFunctor), std::forward<CompareFunctor>(compareFunctor), leftJoin));
+    }
+
+    template<typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+    auto group_join(Container &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false)
+    {
+    	return co_relinx_object<decltype(resultFunctor(CoroType(), std::deque<typename Container::value_type>()))>(co_group_join(std::move(_generator), co_from<Container>(std::forward<Container>(container)), std::forward<ThisKeyFunctor>(thisKeyFunctor), std::forward<OtherKeyFunctor>(otherKeyFunctor), std::forward<ResultFunctor>(resultFunctor), std::forward<CompareFunctor>(compareFunctor), leftJoin));
+    }
+
+    template<typename CoroType1, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
+    auto group_join(std::initializer_list<CoroType1> &&container, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin = false)
+    {
+    	return co_relinx_object<decltype(resultFunctor(CoroType(), std::deque<CoroType1>()))>(co_group_join(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType1>>(container)), std::forward<ThisKeyFunctor>(thisKeyFunctor), std::forward<OtherKeyFunctor>(otherKeyFunctor), std::forward<ResultFunctor>(resultFunctor), std::forward<CompareFunctor>(compareFunctor), leftJoin));
     }
 
     auto reverse()
@@ -940,7 +1085,7 @@ public:
     }
 
     template<typename Container, typename Functor = std::function<CoroType(const CoroType&)>>
-    auto union_with(const Container &container, Functor func = [](auto &&v) { return v; })
+    auto union_with(Container &container, Functor func = [](auto &&v) { return v; })
     {
     	return concat(container).distinct(func);
     }
@@ -970,7 +1115,7 @@ public:
 	}
 
 	template<typename Container, typename Functor>
-	auto zip(const Container &container, Functor func)
+	auto zip(Container &container, Functor func)
 	{
 		return co_relinx_object<decltype(func(CoroType(), typename Container::value_type()))>(co_zip(std::move(_generator), co_from(container), func));
 	}
