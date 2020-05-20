@@ -60,7 +60,7 @@ public:
 
         auto expiry_duration_ms { std::chrono::duration_cast<std::chrono::milliseconds>(duration) };
 
-        _data.emplace(key, std::make_tuple(std::chrono::high_resolution_clock::now(), (expiry_duration_ms == 0ms) ? _expiry_duration_ms.load() : expiry_duration_ms, value));
+        _data.emplace(key, std::make_tuple(std::chrono::high_resolution_clock::now(), (expiry_duration_ms == 0ms) ? _expiry_duration_ms.load(std::memory_order_relaxed) : expiry_duration_ms, value));
     }
 
     bool exists(const key_type &key)
@@ -76,7 +76,7 @@ public:
 
         auto it{ _data.find(key) };
 
-        if (it != std::end(_data) && (_access_prolongs || force_touch)) std::get<0>(it->second) = std::chrono::high_resolution_clock::now();
+        if (it != std::end(_data) && (_access_prolongs.load(std::memory_order_relaxed) || force_touch)) std::get<0>(it->second) = std::chrono::high_resolution_clock::now();
     }
 
     bool get(const key_type &key, value_type &value)
@@ -99,7 +99,7 @@ public:
 
             value = std::get<2>(val);
 
-            if (_access_prolongs) std::get<0>(val) = now;
+            if (_access_prolongs.load(std::memory_order_relaxed)) std::get<0>(val) = now;
 
             return true;
         }
@@ -109,7 +109,7 @@ public:
 
     void set_access_prolongs(bool prolongs = true)
     {
-        _access_prolongs = prolongs;
+        _access_prolongs.store(prolongs, std::memory_order_relaxed);
     }
 
     bool is_access_prolongs() const
@@ -120,7 +120,7 @@ public:
     template<typename duration_type>
     void set_expiry(const duration_type &duration)
     {
-        _expiry_duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        _expiry_duration_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration), std::memory_order_relaxed);
     }
 
     template<typename duration_type>
@@ -135,7 +135,7 @@ public:
 
     const std::chrono::milliseconds get_expiry() const
     {
-        return _expiry_duration_ms.load();
+        return _expiry_duration_ms.load(std::memory_order_relaxed);
     }
 
     const std::chrono::milliseconds get_expiry(const key_type &key) const
@@ -146,7 +146,7 @@ public:
 
         if (it != std::end(_data)) return std::get<1>(it->second);
 
-        return _expiry_duration_ms.load();
+        return _expiry_duration_ms.load(std::memory_order_relaxed);
     }
 
     void clear()
@@ -183,7 +183,7 @@ public:
     template<typename duration_type>
     void set_vacuum_idle_period(const duration_type &duration)
     {
-        _vacuum_idle_period_ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        _vacuum_idle_period_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration), std::memory_order_relaxed);
     }
 
     std::chrono::milliseconds get_vacuum_idle_period() const
@@ -193,29 +193,30 @@ public:
 
     void start_auto_vacuum()
     {
-        if (_auto_vacuum) return;
+        if (_auto_vacuum.load(std::memory_order_relaxed)) return;
 
         std::scoped_lock lock {_mutex};
 
-        if (_auto_vacuum) return;
+        if (_auto_vacuum.load(std::memory_order_relaxed)) return;
 
         _auto_vacuum_thread = std::thread([this]() { _auto_vacuum_procedure(); });
-        _auto_vacuum = true;
+        _auto_vacuum.store(true, std::memory_order_relaxed);
     }
 
     void stop_auto_vacuum()
     {
-        if (!_auto_vacuum) return;
+        if (!_auto_vacuum.load(std::memory_order_relaxed)) return;
 
         std::scoped_lock lock {_mutex};
 
-        if (!_auto_vacuum) return;
+        if (!_auto_vacuum.load(std::memory_order_relaxed)) return;
 
-        _cancel_auto_vacuum = true;
+        _cancel_auto_vacuum.store(true, std::memory_order_relaxed);
 
         if (_auto_vacuum_thread.joinable()) _auto_vacuum_thread.join();
 
-        _auto_vacuum = _cancel_auto_vacuum = false;
+        _auto_vacuum.store(false, std::memory_order_relaxed);
+        _cancel_auto_vacuum.store(false, std::memory_order_relaxed);
     }
 
     nstd::signal_slot::signal<const key_type &, value_type &> signal_data_expired {};
@@ -227,18 +228,18 @@ private:
     {
         auto time{ std::chrono::high_resolution_clock::now() };
 
-        while (!_cancel_auto_vacuum)
+        while (!_cancel_auto_vacuum.load(std::memory_order_relaxed))
         {
             auto now{ std::chrono::high_resolution_clock::now() };
 
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - time) > _vacuum_idle_period_ms.load())
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - time) > _vacuum_idle_period_ms.load(std::memory_order_relaxed))
             {
                 time = now;
 
                 vacuum();
             }
 
-            if (_cancel_auto_vacuum) return;
+            if (_cancel_auto_vacuum.load(std::memory_order_relaxed)) return;
 
             std::this_thread::sleep_for(100ms);
         }
