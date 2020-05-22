@@ -47,6 +47,8 @@ template<typename T, typename V> using default_map = std::unordered_map<T, V>;
 template<typename T, typename V> using default_multimap = std::unordered_multimap<T, V>;
 template<typename T> using default_set = std::unordered_set<T>;
 
+using default_iterator_adapter_tag = std::forward_iterator_tag;
+
 template<typename ParentIterator1, typename ParentIterator2>
 class concat_iterator_adapter
 {
@@ -56,7 +58,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     concat_iterator_adapter() = default;
     concat_iterator_adapter(const self_type &) = default;
@@ -128,7 +130,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     filter_iterator_adapter() = default;
     filter_iterator_adapter(const self_type &) = default;
@@ -194,7 +196,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     tee_iterator_adapter() = default;
     tee_iterator_adapter(const self_type &) = default;
@@ -267,7 +269,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     transform_iterator_adapter() = default;
     transform_iterator_adapter(const self_type &) = default;
@@ -332,7 +334,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     limit_iterator_adapter() = default;
     limit_iterator_adapter(const self_type &) = default;
@@ -402,7 +404,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     distinct_iterator_adapter() = default;
     distinct_iterator_adapter(const self_type &) = default;
@@ -478,7 +480,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     select_many_iterator_adapter() = default;
     select_many_iterator_adapter(const self_type &) = default;
@@ -567,7 +569,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     except_iterator_adapter() = default;
     except_iterator_adapter(const self_type &) = default;
@@ -638,7 +640,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     intersect_iterator_adapter() = default;
     intersect_iterator_adapter(const self_type &) = default;
@@ -716,7 +718,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     join_iterator_adapter() = default;
     join_iterator_adapter(const self_type &) = default;
@@ -844,7 +846,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     group_join_iterator_adapter() = default;
     group_join_iterator_adapter(const self_type &) = default;
@@ -968,7 +970,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     zip_iterator_adapter() = default;
     zip_iterator_adapter(const self_type &) = default;
@@ -1047,7 +1049,7 @@ public:
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_category = default_iterator_adapter_tag;
 
     cycle_iterator_adapter() = default;
     cycle_iterator_adapter(const self_type &) = default;
