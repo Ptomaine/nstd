@@ -1697,9 +1697,7 @@ public:
     template<typename ForeachFunctor>
     auto for_each_i(ForeachFunctor &&foreachFunctor) const noexcept -> void
     {
-        _indexer = 0;
-
-        std::for_each(_begin, _end, [this, &foreachFunctor](auto &&v) { foreachFunctor(v, _indexer); ++_indexer;});
+        std::for_each(_begin, _end, [_indexer = 0, &foreachFunctor](auto &&v) mutable { foreachFunctor(v, _indexer); ++_indexer;});
     }
 
     /** \brief Groups the elements of a sequence according to a specified key selector functor.
@@ -2291,7 +2289,7 @@ public:
     template<typename TransformFunctor>
     auto select_i(TransformFunctor &&transformFunctor) noexcept
     {
-        return _indexer = 0, select([this, &transformFunctor](auto &&v) { return transformFunctor(std::forward<decltype(v)>(v), _indexer++); });
+        return select([_indexer = 0, &transformFunctor](auto &&v) mutable { return transformFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
 
     /** \brief Projects each element of a sequence to a container and flattens the resulting sequences into one sequence.
@@ -2354,7 +2352,7 @@ public:
     template<typename ContainerSelectorFunctor>
     auto select_many_i(ContainerSelectorFunctor &&containerSelectorFunctor) noexcept
     {
-        return _indexer = 0, select_many([this, &containerSelectorFunctor](auto &&v) { return containerSelectorFunctor(std::forward<decltype(v)>(v), _indexer++); });
+        return select_many([_indexer = 0, &containerSelectorFunctor](auto &&v) mutable { return containerSelectorFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
 
     /** \brief Determines whether two sequences are equal by comparing their elements by using a specified compare functor.
@@ -2531,7 +2529,7 @@ public:
     template<typename SkipFunctor>
     auto skip_while_i(SkipFunctor &&skipFunctor)
     {
-        return _indexer = 0, skip_while([this, &skipFunctor](auto &&v) { return skipFunctor(std::forward<decltype(v)>(v), _indexer++); });
+        return skip_while([_indexer = 0, &skipFunctor](auto &&v) mutable { return skipFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
 
     /** \brief Computes the sum of the sequence of values that are obtained by invoking a transform functor on each element of the input sequence.
@@ -2578,7 +2576,7 @@ public:
         using adapter_type = limit_iterator_adapter<iterator_type, std::function<bool(const value_type&)>>;
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
 
-        return _indexer = limit, std::make_shared<next_relinx_type>(std::enable_shared_from_this<self_type>::shared_from_this(), adapter_type(_begin, _end, [this](auto &&){ return _indexer--; }), adapter_type(_end, _end, nullptr));
+        return std::make_shared<next_relinx_type>(std::enable_shared_from_this<self_type>::shared_from_this(), adapter_type(_begin, _end, [_indexer = limit](auto &&) mutable { return _indexer--; }), adapter_type(_end, _end, nullptr));
     }
 
     /** \brief Returns elements from a sequence as long as a specified condition is true.
@@ -2613,7 +2611,7 @@ public:
     template<typename LimitFunctor>
     auto take_while_i(LimitFunctor &&limitFunctor) noexcept
     {
-        return _indexer = 0, take_while([this, &limitFunctor](auto &&v){ return limitFunctor(std::forward<decltype(v)>(v), _indexer++); });
+        return take_while([_indexer = 0, &limitFunctor](auto &&v) mutable { return limitFunctor(std::forward<decltype(v)>(v), _indexer++); });
     }
 
     /** \brief Transparently traverse a sequence and calls an immutable action.
@@ -2797,7 +2795,7 @@ public:
     template<typename FilterFunctor>
     auto where_i(FilterFunctor &&filterFunctor) noexcept
     {
-        return _indexer = 0, where([this, &filterFunctor](auto &&v) { return filterFunctor(v, _indexer++); });
+        return where([_indexer = 0, &filterFunctor](auto &&v) mutable { return filterFunctor(v, _indexer++); });
     }
 
     /** \brief The method merges each element of the first sequence with an element that has the same index in the second sequence.
@@ -2832,7 +2830,6 @@ public:
     }
 
 protected:
-    mutable std::size_t _indexer = 0;
     ContainerType _container {};
     ContainerType _def_val_container {};
     mutable value_type _default_value {};
