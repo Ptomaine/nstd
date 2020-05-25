@@ -51,6 +51,9 @@ template<typename ...Args>
 using default_set = std::unordered_set<Args...>;
 template<typename ...Args>
 using default_map = std::unordered_map<Args...>;
+template<typename ...Args>
+using default_multimap = std::unordered_multimap<Args...>;
+
 
 template<typename CoroType>
 class generator
@@ -637,7 +640,7 @@ public:
 	    using difference_type = std::ptrdiff_t;
 	    using pointer = const value_type*;
 	    using reference = const value_type&;
-	    using iterator_category = std::input_iterator_tag;
+	    using iterator_category = std::forward_iterator_tag;
 
 	    iterator() = default;
 	    iterator(const self_type &) = default;
@@ -1054,7 +1057,7 @@ public:
 
     auto to_deque()
     {
-        return to_container<default_container<CoroType>>();
+        return to_container<std::deque<CoroType>>();
     }
 
     auto to_list()
@@ -1086,7 +1089,7 @@ public:
 
     template<   typename KeySelectorFunctor,
                 typename ValueSelectorFunctor = std::function<CoroType(const CoroType&)>,
-                template <typename, typename> class MultimapType = std::unordered_multimap>
+                template <typename, typename> class MultimapType = default_multimap>
     auto to_multimap(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const CoroType &v) { return v; })
     {
         return to_map<  KeySelectorFunctor,
