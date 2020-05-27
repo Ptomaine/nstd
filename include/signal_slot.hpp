@@ -818,12 +818,12 @@ protected:
 
     static void queue_dispatcher()
     {
-        while (!_cancelled)
+        while (!_cancelled.load(std::memory_order_relaxed))
         {
             {
                 std::scoped_lock<std::mutex> lock { _emit_lock };
 
-                if (_cancelled || std::empty(_signal_queue)) break;
+                if (_cancelled.load(std::memory_order_relaxed) || std::empty(_signal_queue)) break;
 
                 auto &[this_, args] = _signal_queue.front();
 
@@ -834,7 +834,7 @@ protected:
                 if (std::empty(_signal_queue)) break;
             }
 
-            if (_use_delay) std::this_thread::sleep_for(_delay_ms.load(std::memory_order_relaxed));
+            if (_use_delay.load(std::memory_order_relaxed)) std::this_thread::sleep_for(_delay_ms.load(std::memory_order_relaxed));
         }
 
         _thread_running = false;
