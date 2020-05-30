@@ -49,9 +49,9 @@ public:
 
     at_scope_exit() = delete;
     at_scope_exit(const at_scope_exit&) = delete;
-    at_scope_exit(at_scope_exit&&) = delete;
+    at_scope_exit(at_scope_exit&&) = default;
     at_scope_exit &operator =(const at_scope_exit&) = delete;
-    at_scope_exit &operator =(at_scope_exit&&) = delete;
+    at_scope_exit &operator =(at_scope_exit&&) = default;
 
     void reset(std::function<void(void)> &&functor = nullptr) { _functor = std::forward<std::function<void(void)>>(functor); }
 

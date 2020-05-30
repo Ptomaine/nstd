@@ -98,7 +98,7 @@ public:
 
 		auto yield_value(CoroType value)
 		{
-			current_value = value;
+			current_value = std::move(value);
 			
 			return std::suspend_always{};
 		}

@@ -60,7 +60,11 @@ int main(int argc, char **argv)
     if (exe.was_set() && !is_empty_or_ws(shell_cmd)) { std::cout << "command to execute: " << shell_cmd << std::endl; return 0; }
 
     const std::string app_name { "pmr_example" };
-    at_scope_exit execute { [&app_name]() { std::cout << std::endl << "exitting " << app_name << "..." << std::endl;} };
+    at_scope_exit execute_at_scope_exit { [] { const std::u8string_view str { u8"Всё ещё UTF8..." }; std::cout << std::string(std::begin(str), std::end(str))  << std::endl; } };
+    std::vector<at_scope_exit> exit_chain;
+
+    exit_chain.emplace_back([&app_name] { std::cout << std::endl << "#1. exitting " << app_name << "..." << std::endl; });
+    exit_chain.emplace_back([] { std::cout << "#2. stopped" << std::endl; });
 
     constexpr const bool if_windows { current_os_family == os_family::Windows };
 
@@ -74,6 +78,8 @@ int main(int argc, char **argv)
     std::cout << "      OS: "           << get_current_os_type_name()   << std::endl;
     std::cout << "Platform: "           << get_current_os_family_name() << std::endl;
     std::cout << "Compiler: "           << get_current_compiler_name()  << std::endl << std::endl;
+
+    exit_chain.emplace_back([]{ std::cout << "#3. ..." << std::endl; });
 
     using namespace std::string_literals;
     using namespace nstd::pmr;
