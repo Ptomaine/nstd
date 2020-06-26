@@ -93,7 +93,7 @@ public:
 
     static constexpr uuid generate_random()
     {
-        union { uint8_t bytes[16]; uint64_t data[2]; } s { 0 };
+        union { uint8_t bytes[16]; uint64_t data[2]; } s { { 0 } };
 
         s.data[0] = xorshift128plus(seed);
         s.data[1] = xorshift128plus(seed);
