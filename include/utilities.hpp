@@ -24,17 +24,50 @@ SOFTWARE.
 #include <array>
 #include <cctype>
 #include <cmath>
+#include <condition_variable>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
 #include <fstream>
 #include <future>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 
 namespace nstd::utilities
 {
+
+class cancellable_sleep
+{
+public:
+
+    template<typename Duration>
+    bool wait_for(const Duration &duration)
+    {
+        std::unique_lock<std::mutex> lock { _m };
+            
+        return !_cv.wait_for(lock, duration, [this]{ return _cancelled.load(); });
+    }
+
+    void cancel_wait()
+    {
+        _cancelled = true;
+            
+        _cv.notify_all();
+    }
+
+    void reset()
+    {
+        _cancelled = false;
+    }
+
+private:
+
+    std::condition_variable _cv {};
+    std::mutex _m {};
+    std::atomic_bool _cancelled { false };
+};
 
 class at_scope_exit
 {

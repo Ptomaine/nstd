@@ -23,6 +23,7 @@ SOFTWARE.
 #include <any>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <functional>
 #include <mutex>
 #include <deque>
@@ -305,11 +306,11 @@ public:
 
     void emit(const Args &... args)
     {
-        if (!_enabled.load(std::memory_order_relaxed)) return;
+        if (!_enabled) return;
 
         std::scoped_lock<std::mutex> lock { _emit_lock };
 
-        if (!_enabled.load(std::memory_order_relaxed)) return;
+        if (!_enabled) return;
 
         {
             std::scoped_lock<std::mutex> lock { _connect_lock };
@@ -398,12 +399,12 @@ public:
 
     virtual bool enabled() const override
     {
-        return _enabled.load(std::memory_order_relaxed);
+        return _enabled;
     }
 
     virtual void enabled(bool enabled) const override
     {
-        _enabled.store(enabled, std::memory_order_relaxed);
+        _enabled = enabled;
     }
 
     virtual std::any &payload() override
@@ -489,9 +490,9 @@ public:
 
     void emit(const Args&... args)
     {
-        if (!base_class::_enabled.load(std::memory_order_relaxed)) return;
+        if (!base_class::_enabled) return;
 
-        if (_bridge_enabled.load(std::memory_order_relaxed))
+        if (_bridge_enabled)
         {
             {
                 std::scoped_lock<std::mutex> lock { _queue_lock };
@@ -574,12 +575,12 @@ public:
 
     void set_bridge_enabled(bool enabled)
     {
-        _bridge_enabled.store(enabled, std::memory_order_relaxed);
+        _bridge_enabled = enabled;
     }
 
     bool get_bridge_enabled() const
     {
-        return _bridge_enabled.load(std::memory_order_relaxed);
+        return _bridge_enabled;
     }
 
     void clear_queue()
@@ -618,11 +619,11 @@ public:
 
     virtual ~throttled_signal_base() override
     {
-        _cancelled.store(true, std::memory_order_relaxed);
+        _cancelled = true;
 
         if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
-        if (_dispatch_all_on_destroy.load(std::memory_order_relaxed))
+        if (_dispatch_all_on_destroy)
         {
             std::scoped_lock<std::mutex> lock { _emit_lock };
 
@@ -641,7 +642,7 @@ public:
 
         _signal_queue.push_back(std::make_tuple(args...));
 
-        if (!_thread_running.exchange(true, std::memory_order_relaxed))
+        if (!_thread_running.exchange(true))
         {
             if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
@@ -657,22 +658,22 @@ public:
     template<typename Duration>
     void throttle_ms(const Duration &duration)
     {
-        _throttle_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration), std::memory_order_relaxed);
+        _throttle_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
 
     std::chrono::milliseconds throttle_ms() const
     {
-        return _throttle_ms.load(std::memory_order_relaxed);
+        return _throttle_ms.load();
     }
 
     void set_dispatch_all_on_destroy(bool do_dispatch)
     {
-        _dispatch_all_on_destroy.store(do_dispatch, std::memory_order_relaxed);
+        _dispatch_all_on_destroy = do_dispatch;
     }
 
-    bool get_dispatch_all_on_destroy()
+    bool get_dispatch_all_on_destroy() const
     {
-        return _dispatch_all_on_destroy.load(std::memory_order_relaxed);
+        return _dispatch_all_on_destroy;
     }
 
 protected:
@@ -685,12 +686,12 @@ protected:
 
     void queue_dispatcher()
     {
-        while (!_cancelled.load(std::memory_order_relaxed))
+        while (!_cancelled)
         {
             {
                 std::scoped_lock<std::mutex> lock { _emit_lock };
 
-                if (_cancelled.load(std::memory_order_relaxed) || std::empty(_signal_queue)) break;
+                if (_cancelled || std::empty(_signal_queue)) break;
 
                 std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
 
@@ -699,10 +700,10 @@ protected:
                 if (std::empty(_signal_queue)) break;
             }
 
-            std::this_thread::sleep_for(_throttle_ms.load(std::memory_order_relaxed));
+            std::this_thread::sleep_for(_throttle_ms.load());
         }
 
-        _thread_running.store(false, std::memory_order_relaxed);
+        _thread_running = false;
     }
 };
 
@@ -730,11 +731,11 @@ public:
     {
         std::scoped_lock<std::mutex> lock_ { _destruct_lock };
 
-        _cancelled.store(true, std::memory_order_relaxed);
+        _cancelled = true;
 
         if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
-        if (_dispatch_all_on_destroy.load(std::memory_order_relaxed))
+        if (_dispatch_all_on_destroy)
         {
             std::scoped_lock<std::mutex> lock { _emit_lock };
 
@@ -765,7 +766,7 @@ public:
 
         _signal_queue.push_back({ this, std::make_tuple(args...) });
 
-        if (!_thread_running.exchange(true, std::memory_order_relaxed))
+        if (!_thread_running.exchange(true))
         {
             if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
@@ -781,32 +782,32 @@ public:
     template<typename Duration>
     static void delay_ms(const Duration &duration)
     {
-        _delay_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration), std::memory_order_relaxed);
+        _delay_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
 
     static std::chrono::milliseconds delay_ms()
     {
-        return _delay_ms.load(std::memory_order_relaxed);
+        return _delay_ms.load();
     }
 
     static void use_delay(bool use)
     {
-        _use_delay.store(use, std::memory_order_relaxed);
+        _use_delay = use;
     }
 
     static bool use_delay()
     {
-        return _use_delay.load(std::memory_order_relaxed);
+        return _use_delay;
     }
 
     void set_dispatch_all_on_destroy(bool do_dispatch)
     {
-        _dispatch_all_on_destroy.store(do_dispatch, std::memory_order_relaxed);
+        _dispatch_all_on_destroy = do_dispatch;
     }
 
     bool get_dispatch_all_on_destroy()
     {
-        return _dispatch_all_on_destroy.load(std::memory_order_relaxed);
+        return _dispatch_all_on_destroy;
     }
 
 protected:
@@ -818,12 +819,12 @@ protected:
 
     static void queue_dispatcher()
     {
-        while (!_cancelled.load(std::memory_order_relaxed))
+        while (!_cancelled)
         {
             {
                 std::scoped_lock<std::mutex> lock { _emit_lock };
 
-                if (_cancelled.load(std::memory_order_relaxed) || std::empty(_signal_queue)) break;
+                if (_cancelled || std::empty(_signal_queue)) break;
 
                 auto &[this_, args] = _signal_queue.front();
 
@@ -834,7 +835,7 @@ protected:
                 if (std::empty(_signal_queue)) break;
             }
 
-            if (_use_delay.load(std::memory_order_relaxed)) std::this_thread::sleep_for(_delay_ms.load(std::memory_order_relaxed));
+            if (_use_delay) std::this_thread::sleep_for(_delay_ms.load());
         }
 
         _thread_running = false;
@@ -865,59 +866,90 @@ public:
 
     void start_timer(const Args&... args)
     {
-        if (!_timer_enabled.exchange(true, std::memory_order_relaxed))
+        if (!_timer_enabled.exchange(true))
         {
             _args = std::make_tuple(this, args...);
+
+            if (_timer_thread.joinable()) _timer_thread.join();
+
+            _sleep.reset();
+
             _timer_thread = std::thread([this](){ timer_procedure(); });
         }
     }
 
     void stop_timer()
     {
-        _timer_enabled.store(false, std::memory_order_relaxed);
+        _sleep.cancel_wait();
 
         if (_timer_thread.joinable()) _timer_thread.join();
     }
 
     void disable_timer_from_slot()
     {
-        _timer_enabled.store(false, std::memory_order_relaxed);
+        _sleep.cancel_wait();
     }
 
-    template<typename Duration>
-    void timer_ms(const Duration &duration)
+    void timer_ms(const auto &duration)
     {
-        _timer_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration), std::memory_order_relaxed);
+        _timer_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
 
     std::chrono::microseconds timer_ms() const
     {
-        return _timer_ms.load(std::memory_order_relaxed);
+        return _timer_ms.load();
     }
 
 private:
+
     std::atomic_bool _timer_enabled { false };
     std::thread _timer_thread {};
     std::atomic<std::chrono::milliseconds> _timer_ms { 1s };
     mutable std::mutex _emit_lock {};
     std::tuple<timer_signal*, Args...> _args {};
+    class
+    {
+    public:
+
+        bool wait_for(const std::chrono::milliseconds &duration)
+        {
+            std::unique_lock<std::mutex> lock { _m };
+            
+            return !_cv.wait_for(lock, duration, [this]{ return _cancelled.load(); });
+        }
+
+        void cancel_wait()
+        {
+            _cancelled = true;
+            
+            _cv.notify_all();
+        }
+
+        void reset()
+        {
+            _cancelled = false;
+        }
+
+    private:
+
+        std::condition_variable _cv {};
+        std::mutex _m {};
+        std::atomic_bool _cancelled { false };
+    } _sleep;
+
 
     void timer_procedure()
     {
-        while (_timer_enabled.load(std::memory_order_relaxed))
+        while (_sleep.wait_for(_timer_ms.load()))
         {
             {
                 std::scoped_lock<std::mutex> lock { _emit_lock };
 
                 std::apply([this](timer_signal *s, const Args&... a){ base_class::emit(s, a...); }, _args);
-
-                if (!_timer_enabled.load(std::memory_order_relaxed)) return;
             }
-
-            std::this_thread::sleep_for(_timer_ms.load(std::memory_order_relaxed));
         }
 
-        _timer_enabled.store(false, std::memory_order_relaxed);
+        _timer_enabled = false;
     }
 };
 
