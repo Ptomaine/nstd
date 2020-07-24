@@ -47,6 +47,9 @@ template<typename T, typename V> using default_map = std::unordered_map<T, V>;
 template<typename T, typename V> using default_multimap = std::unordered_multimap<T, V>;
 template<typename T> using default_set = std::unordered_set<T>;
 
+template<typename T>
+concept PointerFor = std::is_pointer_v<T>;
+
 using default_iterator_adapter_tag = std::forward_iterator_tag;
 
 template<typename ParentIterator1, typename ParentIterator2>
@@ -2175,7 +2178,7 @@ public:
         Any other casts can be emulated using \ref select and \ref where methods.
     */
     template<typename CastType>
-    requires std::is_pointer_v<CastType>
+    requires PointerFor<CastType>
     auto of_type() noexcept
     {
         return select([](auto &&i) { return dynamic_cast<CastType>(i); })->where([](auto &&i) { return i != nullptr; });
