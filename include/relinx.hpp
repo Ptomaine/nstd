@@ -34,6 +34,7 @@ SOFTWARE.
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <type_traits>
 
 #include <iostream>
 
@@ -49,6 +50,9 @@ template<typename T> using default_set = std::unordered_set<T>;
 
 template<typename T>
 concept PointerFor = std::is_pointer_v<T>;
+
+template<typename P>
+concept PolymorphicPointerFor = PointerFor<P> && std::is_polymorphic_v<std::remove_pointer_t<P>>;
 
 using default_iterator_adapter_tag = std::forward_iterator_tag;
 
@@ -2177,7 +2181,7 @@ public:
         \note This method restricted to and operates ONLY on elements of any pointer type and a pointer MUST point to an object of a polymorphic type.
         Any other casts can be emulated using \ref select and \ref where methods.
     */
-    template<PointerFor CastType>
+    template<PolymorphicPointerFor CastType>
     auto of_type() noexcept
     {
         return select([](auto &&i) { return dynamic_cast<CastType>(i); })->where([](auto &&i) { return i != nullptr; });
