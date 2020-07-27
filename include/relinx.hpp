@@ -2177,8 +2177,7 @@ public:
         \note This method restricted to and operates ONLY on elements of any pointer type and a pointer MUST point to an object of a polymorphic type.
         Any other casts can be emulated using \ref select and \ref where methods.
     */
-    template<typename CastType>
-    requires PointerFor<CastType>
+    template<PointerFor CastType>
     auto of_type() noexcept
     {
         return select([](auto &&i) { return dynamic_cast<CastType>(i); })->where([](auto &&i) { return i != nullptr; });
