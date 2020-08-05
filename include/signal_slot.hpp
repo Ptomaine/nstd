@@ -23,6 +23,7 @@ SOFTWARE.
 #include <any>
 #include <atomic>
 #include <chrono>
+#include <concepts>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -469,7 +470,7 @@ public:
 };
 
 template<template <typename...> typename signal_type, typename... Args>
-requires std::is_base_of_v<signal_base, signal_type<Args...>>
+requires std::derived_from<signal_type<Args...>, signal_base>
 class bridged_signal_base : public signal_type<Args...>
 {
 public:
@@ -603,7 +604,7 @@ template<typename... Args> using bridged_signal = bridged_signal_base<signal, Ar
 template<typename... Args> using bridged_signal_ex = bridged_signal_base<signal_ex, Args...>;
 
 template<template <typename...> typename signal_type, typename... Args>
-requires std::is_base_of_v<signal_base, signal_type<Args...>>
+requires std::derived_from<signal_type<Args...>, signal_base>
 class throttled_signal_base : public signal_type<Args...>
 {
 public:
@@ -712,7 +713,7 @@ template<typename... Args> using throttled_signal_ex = throttled_signal_base<sig
 struct queued_signal_default_scope {};
 
 template<typename scope, template <typename...> typename signal_type, typename... Args>
-requires std::is_base_of_v<signal_base, signal_type<Args...>>
+requires std::derived_from<signal_type<Args...>, signal_base>
 class queued_signal_base : public signal_type<Args...>
 {
 public:
@@ -955,7 +956,7 @@ private:
 };
 
 template<template <typename...> typename SignalType, typename... Args>
-requires std::is_base_of_v<signal_base, SignalType<Args...>>
+requires std::derived_from<SignalType<Args...>, signal_base>
 class signal_set_base
 {
 public:
@@ -1022,7 +1023,7 @@ protected:
 };
 
 template<template <typename...> typename BridgedSignalType, typename... Args>
-requires std::is_base_of_v<signal_base, BridgedSignalType<Args...>>
+requires std::derived_from<BridgedSignalType<Args...>, signal_base>
 class bridged_signal_set_base : public signal_set_base<BridgedSignalType, Args...>
 {
 public:
