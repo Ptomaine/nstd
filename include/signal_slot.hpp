@@ -59,7 +59,7 @@ struct no_value_type
 };
 
 template <typename T1>
-using base_value_type = typename std::conditional<std::is_same<T1, std::void_t<>>::value, no_value_type, has_value_type<T1>>::type;
+using base_value_type = typename std::conditional_t<std::is_same_v<T1, std::void_t<>>, no_value_type, has_value_type<T1>>;
 
 template<typename T1 = std::void_t<>, typename T2 = std::void_t<>>
 class paired_ptr : public base_value_type<T1>
@@ -345,16 +345,13 @@ public:
 
     virtual connection connect(std::function<void(Args...)> &&callable)
     {
-        slot<Args...> new_slot(std::forward<std::function<void(Args...)>>(callable));
-        connection to_return(this, new_slot);
-
         std::scoped_lock<std::mutex> lock { _connect_lock };
         auto end { std::end(_pending_connections) };
 
         _pending_connections.erase(std::remove_if(std::begin(_pending_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
-        _pending_connections.emplace_back(std::move(new_slot));
+        _pending_connections.emplace_back(std::forward<std::function<void(Args...)>>(callable));
 
-        return to_return;
+        return { this, _pending_connections.back() };
     }
 
     virtual connection operator += (std::function<void(Args...)> &&callable)
@@ -380,7 +377,7 @@ public:
     {
         std::scoped_lock<std::mutex> lock { _emit_lock };
 
-        return _slots.size();
+        return std::size(_slots);
     }
 
     void name(const std::u8string &name)
@@ -890,7 +887,8 @@ public:
         _sleep.cancel_wait();
     }
 
-    void timer_ms(const auto &duration)
+    template<typename Duration>
+    void timer_ms(const Duration &duration)
     {
         _timer_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
@@ -958,7 +956,6 @@ class signal_set_base
 {
 public:
     using signal_type = SignalType<Args...>;
-    using signal_args_tuple_type = std::tuple<Args...>;
 
     signal_set_base() = default;
     virtual ~signal_set_base() = default;
@@ -973,13 +970,13 @@ public:
         emit(args...);
     }
 
-    virtual const std::unique_ptr<signal_type> &get_signal(const std::u8string &signal_name)
+    virtual signal_type &get_signal(const std::u8string &signal_name)
     {
         auto signal { _signals.find(signal_name) };
 
-        if (signal != _signals.end()) return signal->second;
+        if (signal != _signals.end()) return *signal->second;
 
-        return _signals.emplace(signal_name, std::make_unique<signal_type>(signal_name)).first->second;
+        return *_signals.emplace(signal_name, std::make_unique<signal_type>(signal_name)).first->second;
     }
 
     bool exists(const std::u8string &signal_name) const
@@ -991,7 +988,7 @@ public:
     {
         std::unordered_set<std::u8string> signal_names;
 
-        for (auto &&[key, value] : _signals) signal_names.emplace(key);
+        for (const auto &[key, _] : _signals) signal_names.insert(key);
 
         return signal_names;
     }
@@ -1001,7 +998,7 @@ public:
         return std::size(_signals);
     }
 
-    const std::unique_ptr<signal_type> &operator[](const std::u8string &signal_name)
+    signal_type &operator[](const std::u8string &signal_name)
     {
         return get_signal(signal_name);
     }
@@ -1028,11 +1025,11 @@ public:
 
     bridged_signal_set_base(const std::function<bool(typename base_class::signal_type::bridged_signal_type*)>& emit_functor) : base_class {}, _emit_functor { emit_functor } {}
 
-    virtual const std::unique_ptr<typename base_class::signal_type> &get_signal(const std::u8string &signal_name) override
+    virtual typename base_class::signal_type &get_signal(const std::u8string &signal_name) override
     {
         auto &signal { base_class::get_signal(signal_name) };
 
-        if (!signal->get_emit_functor() && _emit_functor) signal->set_emit_functor(_emit_functor);
+        if (!signal.get_emit_functor() && _emit_functor) signal.set_emit_functor(_emit_functor);
 
         return signal;
     }

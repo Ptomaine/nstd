@@ -42,11 +42,11 @@ int main()
 
 	live_int int_prop{ u8"integer property for tests"s }, dummy_int_prop{ u8"dummy"s };
 
-    cons = two_step_signal_set[u8"tss"]->connect([](auto &&data)
+    cons = two_step_signal_set[u8"tss"].connect([](auto &&data)
     {
         std::cout << "TSS: '" << data << "'" << std::endl;
     });
-    two_step_signal_set[u8"tss"]->emit("this is two step signal");
+    two_step_signal_set[u8"tss"].emit("this is two step signal");
 
     auto changing_callback = [&to_char](auto &&ctx)
     {
@@ -109,7 +109,7 @@ int main()
     --int_prop;
     int_prop--;
 
-    two_step_signal_set[u8"tss"]->invoke_all();
+    two_step_signal_set[u8"tss"].invoke_all();
 
 	cons.connections.clear(); //auto-disconnect from all slots
     std::cout << "no slots are called from now on since we destroied all connections..." << std::endl << "...setting int_prop to -1 should not be restricted now..." << std::endl;
@@ -229,25 +229,25 @@ int main()
 
     //signal_set<throttled_signal<std::string>> ss;
     ss::signal_set<const std::string&> sss;
-    cons = sss[u8"/mainwindow/button/ok"s]->connect([](auto &&s){ std::cout << s << std::endl; });
-    cons = sss[u8"/new/channel"s]->connect([](auto &&s){ std::cout << s << std::endl; });
-    cons = sss[u8"/other/channel"s]->connect([&cs](auto &&s) { cs.call_me(s); });
-    cons = sss[u8"/broadcast/channel"s]->connect(&cs, &CallableSet::call_me); // the same way to connect as in the previous line
-    cons = sss[u8"/broadcast/channel"s]->connect([](auto &&) { std::cout << "/broadcast/channel..." << std::endl; });
+    cons = sss[u8"/mainwindow/button/ok"s].connect([](auto &&s){ std::cout << s << std::endl; });
+    cons = sss[u8"/new/channel"s].connect([](auto &&s){ std::cout << s << std::endl; });
+    cons = sss[u8"/other/channel"s].connect([&cs](auto &&s) { cs.call_me(s); });
+    cons = sss[u8"/broadcast/channel"s].connect(&cs, &CallableSet::call_me); // the same way to connect as in the previous line
+    cons = sss[u8"/broadcast/channel"s].connect([](auto &&) { std::cout << "/broadcast/channel..." << std::endl; });
     for (auto &&sn : sss.get_signal_names()) std::cout << "signal name: " << to_char(sn) << std::endl;
     if (sss.exists(u8"/broadcast/channel"s)) std::cout << "/broadcast/channel is created..." << std::endl;
     sss.emit("hello..."s); //broadcasting a signal to all slots of the set
 
     ss::signal_ex_set<const std::string&> sssx;
-    cons = sssx[u8"key_down"s]->connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
-    cons = sssx[u8"key_up"s]->connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
+    cons = sssx[u8"key_down"s].connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
+    cons = sssx[u8"key_up"s].connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
     sssx.emit("smart signal..."s);
 
     ss::queued_signal_ex_set<std::string> super_signal_set;
     auto executor { [&to_char](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << to_char(s->name()) << "; value: " << v << std::endl; } };
-    cons = super_signal_set[u8"super signal 1"s]->connect(executor);
-    cons = super_signal_set[u8"super signal 2"s]->connect(executor);
-    cons = super_signal_set[u8"super signal 3"s]->connect(executor);
+    cons = super_signal_set[u8"super signal 1"s].connect(executor);
+    cons = super_signal_set[u8"super signal 2"s].connect(executor);
+    cons = super_signal_set[u8"super signal 3"s].connect(executor);
 
     std::cout << "broadcasting event to all signals in the set..." << std::endl;
 
@@ -262,7 +262,7 @@ int main()
 
         ss::queued_signal_ex_set<event_data> ss2;
 
-        cons = ss2[u8"mouse_move"]->connect([&to_char](auto &&s, auto &&ev)
+        cons = ss2[u8"mouse_move"].connect([&to_char](auto &&s, auto &&ev)
         {
             if (ev.event_data.type() == typeid(mouse_event))
             {
@@ -275,7 +275,7 @@ int main()
                 std::cout << "unsupported event type. expected 'mouse_event [" << std::type_index(typeid(mouse_event)).hash_code() << "]' but got " << ev.event_data_type_index.hash_code() << std::endl;
             }
         });
-        cons = ss2[u8"key_down"]->connect([&to_char](auto &&s, auto &&ev)
+        cons = ss2[u8"key_down"].connect([&to_char](auto &&s, auto &&ev)
         {
             if (ev.event_data.type() == typeid(keyboard_event))
             {
@@ -291,9 +291,9 @@ int main()
 
         auto make_event = [](auto &&ed) { return event_data { typeid(ed), std::forward<decltype(ed)>(ed) }; };
 
-        ss2[u8"mouse_move"]->emit(make_event(mouse_event { 100, 100 }));
-        ss2[u8"key_down"]->emit(make_event(keyboard_event { 32, "new mods..."s }));
-        ss2[u8"key_down"]->emit(make_event(mouse_event { 200, 200 })); // this event is supposed to be ignored
+        ss2[u8"mouse_move"].emit(make_event(mouse_event { 100, 100 }));
+        ss2[u8"key_down"].emit(make_event(keyboard_event { 32, "new mods..."s }));
+        ss2[u8"key_down"].emit(make_event(mouse_event { 200, 200 })); // this event is supposed to be ignored
 
         std::this_thread::sleep_for(0.1s);
     }
@@ -301,9 +301,9 @@ int main()
     struct my_scope {};
     ss::queued_signal_scoped_set<my_scope, std::string> qsss;
 
-    cons = qsss[u8"test"]->connect([](auto &&s) { std::cout << s << std::endl; });
+    cons = qsss[u8"test"].connect([](auto &&s) { std::cout << s << std::endl; });
 
-    qsss[u8"test"]->emit("Hello Queued Scoped Signal Set!");
+    qsss[u8"test"].emit("Hello Queued Scoped Signal Set!");
 
     std::cout << "exitting..." << std::endl;
 

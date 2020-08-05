@@ -52,7 +52,7 @@ int main()
     nstd::remote::remote_slot_hub local_slots {}; // remote signal subscriber/client
     local_slots.connect_to_remote_signal_hub(host, port);
 
-    cons = local_slots.get_remote_signal(signal_name)->connect([&to_char](auto s, auto &&data) // defining signal processor on client side
+    cons = local_slots.get_remote_signal(signal_name).connect([&to_char](auto s, auto &&data) // defining signal processor on client side
     {
         if (data)
         {

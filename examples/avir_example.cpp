@@ -41,7 +41,7 @@ int main()
 
     uint8_t *image { reinterpret_cast<uint8_t*>(image_data.pixelData) };
     const int &width { image_data.size.w }, &height { image_data.size.h }, stride { static_cast<int>(image_data.stride) };
-    constexpr const float scale { .5 };
+    constexpr const float scale { .5f };
     const int channels { static_cast<int>(blFormatInfo[image_data.format].depth / 8) };
     const int new_width { static_cast<int>(width * scale + .5) }, new_height { static_cast<int>(height * scale + .5) }, new_stride { new_width * channels };
     auto new_image = std::make_unique<uint8_t[]>(new_height * new_stride);

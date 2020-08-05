@@ -87,7 +87,7 @@ private:
                 {
                     auto data { std::make_shared<std::vector<uint8_t>>(++divider_pos, end) };
 
-                     _signal_queue[signal_name]->emit(data);
+                     _signal_queue[signal_name].emit(data);
                 }
             }
 
