@@ -6,7 +6,7 @@ solution "nstd_examples"
         buildoptions { "/std:c++latest", "/EHsc", "/Wall" }
 
     configuration "gcc"
-        buildoptions_cpp { "-std=c++2a", "-fexceptions" }
+        buildoptions_cpp { "-std=c++20", "-fexceptions" }
         buildoptions "-Wall"
 
     language "C++"
