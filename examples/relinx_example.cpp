@@ -990,6 +990,18 @@ int main()
         for(auto &&i : t1_data){ delete i; };
     }
 
+    { //auto of_type() const noexcept -> decltype(auto)
+        std::list<std::any> t1_data = { 1, "string"s, 3, "string view"sv, 3.5f };
+
+        auto start = hr_clock::now();
+
+        auto t1_res = from(t1_data)->of_type<int>();
+
+        assert(t1_res->count() == 2);
+
+        print_duration("of_type<any>():", start);
+    }
+
     { //auto reverse() const -> decltype(auto)
         auto start = hr_clock::now();
 

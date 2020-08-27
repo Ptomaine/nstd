@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <algorithm>
+#include <any>
 #include <functional>
 #include <iterator>
 #include <list>
@@ -2003,7 +2004,7 @@ public:
     {
         if (_begin == _end) throw no_elements("last"s);
 
-        if constexpr (std::is_same<typename iterator_type::iterator_category, std::bidirectional_iterator_tag>::value || std::is_same<typename iterator_type::iterator_category, std::random_access_iterator_tag>::value)
+        if constexpr (std::is_same_v<typename iterator_type::iterator_category, std::bidirectional_iterator_tag> || std::is_same_v<typename iterator_type::iterator_category, std::random_access_iterator_tag>)
         {
             auto rend { std::make_reverse_iterator(_begin) };
             auto i { std::find_if(std::make_reverse_iterator(_end), rend, std::forward<ConditionFunctor>(conditionFunctor)) };
@@ -2047,7 +2048,7 @@ public:
     template<typename ConditionFunctor>
     auto last_or_default(ConditionFunctor &&conditionFunctor, value_type default_value = value_type()) const noexcept
     {
-        if constexpr (std::is_same<typename iterator_type::iterator_category, std::bidirectional_iterator_tag>::value || std::is_same<typename iterator_type::iterator_category, std::random_access_iterator_tag>::value)
+        if constexpr (std::is_same_v<typename iterator_type::iterator_category, std::bidirectional_iterator_tag> || std::is_same_v<typename iterator_type::iterator_category, std::random_access_iterator_tag>)
         {
             _default_value = default_value;
             auto rend { std::make_reverse_iterator(_begin) };
@@ -2185,6 +2186,13 @@ public:
     auto of_type() noexcept
     {
         return select([](auto &&i) { return dynamic_cast<CastType>(i); })->where([](auto &&i) { return i != nullptr; });
+    }
+
+    template<typename CastType>
+    requires std::is_same_v<typename iterator_type::value_type, std::any>
+    auto of_type() noexcept
+    {
+        return where([](auto &&i) { return i.type() == typeid(CastType); })->select([](auto &&i) { return std::any_cast<CastType>(i); });
     }
 
     template<typename SelectFunctor, typename SortFunctor>
