@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <algorithm>
 #include <any>
+#include <concepts>
 #include <functional>
 #include <iterator>
 #include <list>
@@ -36,6 +37,7 @@ SOFTWARE.
 #include <unordered_map>
 #include <unordered_set>
 #include <type_traits>
+#include <variant>
 
 #include <iostream>
 
@@ -54,6 +56,15 @@ concept PointerFor = std::is_pointer_v<T>;
 
 template<typename P>
 concept PolymorphicPointerFor = PointerFor<P> && std::is_polymorphic_v<std::remove_pointer_t<P>>;
+
+template <typename T, template <typename...> class Z>
+struct is_specialization_of : std::false_type { };
+
+template <typename... Args, template <typename...> class Z>
+struct is_specialization_of<Z<Args...>, Z> : std::true_type { };
+
+template <typename A, template <typename...> typename B>
+concept SpecializationOf = is_specialization_of<A, B>::value;
 
 using default_iterator_adapter_tag = std::forward_iterator_tag;
 
@@ -2193,6 +2204,13 @@ public:
     auto of_type() noexcept
     {
         return where([](auto &&i) { return i.type() == typeid(CastType); })->select([](auto &&i) { return std::any_cast<CastType>(i); });
+    }
+
+    template<typename CastType>
+    requires SpecializationOf<typename iterator_type::value_type, std::variant>
+    auto of_type() noexcept
+    {
+        return where([](auto &&i) { return std::holds_alternative<CastType>(i); })->select([](auto &&i) { return std::get<CastType>(i); });
     }
 
     template<typename SelectFunctor, typename SortFunctor>
