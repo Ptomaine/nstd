@@ -1640,6 +1640,8 @@ public:
     template<typename ConditionFunctor>
     auto first(ConditionFunctor &&conditionFunctor) const
     {
+        if (_begin == _end) throw no_elements("first"s);
+        
         auto i = std::find_if(_begin, _end, std::forward<ConditionFunctor>(conditionFunctor));
 
         if (i == _end) throw not_found("first"s);

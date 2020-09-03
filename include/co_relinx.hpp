@@ -798,6 +798,48 @@ public:
     	return co_relinx_object<CoroType>(co_except(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType>>(container)), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
     }    
 
+    template<typename ConditionFunctor>
+    auto first(ConditionFunctor &&conditionFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+        
+        if (begin == end) throw no_elements("first"s);
+
+        auto i = std::find_if(begin, end, std::forward<ConditionFunctor>(conditionFunctor));
+
+        if (i == end) throw not_found("first"s);
+
+        return *i;
+    }
+
+    auto first()
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+        if (begin == end) throw no_elements("first"s);
+
+        return *begin;
+    }
+
+    template<typename ConditionFunctor>
+    auto first_or_default(ConditionFunctor &&conditionFunctor, value_type default_value = value_type())
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+        auto i = std::find_if(begin, end, std::forward<ConditionFunctor>(conditionFunctor));
+
+        return i == end ? default_value : *i;
+    }
+
+    auto first_or_default(value_type default_value = value_type())
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+        
+        return begin == end ? default_value : *begin;
+    }
+
     template<typename Container>
     auto intersect_with(Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
     {
@@ -876,36 +918,102 @@ public:
     	return co_relinx_object<decltype(resultFunctor(CoroType(), default_container<CoroType1>()))>(co_group_join(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType1>>(container)), std::forward<ThisKeyFunctor>(thisKeyFunctor), std::forward<OtherKeyFunctor>(otherKeyFunctor), std::forward<ResultFunctor>(resultFunctor), std::forward<CompareFunctor>(compareFunctor), leftJoin));
     }
 
+    auto max()
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        if (begin == end) throw no_elements("max"s);
+
+        auto largest = *begin;
+
+        ++begin;
+
+        for (; begin != end; ++begin)
+        {
+            if (largest < *begin)
+            {
+                largest = *begin;
+            }
+        }
+
+        return largest;
+    }
+
+    template<typename TransformFunctor>
+    auto max(TransformFunctor &&transformFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        if (begin == end) throw no_elements("max"s);
+
+        return select(transformFunctor).max();
+    }
+
+    auto min()
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        if (begin == end) throw no_elements("max"s);
+
+        auto smallest = *begin;
+
+        ++begin;
+
+        for (; begin != end; ++begin)
+        {
+            if (*begin < smallest)
+            {
+                smallest = *begin;
+            }
+        }
+
+        return smallest;
+    }
+
+    template<typename TransformFunctor>
+    auto min(TransformFunctor &&transformFunctor)
+    {
+        auto begin { iterator { this } };
+        auto end { iterator {} };
+
+        if (begin == end) throw no_elements("max"s);
+
+        return select(transformFunctor).min();
+    }
+
     auto reverse()
     {
     	return co_relinx_object<CoroType>(co_reverse(std::move(_generator)));
     }
 
-	template<typename Selector>
-	auto select(Selector func)
-	{
-		return co_relinx_object<decltype(func(CoroType()))>(co_transform(std::move(_generator), func));
-	}
+    template<typename Selector>
+    auto select(Selector func)
+    {
+        return co_relinx_object<decltype(func(CoroType()))>(co_transform(std::move(_generator), func));
+    }
 
-	template<typename Selector>
-	auto select_i(Selector func)
-	{
-		return co_relinx_object<decltype(func(CoroType(), 0UL))>(co_transform_i(std::move(_generator), func));
-	}
+    template<typename Selector>
+    auto select_i(Selector func)
+    {
+        return co_relinx_object<decltype(func(CoroType(), 0UL))>(co_transform_i(std::move(_generator), func));
+    }
 
-	template<typename Selector>
-	auto select_many(Selector func)
-	{
-		return co_relinx_object<decltype(func(typename CoroType::value_type()))>(co_select_many(std::move(_generator), func));
-	}
+    template<typename Selector>
+    auto select_many(Selector func)
+    {
+        return co_relinx_object<decltype(func(typename CoroType::value_type()))>(co_select_many(std::move(_generator), func));
+    }
 
-	template<typename Selector>
-	auto select_many_i(Selector func)
-	{
-		return co_relinx_object<decltype(func(typename CoroType::value_type(), 0UL))>(co_select_many_i(std::move(_generator), func));
-	}
+    template<typename Selector>
+    auto select_many_i(Selector func)
+    {
+        return co_relinx_object<decltype(func(typename CoroType::value_type(), 0UL))>(co_select_many_i(std::move(_generator), func));
+    }
 
-	template<typename Container, typename CompareFunctor>
+    template<typename Container, typename CompareFunctor>
     auto sequence_equal(Container &&container, CompareFunctor &&compareFunctor)
     {
         auto begin { iterator { this } };
@@ -1024,21 +1132,21 @@ public:
     }
 
     auto take(size_t limit)
-	{
-		return co_relinx_object<CoroType>(co_take(std::move(_generator), limit));
-	}
+    {
+        return co_relinx_object<CoroType>(co_take(std::move(_generator), limit));
+    }
 
-	template<typename Functor>
-	auto take_while(Functor func)
-	{
-		return co_relinx_object<CoroType>(co_limit(std::move(_generator), func));
-	}
+    template<typename Functor>
+    auto take_while(Functor func)
+    {
+        return co_relinx_object<CoroType>(co_limit(std::move(_generator), func));
+    }
 
-	template<typename Functor>
-	auto take_while_i(Functor func)
-	{
-		return co_relinx_object<CoroType>(co_limit_i(std::move(_generator), func));
-	}
+    template<typename Functor>
+    auto take_while_i(Functor func)
+    {
+        return co_relinx_object<CoroType>(co_limit_i(std::move(_generator), func));
+    }
 
     template<typename TeeFunctor>
     auto tee(TeeFunctor &&teeFunctor)
@@ -1046,7 +1154,7 @@ public:
     	return co_relinx_object<CoroType>(co_tee(std::move(_generator), teeFunctor));
     }	
 
-	template<typename AnyContainerType>
+    template<typename AnyContainerType>
     auto to_container()
     {
         auto begin { iterator { this } };
@@ -1131,35 +1239,35 @@ public:
     	return concat(std::forward<std::initializer_list<CoroType>>(container)).distinct(func);
     }
 
-	template<typename Functor>
-	auto where(Functor func)
-	{
-		return co_relinx_object<CoroType>(co_filter(std::move(_generator), func));
-	}
+    template<typename Functor>
+    auto where(Functor func)
+    {
+        return co_relinx_object<CoroType>(co_filter(std::move(_generator), func));
+    }
 
-	template<typename Functor>
-	auto where_i(Functor func)
-	{
-		return co_relinx_object<CoroType>(co_filter_i(std::move(_generator), func));
-	}
+    template<typename Functor>
+    auto where_i(Functor func)
+    {
+        return co_relinx_object<CoroType>(co_filter_i(std::move(_generator), func));
+    }
 
-	template<typename Container, typename Functor>
-	auto zip(Container &container, Functor func)
-	{
-		return co_relinx_object<decltype(func(CoroType(), typename Container::value_type()))>(co_zip(std::move(_generator), co_from(container), func));
-	}
+    template<typename Container, typename Functor>
+    auto zip(Container &container, Functor func)
+    {
+        return co_relinx_object<decltype(func(CoroType(), typename Container::value_type()))>(co_zip(std::move(_generator), co_from(container), func));
+    }
 
-	template<typename Container, typename Functor>
-	auto zip(Container &&container, Functor func)
-	{
-		return co_relinx_object<decltype(func(CoroType(), typename Container::value_type()))>(co_zip(std::move(_generator), co_from(std::forward<Container>(container)), func));
-	}
+    template<typename Container, typename Functor>
+    auto zip(Container &&container, Functor func)
+    {
+        return co_relinx_object<decltype(func(CoroType(), typename Container::value_type()))>(co_zip(std::move(_generator), co_from(std::forward<Container>(container)), func));
+    }
 
-	template<typename CoroType1, typename Functor>
-	auto zip(std::initializer_list<CoroType1> &&container, Functor func)
-	{
-		return co_relinx_object<decltype(func(CoroType(), CoroType1()))>(co_zip(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType1>>(container)), func));
-	}
+    template<typename CoroType1, typename Functor>
+    auto zip(std::initializer_list<CoroType1> &&container, Functor func)
+    {
+        return co_relinx_object<decltype(func(CoroType(), CoroType1()))>(co_zip(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType1>>(container)), func));
+    }
 
 private:
 	generator<CoroType> _generator;
