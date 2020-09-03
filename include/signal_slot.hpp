@@ -26,6 +26,7 @@ SOFTWARE.
 #include <concepts>
 #include <condition_variable>
 #include <functional>
+#include <iterator>
 #include <mutex>
 #include <deque>
 #include <string>
