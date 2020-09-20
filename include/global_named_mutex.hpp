@@ -21,8 +21,9 @@ SOFTWARE.
 */
 
 
-#include <string>
+#include <atomic>
 #include <cstdint>
+#include <string>
 
 #if defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
     #define WINDOWS_OS
@@ -346,8 +347,8 @@ namespace nstd::thread
 		{
 		public:
 			pthread_mutex_t *_mutex;
-			volatile uint32_t *_count;
-			volatile uint32_t *_max;
+			uint32_t *_count;
+			uint32_t *_max;
 			pthread_cond_t *_condition;
 		};
 
@@ -485,9 +486,9 @@ namespace nstd::thread
 		{
 		public:
 			pthread_mutex_t *_mutex;
-			volatile char *_manual;
-			volatile char *_signaled;
-			volatile uint32_t *_waiting;
+			char *_manual;
+			char *_signaled;
+			uint32_t *_waiting;
 			pthread_cond_t *_condition;
 		};
 
@@ -921,6 +922,6 @@ namespace nstd::thread
 #endif
 
 		volatile thread_id_type _owner_id { 0 };
-		volatile uint32_t _count { 0 };
+		std::atomic<uint32_t> _count { 0 };
 	};
 }
