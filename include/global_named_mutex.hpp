@@ -362,10 +362,13 @@ namespace nstd::thread
             result._mutex = reinterpret_cast<pthread_mutex_t *>(memory);
             memory += align_unix_size(sizeof(pthread_mutex_t));
 
-            result._count = reinterpret_cast<uint32_t *>(memory);
+            std::atomic_ref<uint32_t*> a_count { result._count };
+            std::atomic_ref<uint32_t*> a_max { result._max };
+
+            a_count = reinterpret_cast<uint32_t *>(memory);
             memory += align_unix_size(sizeof(uint32_t));
 
-            result._max = reinterpret_cast<uint32_t *>(memory);
+            a_max = reinterpret_cast<uint32_t *>(memory);
             memory += align_unix_size(sizeof(uint32_t));
 
             result._condition = reinterpret_cast<pthread_cond_t *>(memory);
@@ -387,8 +390,13 @@ namespace nstd::thread
 
             pthread_mutex_init(unix_semaphore._mutex, &mutex_attr);
             if (start > max)  start = max;
-            unix_semaphore._count[0] = start;
-            unix_semaphore._max[0] = max;
+
+            std::atomic_ref a_count { *unix_semaphore._count };
+            std::atomic_ref a_max { *unix_semaphore._max };
+
+            a_count = start;
+            a_max = max;
+
             pthread_cond_init(unix_semaphore._condition, &cond_attr);
 
             pthread_condattr_destroy(&cond_attr);
@@ -407,10 +415,11 @@ namespace nstd::thread
             }
 
             bool result = false;
+            std::atomic_ref a_count { *unix_semaphore._count };
 
-            if (unix_semaphore._count[0])
+            if (a_count)
             {
-                unix_semaphore._count[0]--;
+                --a_count;
 
                 result = true;
             }
@@ -421,11 +430,11 @@ namespace nstd::thread
                 {
                     result2 = pthread_cond_wait(unix_semaphore._condition, unix_semaphore._mutex);
                     if (result2 != 0)  break;
-                } while (!unix_semaphore._count[0]);
+                } while (!a_count);
 
                 if (result2 == 0)
                 {
-                    unix_semaphore._count[0]--;
+                    --a_count;
 
                     result = true;
                 }
@@ -446,11 +455,11 @@ namespace nstd::thread
                 {
                     result2 = pthread_cond_timedwait(unix_semaphore._condition, unix_semaphore._mutex, &temp_time);
                     if (result2 != 0)  break;
-                } while (!unix_semaphore._count[0]);
+                } while (!a_count);
 
                 if (result2 == 0)
                 {
-                    unix_semaphore._count[0]--;
+                    --a_count;
 
                     result = true;
                 }
@@ -465,12 +474,16 @@ namespace nstd::thread
         {
             if (pthread_mutex_lock(unix_semaphore._mutex) != 0)  return false;
 
-            if (prev_val != NULL)  *prev_val = unix_semaphore._count[0];
-            unix_semaphore._count[0]++;
-            if (unix_semaphore._count[0] > unix_semaphore._max[0])  unix_semaphore._count[0] = unix_semaphore._max[0];
+            std::atomic_ref a_count { *unix_semaphore._count };
+            std::atomic_ref a_max { *unix_semaphore._max };
+
+            if (prev_val != NULL)  *prev_val = a_count;
+
+            ++a_count;
+
+            if (a_count > a_max)  a_count = a_max.load();
 
             pthread_cond_signal(unix_semaphore._condition);
-
             pthread_mutex_unlock(unix_semaphore._mutex);
 
             return true;
@@ -502,11 +515,15 @@ namespace nstd::thread
             result._mutex = reinterpret_cast<pthread_mutex_t *>(memory);
             memory += align_unix_size(sizeof(pthread_mutex_t));
 
-            result._manual = memory;
-            result._signaled = memory + 1;
+            std::atomic_ref<char*> a_manual      { result._manual };
+            std::atomic_ref<char*> a_signaled    { result._signaled };
+            std::atomic_ref<uint32_t*> a_waiting { result._waiting };
+
+            a_manual = memory;
+            a_signaled = memory + 1;
             memory += align_unix_size(2);
 
-            result._waiting = reinterpret_cast<uint32_t *>(memory);
+            a_waiting = reinterpret_cast<uint32_t *>(memory);
             memory += align_unix_size(sizeof(uint32_t));
 
             result._condition = reinterpret_cast<pthread_cond_t *>(memory);
@@ -526,10 +543,14 @@ namespace nstd::thread
                 pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED);
             }
 
+            std::atomic_ref a_manual   { *unix_event._manual };
+            std::atomic_ref a_signaled { *unix_event._signaled };
+            std::atomic_ref a_waiting  { *unix_event._waiting };
+
             pthread_mutex_init(unix_event._mutex, &mutex_attr);
-            unix_event._manual[0] = (manual ? '\x01' : '\x00');
-            unix_event._signaled[0] = (signaled ? '\x01' : '\x00');
-            unix_event._waiting[0] = 0;
+            a_manual = (manual ? '\x01' : '\x00');
+            a_signaled = (signaled ? '\x01' : '\x00');
+            a_waiting = 0;
             pthread_cond_init(unix_event._condition, &cond_attr);
 
             pthread_condattr_destroy(&cond_attr);
@@ -548,29 +569,32 @@ namespace nstd::thread
             }
 
             bool result = false;
+            std::atomic_ref a_manual   { *unix_event._manual };
+            std::atomic_ref a_signaled { *unix_event._signaled };
+            std::atomic_ref a_waiting  { *unix_event._waiting };
 
-            if (unix_event._signaled[0] != '\x00' && (unix_event._manual[0] != '\x00' || !unix_event._waiting[0]))
+            if (a_signaled != '\x00' && (a_manual != '\x00' || !a_waiting))
             {
-                if (unix_event._manual[0] == '\x00')  unix_event._signaled[0] = '\x00';
+                if (a_manual == '\x00')  a_signaled = '\x00';
 
                 result = true;
             }
             else if (wait_ms == helper::WaitInfinitely)
             {
-                unix_event._waiting[0]++;
+                ++a_waiting;
 
                 int result2;
                 do
                 {
                     result2 = pthread_cond_wait(unix_event._condition, unix_event._mutex);
                     if (result2 != 0)  break;
-                } while (unix_event._signaled[0] == '\x00');
+                } while (a_signaled == '\x00');
 
-                unix_event._waiting[0]--;
+                --a_waiting;
 
                 if (result2 == 0)
                 {
-                    if (unix_event._manual[0] == '\x00')  unix_event._signaled[0] = '\x00';
+                    if (a_manual == '\x00')  a_signaled = '\x00';
 
                     result = true;
                 }
@@ -592,20 +616,20 @@ namespace nstd::thread
                 temp_time.tv_sec += temp_time.tv_nsec / 1000000000;
                 temp_time.tv_nsec = temp_time.tv_nsec % 1000000000;
 
-                unix_event._waiting[0]++;
+                ++a_waiting;
 
                 int result2;
                 do
                 {
                     result2 = pthread_cond_timedwait(unix_event._condition, unix_event._mutex, &temp_time);
                     if (result2 != 0)  break;
-                } while (unix_event._signaled[0] == '\x00');
+                } while (a_signaled == '\x00');
 
-                unix_event._waiting[0]--;
+                --a_waiting;
 
                 if (result2 == 0)
                 {
-                    if (unix_event._manual[0] == '\x00')  unix_event._signaled[0] = '\x00';
+                    if (a_manual == '\x00')  a_signaled = '\x00';
 
                     result = true;
                 }
@@ -620,9 +644,13 @@ namespace nstd::thread
         {
             if (pthread_mutex_lock(unix_event._mutex) != 0)  return false;
 
-            unix_event._signaled[0] = '\x01';
 
-            if (unix_event._manual[0] != '\x00')  pthread_cond_broadcast(unix_event._condition);
+            std::atomic_ref a_manual   { *unix_event._manual };
+            std::atomic_ref a_signaled { *unix_event._signaled };
+
+            a_signaled = '\x01';
+
+            if (a_manual != '\x00')  pthread_cond_broadcast(unix_event._condition);
             else  pthread_cond_signal(unix_event._condition);
 
             pthread_mutex_unlock(unix_event._mutex);
@@ -632,10 +660,13 @@ namespace nstd::thread
 
 		static bool reset_unix_event(unix_event_wrapper& unix_event)
         {
-            if (unix_event._manual[0] == '\x00')  return false;
+            std::atomic_ref a_manual   { *unix_event._manual };
+            std::atomic_ref a_signaled { *unix_event._signaled };
+
+            if (a_manual == '\x00')  return false;
             if (pthread_mutex_lock(unix_event._mutex) != 0)  return false;
 
-            unix_event._signaled[0] = '\x00';
+            a_signaled = '\x00';
 
             pthread_mutex_unlock(unix_event._mutex);
 
