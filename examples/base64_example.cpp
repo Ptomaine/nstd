@@ -47,12 +47,15 @@ int main()
     std::cout << "c_crc32 :" << nstd::crc32::c_crc32<10>("1234567890") << std::endl;
 
     nstd::tailed<int, 3> tailed_int { 5 };
+    nstd::tailed<std::string, 2> tailed_string { "Hello World"s };
 
     tailed_int = 10;
     ++tailed_int;
+    tailed_string = "Move it!"s;
 
     std::cout << tailed_int[0] << ">>" << tailed_int[1] << ">>" << tailed_int[2] << std::endl;
     std::cout << tailed_int.current() << ">>" << tailed_int.previous() << std::endl;
+    std::cout << tailed_string.current() << ">>" << tailed_string.previous() << std::endl;
 
     std::cout << "exitting..." << std::endl;
 

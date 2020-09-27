@@ -65,12 +65,12 @@ public:
 		static_assert(tail_limit > 1);
 	}
 
-	value_type &current()
+	const value_type &current() const
 	{
 		return _values.front();
 	}
 
-	value_type &previous(const int shift = 1)
+	const value_type &previous(const int shift = 1) const
 	{
 		if (shift >= tail_limit) throw std::out_of_range("The index is out of range!");
 
@@ -84,12 +84,12 @@ public:
 		return *this;
 	}
 
-	value_type &operator () ()
+	const value_type &operator () () const
 	{
 		return _values.front();
 	}
 
-	value_type &operator * ()
+	const value_type &operator * ()
 	{
 		return push();
 	}
@@ -154,7 +154,7 @@ public:
 		return temp;
 	}
 
-	operator value_type&()
+	operator value_type&() const
 	{
 		return _values.front();
 	}
@@ -164,14 +164,7 @@ public:
 		return _values.front();
 	}
 
-	value_type &operator [](const int index)
-	{
-		if (index >= tail_limit) throw std::out_of_range("The index is out of range!");
-
-		return _values[index];
-	}
-
-	value_type operator [](const int index) const
+	const value_type &operator [](const int index) const
 	{
 		if (index >= tail_limit) throw std::out_of_range("The index is out of range!");
 
