@@ -49,15 +49,15 @@ struct has_value_type
     T value = {};
 
     has_value_type() = default;
-    has_value_type(has_value_type &&) = default;
-    has_value_type &operator= (has_value_type &&) = default;
+    has_value_type(has_value_type &&) noexcept = default;
+    has_value_type &operator= (has_value_type &&) noexcept = default;
 };
 
 struct no_value_type
 {
     no_value_type() = default;
-    no_value_type(no_value_type &&) = default;
-    no_value_type &operator= (no_value_type &&) = default;
+    no_value_type(no_value_type &&) noexcept = default;
+    no_value_type &operator= (no_value_type &&) noexcept = default;
 };
 
 template <typename T1>
@@ -87,7 +87,7 @@ public:
 		if (_connected_paired_ptr) _connected_paired_ptr->_connected_paired_ptr = this;
 	}
 
-	paired_ptr(paired_ptr &&other) : paired_ptr{ other._connected_paired_ptr }
+	paired_ptr(paired_ptr &&other) noexcept : paired_ptr{ other._connected_paired_ptr }
 	{
 		base_type::operator=(static_cast<base_type&&>(std::forward<paired_ptr>(other)));
 		other._connected_paired_ptr = nullptr;
@@ -96,7 +96,7 @@ public:
 	paired_ptr(const paired_ptr &other) = delete;
 	paired_ptr & operator=(const paired_ptr &other) = delete;
 
-	paired_ptr & operator=(paired_ptr &&other)
+	paired_ptr & operator=(paired_ptr &&other) noexcept
 	{
 		if (_connected_paired_ptr)
 		{
@@ -249,10 +249,10 @@ public:
     {
     }
 
-    connection(connection &&other) = default;
+    connection(connection &&other) noexcept = default;
     connection(const connection &other) = delete;
     connection &operator=(const connection &other) = delete;
-    connection &operator=(connection &&other)
+    connection &operator=(connection &&other) noexcept
     {
         disconnect();
 
@@ -302,8 +302,8 @@ class signal : public signal_base
 public:
     signal() = default;
     signal(const std::u8string &name) : _name{ name } {}
-    signal(signal &&other) = default;
-    signal &operator=(signal &&other) = default;
+    signal(signal &&other) noexcept = default;
+    signal &operator=(signal &&other) noexcept = default;
     virtual ~signal() override = default;
 
     void emit(const Args &... args)
@@ -455,8 +455,8 @@ public:
 
     signal_ex() = default;
     signal_ex(const std::u8string &name) : base_class(name) {}
-    signal_ex(signal_ex &&other) = default;
-    signal_ex &operator=(signal_ex &&other) = default;
+    signal_ex(signal_ex &&other) noexcept = default;
+    signal_ex &operator=(signal_ex &&other) noexcept = default;
     virtual ~signal_ex() override = default;
 
     void emit(const Args&... args)
@@ -484,8 +484,8 @@ public:
     bridged_signal_base(const std::function<bool(bridged_signal_base*)>& emit_functor) : bridged_signal_base { std::u8string {}, emit_functor } {}
     bridged_signal_base(const std::u8string &name, bool bridge_enabled) : base_class { name }, _bridge_enabled { bridge_enabled } {}
     bridged_signal_base(bool bridge_enabled) : bridged_signal_base { std::u8string {}, bridge_enabled } {}
-    bridged_signal_base(bridged_signal_base &&other) = default;
-    bridged_signal_base &operator=(bridged_signal_base &&other) = default;
+    bridged_signal_base(bridged_signal_base &&other) noexcept = default;
+    bridged_signal_base &operator=(bridged_signal_base &&other) noexcept = default;
     virtual ~bridged_signal_base() override = default;
 
     void emit(const Args&... args)
@@ -615,8 +615,8 @@ public:
     template<typename Duration>
     throttled_signal_base(const std::u8string &name, const Duration &throttle_ms = throttled_signal_base::_default_throttle_ms) : base_class{ name }, _throttle_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms) } {}
     throttled_signal_base(const std::u8string &name) : base_class{ name } {}
-    throttled_signal_base(throttled_signal_base &&other) = default;
-    throttled_signal_base &operator=(throttled_signal_base &&other) = default;
+    throttled_signal_base(throttled_signal_base &&other) noexcept = default;
+    throttled_signal_base &operator=(throttled_signal_base &&other) noexcept = default;
 
     virtual ~throttled_signal_base() override
     {
@@ -724,8 +724,8 @@ public:
     template<typename Duration>
     queued_signal_base(const std::u8string &name, const Duration &throttle_ms = queued_signal_base::_default_throttle_ms) : base_class{ name } {}
     queued_signal_base(const std::u8string &name) : base_class{ name } {}
-    queued_signal_base(queued_signal_base &&other) = default;
-    queued_signal_base &operator=(queued_signal_base &&other) = default;
+    queued_signal_base(queued_signal_base &&other) noexcept = default;
+    queued_signal_base &operator=(queued_signal_base &&other) noexcept = default;
     queued_signal_base(const queued_signal_base &other) = delete;
     queued_signal_base &operator=(const queued_signal_base &other) = delete;
 
@@ -858,8 +858,8 @@ public:
     timer_signal() = default;
     template<typename Duration>
     timer_signal(const std::u8string &name, const Duration &timer_ms = 1s) : base_class{ name }, _timer_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(timer_ms) } {}
-    timer_signal(timer_signal &&other) = default;
-    timer_signal &operator=(timer_signal &&other) = default;
+    timer_signal(timer_signal &&other) noexcept = default;
+    timer_signal &operator=(timer_signal &&other) noexcept = default;
 
     virtual ~timer_signal() override
     {

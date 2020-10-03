@@ -52,7 +52,7 @@ public:
         operator= (other._value);
     }
 
-    live_property(live_property &&other)
+    live_property(live_property &&other) noexcept
     {
         operator=(std::forward<live_property>(other));
     }
@@ -62,7 +62,7 @@ public:
         return move_value(std::forward<value_type>(value));
     }
 
-    live_property &operator=(live_property &&other)
+    live_property &operator=(live_property &&other) noexcept
     {
         return operator=(std::move(other._value));
     }
@@ -305,7 +305,7 @@ public:
         operator= (other._value);
     }
 
-    live_property_ts(live_property_ts &&other)
+    live_property_ts(live_property_ts &&other) noexcept
     {
         operator=(std::forward<live_property_ts>(other));
     }
@@ -317,7 +317,7 @@ public:
         return move_value(std::forward<value_type>(value));
     }
 
-    live_property_ts &operator=(live_property_ts &&other)
+    live_property_ts &operator=(live_property_ts &&other) noexcept
     {
         std::scoped_lock lock { _lock };
 
