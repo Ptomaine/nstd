@@ -44,12 +44,12 @@ public:
 
     virtual void addWorkload(CWorkload *const workload) override
     {
-        _workloads.emplace_back(workload);
+        _workloads.push_back(workload);
     }
 
     virtual void startAllWorkloads() override
     {
-        for (auto &workload : _workloads) _tasks.emplace_back(thread_pool_base::enqueue([](auto workload){ workload->process(); }, workload));
+        for (auto &workload : _workloads) _tasks.push_back(thread_pool_base::enqueue([](auto workload){ workload->process(); }, workload));
     }
 
     virtual void waitAllWorkloadsToFinish() override

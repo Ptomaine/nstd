@@ -29,6 +29,7 @@ SOFTWARE.
 #include <iterator>
 #include <mutex>
 #include <deque>
+#include <shared_mutex>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -384,14 +385,14 @@ public:
 
     void name(const std::u8string &name)
     {
-        std::scoped_lock<std::mutex> lock { _name_lock };
+        std::unique_lock<std::shared_mutex> lock { _name_lock };
 
         _name = name;
     }
 
     virtual std::u8string_view name() const override
     {
-        std::scoped_lock<std::mutex> lock { _name_lock };
+        std::shared_lock<std::shared_mutex> lock { _name_lock };
 
         return _name;
     }
@@ -442,7 +443,8 @@ public:
 protected:
     std::u8string _name {};
     std::vector<slot<Args...>> _slots {}, _pending_connections {};
-    mutable std::mutex _connect_lock {}, _emit_lock {}, _name_lock {};
+    mutable std::mutex _connect_lock {}, _emit_lock {};
+    mutable std::shared_mutex _name_lock {};
     mutable std::atomic_bool _enabled { true };
     std::any _payload;
 };
