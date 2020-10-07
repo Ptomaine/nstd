@@ -620,7 +620,7 @@ public:
 
     virtual ~throttled_signal_base() override
     {
-        _cancelled = true;
+        _dispatcher_thread.request_stop();
 
         if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
@@ -647,7 +647,7 @@ public:
         {
             if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
-            _dispatcher_thread = std::thread([this](){ queue_dispatcher(); });
+            _dispatcher_thread = std::jthread([this](std::stop_token cancelled){ queue_dispatcher(std::move(cancelled)); });
         }
     }
 
@@ -682,17 +682,17 @@ protected:
     std::deque<std::tuple<Args...>> _signal_queue {};
     std::mutex _emit_lock {};
     std::atomic<std::chrono::milliseconds> _throttle_ms { _default_throttle_ms };
-    std::thread _dispatcher_thread {};
-    std::atomic_bool _cancelled { false }, _thread_running { false }, _dispatch_all_on_destroy { true };
+    std::jthread _dispatcher_thread {};
+    std::atomic_bool _thread_running { false }, _dispatch_all_on_destroy { true };
 
-    void queue_dispatcher()
+    void queue_dispatcher(std::stop_token cancelled)
     {
-        while (!_cancelled)
+        while (!cancelled.stop_requested())
         {
             {
                 std::scoped_lock<std::mutex> lock { _emit_lock };
 
-                if (_cancelled || std::empty(_signal_queue)) break;
+                if (cancelled.stop_requested() || std::empty(_signal_queue)) break;
 
                 std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
 
@@ -733,7 +733,7 @@ public:
     {
         std::scoped_lock<std::mutex> lock_ { _destruct_lock };
 
-        _cancelled = true;
+        _dispatcher_thread.request_stop();
 
         if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
@@ -772,7 +772,7 @@ public:
         {
             if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
 
-            _dispatcher_thread = std::thread(&queue_dispatcher);
+            _dispatcher_thread = std::jthread(&queue_dispatcher);
         }
     }
 
@@ -816,17 +816,17 @@ protected:
     static inline std::deque<std::tuple<queued_signal_base*, std::tuple<Args...>>> _signal_queue {};
     static inline std::mutex _emit_lock {}, _destruct_lock {};
     static inline std::atomic<std::chrono::milliseconds> _delay_ms { 0ms };
-    static inline std::thread _dispatcher_thread {};
-    static inline std::atomic_bool _use_delay { false }, _cancelled { false }, _thread_running { false }, _dispatch_all_on_destroy { true };
+    static inline std::jthread _dispatcher_thread {};
+    static inline std::atomic_bool _use_delay { false }, _thread_running { false }, _dispatch_all_on_destroy { true };
 
-    static void queue_dispatcher()
+    static void queue_dispatcher(std::stop_token cancelled)
     {
-        while (!_cancelled)
+        while (cancelled.stop_requested())
         {
             {
                 std::scoped_lock<std::mutex> lock { _emit_lock };
 
-                if (_cancelled || std::empty(_signal_queue)) break;
+                if (cancelled.stop_requested() || std::empty(_signal_queue)) break;
 
                 auto &[this_, args] = _signal_queue.front();
 
@@ -876,7 +876,7 @@ public:
 
             _sleep.reset();
 
-            _timer_thread = std::thread([this](){ timer_procedure(); });
+            _timer_thread = std::jthread([this](){ timer_procedure(); });
         }
     }
 
@@ -906,7 +906,7 @@ public:
 private:
 
     std::atomic_bool _timer_enabled { false };
-    std::thread _timer_thread {};
+    std::jthread _timer_thread {};
     std::atomic<std::chrono::milliseconds> _timer_ms { 1s };
     mutable std::mutex _emit_lock {};
     std::tuple<timer_signal*, Args...> _args {};
@@ -917,14 +917,14 @@ private:
         bool wait_for(const std::chrono::milliseconds &duration)
         {
             std::unique_lock<std::mutex> lock { _m };
-            
+
             return !_cv.wait_for(lock, duration, [this]{ return _cancelled.load(); });
         }
 
         void cancel_wait()
         {
             _cancelled = true;
-            
+
             _cv.notify_all();
         }
 
