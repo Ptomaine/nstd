@@ -505,7 +505,7 @@ public:
 
             if (remove_quotes) ++cursor;
 
-            result.emplace(std::move(name), std::move(value));
+            result.emplace(std::make_pair(std::move(name), std::move(value)));
 
             ++cursor;
         }
@@ -572,7 +572,7 @@ protected:
 
                 while (cursor < data_end && *reinterpret_cast<const uint16_t*>(cursor) != http_constants::CRLF) ++cursor;
 
-                item.headers.emplace(std::move(param), parse_header_value({ value_start, static_cast<size_t>(cursor - value_start) }));
+                item.headers.emplace(std::make_pair(std::move(param), parse_header_value({ value_start, static_cast<size_t>(cursor - value_start) })));
 
                 cursor += sizeof(http_constants::CRLF);
             }
@@ -610,7 +610,7 @@ protected:
                 }
             }
 
-            multipart_items.emplace_back(std::move(item));
+            multipart_items.push_back(std::move(item));
         }
 
         return multipart_items;

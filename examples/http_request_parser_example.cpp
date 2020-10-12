@@ -102,6 +102,8 @@ int main()
     std::cout << "Multipart form data size: " << std::size(mdata) << std::endl;
     std::cout << "Multipart mixed form data detected: '" << (mdata[1].mixed_content ? "true" : "false") << "'" << std::endl;
     std::cout << "Multipart form data: '" << mdata[1].content << "'" << std::endl;
+    std::cout << "Multipart filename: '" << mdata[1].headers["Content-Disposition"]["filename"] << "'" << std::endl;
+    std::cout << "Multipart Content-Type: '" << mdata[1].headers["Content-Type"][""] << "'" << std::endl;
 
     std::cout << std::endl << "exiting..." << std::endl;
     return 0;
