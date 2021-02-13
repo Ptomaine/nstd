@@ -1,17 +1,14 @@
 solution "nstd_examples"
+    language "C++"
     configurations { "Debug", "Release" }
     userincludedirs { "../include" }
-    flags { "StaticRuntime" }
-    configuration "vs*"
-        buildoptions { "/std:c++latest", "/EHsc", "/Wall" }
+    flags { "StaticRuntime", "CppLatest" }
+    startproject "relinx_example"
+    platforms { "Native", "x64", "x32" }
 
-    configuration "gcc"
-        buildoptions_cpp { "-std=c++20", "-fexceptions" }
-        buildoptions "-Wall"
-
-    language "C++"
     configuration { "windows", "gcc" }
         linkoptions { "-static" }
+        defines { "_WIN32_WINNT=_WIN32_WINNT_WIN10" }
 
     configuration { "Debug" }
         kind "ConsoleApp"
@@ -182,7 +179,7 @@ solution "nstd_examples"
             configuration "gcc"
                 buildoptions { "-Wno-unused-variable", "-Wno-unused-but-set-variable" }
 
-    --[[project "relinx_generator_example"
+    project "relinx_generator_example"
         files { "relinx_generator_example.cpp" }
         userincludedirs { "../include/external/asio/asio/include" }
         includedirs { "../include/external/json/include" }
@@ -201,7 +198,7 @@ solution "nstd_examples"
             links { "ws2_32" }
 
         configuration "linux or macosx or bsd"
-            links { "pthread" }--]]
+            links { "pthread" }
 
     project "pmr_example"
         files { "pmr_example.cpp", "../include/process.cpp" }
