@@ -20,10 +20,6 @@ SOFTWARE.
 
 #define BL_STATIC
 
-#ifndef _WIN32_WINNT
-         #define _WIN32_WINNT _WIN32_WINNT_WIN10
-#endif
-
 #include "external/asmjit/src/asmjit/core/archtraits.cpp"
 #include "external/asmjit/src/asmjit/core/assembler.cpp"
 #include "external/asmjit/src/asmjit/core/builder.cpp"

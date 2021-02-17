@@ -42,6 +42,7 @@ public:
     constexpr uuid(uuid&&) = default;
     constexpr uuid(const uuid&) = default;
     constexpr uuid &operator=(const uuid&) = default;
+    constexpr uuid &operator=(uuid&&) noexcept = default;
 
     constexpr bool operator ==(const uuid &other) const
     {
@@ -116,6 +117,8 @@ public:
             seed[0] = random_provider();
             seed[1] = random_provider();
         } while (!(seed[0] && seed[1]));
+
+        random_was_inited = true;
     }
 
     static constexpr bool validate_uuid_string(std::string_view str, bool strict = false)
@@ -197,6 +200,7 @@ private:
     inline static uint64_t seed[2] { 0 };
     inline static constexpr std::array<size_t, 4> dash_positions {8, 13, 18, 23};
     inline static constexpr const char sep_char { '-' }, op_brace { '{' }, cl_brace { '}' };
+    inline static bool random_was_inited { false };
 };
 
 namespace literals
