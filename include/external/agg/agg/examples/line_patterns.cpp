@@ -314,10 +314,10 @@ int agg_main(int argc, char* argv[])
     {
         char buf[256];
         sprintf(buf, "There must be files 1%s...9%s\n"
-                     "Download and unzip:\n"
-                     "http://www.antigrain.com/line_patterns.bmp.zip\n"
+                     "Copy and unzip:\n"
+                     "../art/line_patterns.bmp.zip\n"
                      "or\n"
-                     "http://www.antigrain.com/line_patterns.ppm.tar.gz\n", 
+                     "../art/line_patterns.ppm.tar.gz\n", 
                      app.img_ext(), app.img_ext());
         app.message(buf);
         return 1;

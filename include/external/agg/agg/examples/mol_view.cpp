@@ -172,7 +172,8 @@ unsigned trim_cr_lf(char* buf)
         --len;
         ++pos;
     }
-    if(pos) strcpy(buf, buf + pos);
+	// Note that strcpy has undefined behavior if the strings overlap
+    if(pos) memmove(buf, buf + pos, len);
 
     // Trim "\n\r" at the end 
     while(len && (buf[len-1] == '\n' || buf[len-1] == '\r')) --len;
@@ -202,7 +203,7 @@ bool molecule::read(FILE* fd)
     unsigned len;
     if(!fgets(buf, 510, fd)) return false;
     len = trim_cr_lf(buf);
-    if(len > 128) len = 128;
+    if(len > 127) len = 127;
 
     if(len) memcpy(m_name, buf, len);
     m_name[len] = 0;
@@ -800,7 +801,7 @@ public:
         else
         {
             char buf[256];
-            sprintf(buf, "File not found: '%s'. Download http://www.antigrain.com/%s\n",
+            sprintf(buf, "File not found: '%s'. Copy from ../art/%s\n",
                     fname, fname);
             message(buf);
         }

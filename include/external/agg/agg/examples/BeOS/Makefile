@@ -338,48 +338,27 @@ clean:
 	rm -rf gpc_test
 
 agg.ppm:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/agg.ppm to /examples/X11/"
-	@echo "Attempting to retrieve via wget: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/agg.ppm
+	cp ../art/agg.ppm .
 
 compositing.ppm:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/compositing.ppm to /examples/X11/"
-	@echo "Attempting to retrieve via wget: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/compositing.ppm
+	cp ../art/compositing.ppm .
 
 spheres.ppm:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/spheres.ppm to /examples/X11/"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/spheres.ppm
+	cp ../art/spheres.ppm .
 
 shapes.txt:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/shapes.txt to /examples/X11/"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/shapes.txt
+	cp ../art/shapes.txt .
 
 1.sdf:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/1.sdf to /examples/macosx_carbon/"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/1.sdf
+	cp ../art/1.sdf .
 
 1.ppm:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/line_patterns.tar.gz to /examples/X11/ and decompress it"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/line_patterns.tar.gz
+	cp ../art/line_patterns.tar.gz .
 	gunzip line_patterns.tar.gz
 	tar -xvf line_patterns.tar
 	
 timesi.ttf:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/timesi.zip to /examples/X11/ and decompress it"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/timesi.zip
+	cp ../art/timesi.zip .
 	unzip -o timesi.zip
 	
 ../freetype_test.o:	../freetype_test.cpp

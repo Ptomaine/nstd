@@ -32,7 +32,6 @@
 #include "agg_pixfmt_rgb.h"
 #include "agg_pixfmt_rgba.h"
 
-
 namespace agg
 {
     
@@ -1239,7 +1238,7 @@ namespace agg
                      height + (height - (rct.bottom - rct.top)),
                      FALSE);
    
-        ::SetWindowLongPtr(m_specific->m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        ::SetWindowLongPtr(m_specific->m_hwnd, GWLP_USERDATA, (LONG)this);
         m_specific->create_pmap(width, height, &m_rbuf_window);
         m_initial_width = width;
         m_initial_height = height;
@@ -1451,7 +1450,7 @@ namespace agg
     //-----------------------------------------------------------------------
     inline int tokenizer::check_chr(const char *str, char chr)
     {
-        return int(strchr(str, chr) != nullptr);
+        return int(strchr(str, chr));
     }
 
 

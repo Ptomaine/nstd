@@ -172,10 +172,8 @@ namespace agg
     {
         double a1 = std::atan2(dy1 * m_width_sign, dx1 * m_width_sign);
         double a2 = std::atan2(dy2 * m_width_sign, dx2 * m_width_sign);
-        double da = a1 - a2;
+        double da = std::acos(m_width_abs / (m_width_abs + 0.125 / m_approx_scale)) * 2;
         int i, n;
-
-        da = std::acos(m_width_abs / (m_width_abs + 0.125 / m_approx_scale)) * 2;
 
         add_vertex(vc, x + dx1, y + dy1);
         if(m_width_sign > 0)

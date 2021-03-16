@@ -16,10 +16,6 @@
 #ifndef AGG_FONT_WIN32_TT_INCLUDED
 #define AGG_FONT_WIN32_TT_INCLUDED
 
-#if defined(_MSC_VER) && !defined(NOMINMAX)
-#define NOMINMAX 1
-#endif
-
 #include <windows.h>
 #include "agg_scanline_storage_aa.h"
 #include "agg_scanline_storage_bin.h"

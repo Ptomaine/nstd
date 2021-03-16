@@ -204,7 +204,7 @@ public:
         else
         {
             message("Please copy file timesi.ttf to the current directory\n"
-                    "or download it from http://www.antigrain.com/timesi.zip");
+                    "or unzip it from ../art/timesi.zip");
         }
 
 

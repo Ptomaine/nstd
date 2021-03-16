@@ -230,7 +230,7 @@ int agg_main(int argc, char* argv[])
         if(fd == 0)
         {
             app.message("Usage: svg_test <svg_file>\n"
-                        "Download http://antigrain.com/svg/tiger.svg");
+                        "Copy ../art/tiger.svg");
             return 1;
         }
         fclose(fd);

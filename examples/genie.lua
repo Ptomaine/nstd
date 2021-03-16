@@ -77,6 +77,8 @@ solution "nstd_examples"
     project "blend2d_example"
         files { "blend2d_example.cpp", "../include/blend2d.cpp" }
         includedirs { "../include/external/asmjit/src" }
+        flags { "EnableAVX2" }
+        defines { "BL_BUILD_OPT_AVX2" }
 
         postbuildcmd = "copy ../resources/example_resources/blend2d_example/fonts/*.ttf ./bin/blend2d_example/"
 
@@ -238,6 +240,7 @@ solution "nstd_examples"
         includedirs { "../include/external/sqlite", "../include/external/json/include" }
         configuration "gcc"
             buildoptions { "-Wno-return-local-addr", "-Wno-unused-but-set-variable", "-DSQLITE_DQS=0" }
+            buildoptions_cpp { "-fpermissive" }
 
         configuration { "Debug" }
             objdir "obj/sqlite_example/Debug"
@@ -246,9 +249,6 @@ solution "nstd_examples"
         configuration { "Release" }
             objdir "obj/sqlite_example/Release"
             targetdir "bin/sqlite_example/Release"
-
-        configuration "gcc"
-            buildoptions_cpp { "-fpermissive" }
 
         configuration "linux or macosx or bsd"
             links { "pthread", "dl" }

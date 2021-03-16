@@ -1,4 +1,4 @@
-AC_INIT(agg, 2.6.0)
+AC_INIT(agg, 2.7.0)
 AC_CONFIG_SRCDIR(src/agg_arc.cpp)
 AC_CANONICAL_TARGET
 AC_CONFIG_HEADERS(include/config.h)
@@ -127,7 +127,7 @@ AC_SUBST(x_libraries)
 dnl ###############################################
 
 dnl Settung up library version
-AGG_LIB_VERSION="2:6:0"
+AGG_LIB_VERSION="2:7:0"
 dnl     current-´ / /
 dnl    revision--´ /
 dnl         age---´

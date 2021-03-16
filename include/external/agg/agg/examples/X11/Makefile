@@ -12,6 +12,7 @@ CXXFREETYPEFLAGS= $(AGGCXXFLAGS) -Wall \
 -I../../include \
 -I../../font_freetype \
 -I/usr/local/include/freetype2 \
+-I/usr/include/freetype2 \
 -L../../src \
 $(PIXFMT)
 
@@ -283,47 +284,31 @@ clean:
 	rm -f ../../src/platform/$(PLATFORM)/agg_platform_support.o
 
 agg.ppm:
-	@echo "Please download http://www.antigrain.com/agg.ppm"
-	@echo "Attempting to retrieve via wget: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/agg.ppm
+	cp ../art/agg.ppm .
 
 compositing.ppm:
-	@echo "Please download http://www.antigrain.com/compositing.ppm"
-	@echo "Attempting to retrieve via wget: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/compositing.ppm
+	cp ../art/compositing.ppm .
 
 spheres.ppm:
-	@echo "Please download http://www.antigrain.com/spheres.ppm"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/spheres.ppm
+	cp ../art/spheres.ppm .
 
 shapes.txt:
-	@echo "Please download http://www.antigrain.com/shapes.txt"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/shapes.txt
+	cp ../art/shapes.txt .
 
 1.sdf:
-	@echo "Please download http://www.antigrain.com/1.sdf"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/1.sdf
+	cp ../art/1.sdf .
 
 1.ppm:
-	@echo "Please download http://www.antigrain.com/line_patterns.tar.gz and decompress it"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/line_patterns.tar.gz
+	cp ../art/line_patterns.tar.gz .
 	gunzip line_patterns.tar.gz
 	tar -xvf line_patterns.tar
 	
 timesi.ttf:
-	@echo "Please download http://www.antigrain.com/timesi.zip and decompress it"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/timesi.zip
+	cp ../art/timesi.zip .
 	unzip -o timesi.zip
 
 tiger.svg:
-	@echo "Please download http://www.antigrain.com/svg/tiger.svg"
-	@echo "Attempting to retrieve file: (will fail if wget is not installed)"
-	wget http://www.antigrain.com/svg/tiger.svg
+	cp ../art/tiger.svg .
 	
 ../freetype_test.o:	../freetype_test.cpp
 	@echo \< $*.cpp \>

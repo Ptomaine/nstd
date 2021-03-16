@@ -310,41 +310,23 @@ clean:
 	rm -f gpc_test
 
 agg.bmp:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/agg.bmp to /examples/sdl/"
-	@echo "Attempting to retrieve via curl -O : (will fail if curl -O  is not installed)"
-	curl -O  http://www.antigrain.com/agg.bmp
+	cp ../art/agg.bmp .
 
 compositing.bmp:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/compositing.bmp to /examples/sdl/"
-	@echo "Attempting to retrieve via curl -O : (will fail if curl -O  is not installed)"
-	curl -O  http://www.antigrain.com/compositing.bmp
+	cp ../art/compositing.bmp .
 
 spheres.bmp:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/spheres.bmp to /examples/sdl/"
-	@echo "Attempting to retrieve file: (will fail if curl -O  is not installed)"
-	curl -O  http://www.antigrain.com/spheres.bmp
+	cp ../art/spheres.bmp .
 
 1.sdf:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/1.sdf to /examples/sdl/"
-	@echo "Attempting to retrieve file: (will fail if curl -O  is not installed)"
-	curl -O  http://www.antigrain.com/1.sdf
+	cp ../art/1.sdf .
 
 1.bmp:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/line_patterns.bmp.zip to /examples/sdl/ and decompress it"
-	@echo "Attempting to retrieve file: (will fail if curl -O  is not installed)"
-	curl -O  http://www.antigrain.com/line_patterns.bmp.zip
+	cp ../art/line_patterns.bmp.zip .
 	unzip -o line_patterns.bmp.zip
 
 timesi.ttf:
-	@echo "Required file missing!!"
-	@echo "Please download http://www.antigrain.com/timesi.zip to /examples/sdl/ and decompress it"
-	@echo "Attempting to retrieve file: (will fail if curl -O  is not installed)"
-	curl -O  http://www.antigrain.com/timesi.zip
+	cp ../art/timesi.zip .
 	unzip -o timesi.zip
 	
 ../freetype_test.o:	../freetype_test.cpp

@@ -13,4 +13,3 @@
 #elif defined (__linux__)
 	#include "X11/agg_platform_support.cpp"
 #endif
-

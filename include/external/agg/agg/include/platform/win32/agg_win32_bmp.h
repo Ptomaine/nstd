@@ -19,12 +19,9 @@
 #ifndef AGG_WIN32_BMP_INCLUDED
 #define AGG_WIN32_BMP_INCLUDED
 
-#if defined(_MSC_VER) && !defined(NOMINMAX)
-#define NOMINMAX 1
-#endif
 
 #include <windows.h>
-#include <stdio.h>
+
 
 namespace agg
 {

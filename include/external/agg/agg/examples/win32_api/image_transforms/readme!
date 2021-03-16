@@ -14,7 +14,7 @@
 //----------------------------------------------------------------------------
 
 IMPORTANT!
-Download http://www.antigrain.com/spheres.bmp before running this example.
+Copy spheres.bmp from ..\..\art before running this example.
 
 
 Using affine transformations for images looks tricky, but it's not, especially 

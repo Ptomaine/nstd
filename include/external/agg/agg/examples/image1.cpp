@@ -162,7 +162,7 @@ int agg_main(int argc, char* argv[])
         if(strcmp(img_name, "spheres") == 0)
         {
             sprintf(buf, "File not found: %s%s. Download http://www.antigrain.com/%s%s\n"
-                         "or copy it from another directory if available.",
+                         "or copy it from the ../art directory.",
                     img_name, app.img_ext(), img_name, app.img_ext());
         }
         else
