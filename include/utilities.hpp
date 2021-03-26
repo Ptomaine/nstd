@@ -62,6 +62,11 @@ public:
         _cancelled = false;
     }
 
+    ~cancellable_sleep()
+    {
+        cancel_wait();
+    }
+
 private:
 
     std::condition_variable _cv {};
@@ -91,6 +96,19 @@ public:
 private:
     std::function<void(void)> _functor;
 };
+
+// Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
+uint32_t turbulence_hash(uint32_t state)
+{
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+
+    return state;
+}
 
 struct case_insensitive_hash
 {
@@ -126,6 +144,58 @@ struct case_insensitive_equal
                                 else return std::towlower(ca) == std::towlower(cb);
                             });
     }
+};
+
+class reinterpreted_buffer
+{
+public:
+    reinterpreted_buffer(void *data, uint64_t size) :
+        _data{ reinterpret_cast<uint8_t*>(data) }, _next_data{ _data }, _size{ size }, _size_left{ _size }
+    {
+    }
+
+    template<typename T>
+    const T& get_next()
+    {
+        if (_size_left == 0) throw "No data left";
+
+        constexpr const uint64_t type_size{ sizeof(T) };
+
+        if (_size_left < type_size) throw "The type size is too big";
+
+        void *current_data { _next_data };
+
+        _next_data += type_size;
+        _size_left -= type_size;
+
+        return *reinterpret_cast<T*>(current_data);
+    }
+
+    template<typename T>
+    bool has_next() const
+    {
+        return _size_left >= sizeof(T);
+    }
+
+    uint64_t get_size_left() const
+    {
+        return _size_left;
+    }
+
+    void *get_current_ptr() const
+    {
+        return _next_data;
+    }
+
+    void reset()
+    {
+        _next_data = _data;
+        _size_left = _size;
+    }
+
+private:
+    uint8_t *_data, *_next_data;
+    uint64_t _size, _size_left;
 };
 
 template<typename CharT = char>
