@@ -155,20 +155,18 @@ public:
     }
 
     template<typename T>
-    const T& get_next()
+    const T *const get_next()
     {
-        if (_size_left == 0) throw "No data left";
-
         constexpr const uint64_t type_size{ sizeof(T) };
 
-        if (_size_left < type_size) throw "The type size is too big";
+        if (_size_left == 0 || _size_left < type_size) return nullptr;
 
         void *current_data { _next_data };
 
         _next_data += type_size;
         _size_left -= type_size;
 
-        return *reinterpret_cast<T*>(current_data);
+        return reinterpret_cast<const T*const>(current_data);
     }
 
     template<typename T>
