@@ -155,7 +155,7 @@ public:
     }
 
     template<typename T>
-    const T *const get_next()
+    const T *const get_next_as()
     {
         constexpr const uint64_t type_size{ sizeof(T) };
 
@@ -170,7 +170,17 @@ public:
     }
 
     template<typename T>
-    bool has_next() const
+    const T *const get_current_as()
+    {
+        constexpr const uint64_t type_size{ sizeof(T) };
+
+        if (_size_left == 0 || _size_left < type_size) return nullptr;
+
+        return reinterpret_cast<const T*const>(_next_data);
+    }
+
+    template<typename T>
+    bool is_available_as() const
     {
         return _size_left >= sizeof(T);
     }
