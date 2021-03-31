@@ -287,4 +287,30 @@ inline NumericType wstring_to_numeric(const std::wstring &value)
     return (iss >> result), result;
 }
 
+template <typename T>
+inline any_string<T> pad_left(const any_string<T>& str, int32_t total_digits, T filler)
+{
+    if (total_digits <= 0) return str;
+
+    const int32_t str_length { static_cast<int32_t>(std::size(str)) };
+
+    return any_string<T>(std::clamp(total_digits - str_length, 0, total_digits), filler) + str;
+}
+
+template <typename T>
+inline any_string<T> pad_right(const any_string<T>& str, int32_t total_digits, T filler)
+{
+    if (total_digits <= 0) return str;
+
+    const int32_t str_length { static_cast<int32_t>(std::size(str)) };
+
+    return str + any_string<T>(std::clamp(total_digits - str_length, 0, total_digits), filler);
+}
+
+template <typename T>
+inline any_string<T> reverse(const any_string<T>& str)
+{
+    return any_string<T>{ std::rbegin(str), std::rend(str) };
+}
+
 }
