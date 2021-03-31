@@ -325,4 +325,34 @@ inline any_string<T>& reverse_inplace(any_string<T>& str)
     return str;
 }
 
+inline std::string add_string_numbers(const std::string& a, const std::string& b)
+{
+    std::string result;
+
+    auto aa { reverse(a) }, bb { reverse(b) };
+    auto max_length { std::max(std::size(aa), std::size(bb)) };
+
+    result.reserve(max_length + 1);
+
+    aa = pad_right(aa, static_cast<int32_t>(max_length), '0');
+    bb = pad_right(bb, static_cast<int32_t>(max_length), '0');
+
+    int carry_flag { 0 };
+
+    for (auto idx { 0u }; idx < max_length; ++idx)
+    {
+        auto local { (aa[idx] - '0') + (bb[idx] - '0') + carry_flag };
+
+        carry_flag = local / 10;
+
+        result.append(1, '0' + static_cast<std::string::value_type>(local % 10));
+    }
+
+    if (carry_flag) result.append(1, '1');
+
+    (void)reverse_inplace(result);
+
+    return result;
+}
+
 }
