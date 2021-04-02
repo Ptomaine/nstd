@@ -149,6 +149,9 @@ inline std::u16string_view trim(std::u16string_view sv, const std::u16string_vie
 inline std::u32string_view trim(std::u32string_view sv, const std::u32string_view chars_to_remove = u32whitespace_chars) { return trim_impl(sv, chars_to_remove); }
 
 template <typename T>
+using any_string_view = std::basic_string_view<T, std::char_traits<T>>;
+
+template <typename T>
 using any_string = std::basic_string<T, std::char_traits<T>, std::allocator<T>>;
 
 template <typename T>
@@ -310,15 +313,13 @@ inline any_string<T> pad_right(const any_string<T>& str, int32_t total_digits, T
 template <typename T>
 inline any_string<T> reverse(const any_string<T>& str)
 {
-    return any_string<T>{ std::rbegin(str), std::rend(str) };
+    return { std::rbegin(str), std::rend(str) };
 }
 
 template <typename T>
 inline any_string<T>& reverse_inplace(any_string<T>& str)
 {
-    auto idx { 0u };
-    auto idx_back { std::size(str) };
-    auto half_size { idx_back / 2 };
+    auto idx_back { std::size(str) }, idx { 0u }, half_size { idx_back / 2 };
 
     while (half_size--) std::swap(str[idx++], str[--idx_back]);
 
@@ -327,6 +328,8 @@ inline any_string<T>& reverse_inplace(any_string<T>& str)
 
 inline std::string add_string_numbers(const std::string& a, const std::string& b)
 {
+    if (a.starts_with('-') || b.starts_with('-')) return {};
+
     std::string result;
 
     auto aa { reverse(a) }, bb { reverse(b) };
