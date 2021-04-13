@@ -103,6 +103,7 @@ solution "nstd_examples"
     project "avir_example"
         files { "avir_example.cpp", "../include/blend2d.cpp" }
         includedirs { "../include/external/asmjit/src" }
+        flags { "EnableAVX2" }
 
         postbuildcmd = "copy ../resources/example_resources/avir_example/images/* ./bin/avir_example/"
 

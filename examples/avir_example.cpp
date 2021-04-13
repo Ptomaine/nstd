@@ -18,74 +18,107 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <chrono>
 #include <iostream>
 #include <memory>
+
 #include "blend2d.hpp"
 #include "avir.hpp"
+#include "cmdline_options.hpp"
 
-int main()
+int main(int argc, char** argv)
 {
-    BLImage texture;
+    nstd::po::parser p;
+    auto help_callback { [&p]{ std::cout << p << std::endl; } };
 
-    if (BLResult err = texture.readFromFile("texture.jpeg"); err)
+    auto &sc = p["scale"].abbreviation('s').type(nstd::po::f64).description("Scale factor. 0.5 means twice smaller.\n2.5 means 2 and a half times bigger.\n(Default is 0.5)").fallback(0.5);
+    auto &help = p["help"].abbreviation('?').description("Prints the help screen");
+    auto &files = p[""];
+
+    if (argc == 1 || !p(argc, argv) || std::size(files) == 0) { help_callback(); return -1; }
+
+    for (const auto& filename : files.to_vector<nstd::po::string>())
     {
-        std::cout << "Cannot open image file: " << err << std::endl;
-        return err;
-    }
+        std::cout << "Working on: " << filename << std::endl;
 
-    BLImageData image_data;
+        BLImage texture;
 
-    texture.getData(&image_data);
+        if (BLResult err = texture.readFromFile(filename.c_str()); err)
+        {
+            std::cout << "Cannot open image file: " << err << std::endl;
+            continue;
+        }
 
-    using fpclass_dith = nstd::avir::fpclass_def<float, float, nstd::avir::CImageResizerDithererErrdINL<float>>;
+        BLImageData image_data;
 
-    uint8_t *image { reinterpret_cast<uint8_t*>(image_data.pixelData) };
-    const int &width { image_data.size.w }, &height { image_data.size.h }, stride { static_cast<int>(image_data.stride) };
-    constexpr const float scale { .5f };
-    const int channels { static_cast<int>(blFormatInfo[image_data.format].depth / 8) };
-    const int new_width { static_cast<int>(width * scale + .5) }, new_height { static_cast<int>(height * scale + .5) }, new_stride { new_width * channels };
-    auto new_image = std::make_unique<uint8_t[]>(new_height * new_stride);
+        texture.getData(&image_data);
 
-    std::cout << "w: " << width << "; h: " << height << "; s: " << stride << std::endl << "w: " << new_width << "; h: " << new_height << "; s: " << new_stride << std::endl;
+        using fpclass_dith = nstd::avir::fpclass_def<float, float, nstd::avir::CImageResizerDithererErrdINL<float>>;
 
-    nstd::avir_scale_thread_pool scaling_pool;
-    nstd::avir::CImageResizerVars vars; vars.ThreadPool = &scaling_pool;
-    nstd::avir::CImageResizerParamsUltra roptions;
-    nstd::avir::CImageResizer<fpclass_dith> image_resizer { 8, 0, roptions};
-    std::cout << "the size of pool: " << scaling_pool.size() << std::endl;
-    image_resizer.resizeImage(image, width, height, 0, new_image.get(), new_width, new_height, channels, 0, &vars);
+        uint8_t *image { reinterpret_cast<uint8_t*>(image_data.pixelData) };
+        const int &width { image_data.size.w }, &height { image_data.size.h }, stride { static_cast<int>(image_data.stride) };
+        const double scale { sc.get().f64 };
+        const int channels { static_cast<int>(blFormatInfo[image_data.format].depth / 8) };
+        const int new_width { static_cast<int>(width * scale + .5) }, new_height { static_cast<int>(height * scale + .5) }, new_stride { new_width * channels };
+        auto new_image = std::make_unique<uint8_t[]>(new_height * new_stride);
 
+        std::cout << "Scaling: " << scale << std::endl;
+        std::cout << "w: " << width << "; h: " << height << "; s: " << stride << std::endl << "w: " << new_width << "; h: " << new_height << "; s: " << new_stride << std::endl;
 
-    BLImage new_img;
+        nstd::avir_scale_thread_pool scaling_pool;
+        nstd::avir::CImageResizerVars vars; vars.ThreadPool = &scaling_pool;
+        nstd::avir::CImageResizerParamsUltra roptions;
+        nstd::avir::CImageResizer<fpclass_dith> image_resizer { 8, 0, roptions};
+        std::cout << "the size of pool: " << scaling_pool.size() << std::endl;
+        std::chrono::high_resolution_clock::time_point start_time { std::chrono::high_resolution_clock::now() };
 
-    if (BLResult err = new_img.createFromData(new_width, new_height, image_data.format, new_image.get(), new_stride); err)
-    {
-        std::cout << "Cannot store image data..." << err << std::endl;
-        return err;
-    }
+        image_resizer.resizeImage(image, width, height, 0, new_image.get(), new_width, new_height, channels, 0, &vars);
 
-    BLImageCodec codec;
+        std::chrono::high_resolution_clock::time_point finish_time { std::chrono::high_resolution_clock::now() };
+        std::chrono::milliseconds run_time { std::chrono::duration_cast<std::chrono::milliseconds>(finish_time - start_time) };
 
-    codec.findByName("BMP");
+        std::cout << "AVIR resizing time: " << (static_cast<double>(run_time.count()) / 1000) << " seconds" << std::endl;
 
-    if (BLResult err = new_img.writeToFile("avir_example_avir_output.bmp", codec); err)
-    {
-        return err;
-    }
+        BLImage new_img;
 
-    // Blend2D resize with Blackman
-    BLImage blackman;
-    BLSizeI size { new_width, new_height };
-    BLImageScaleOptions options { .radius = (scale < 1. ? 2. : (scale <= 16. ? scale : 16.)) };
+        if (BLResult err = new_img.createFromData(new_width, new_height, image_data.format, new_image.get(), new_stride); err)
+        {
+            std::cout << "Cannot store image data..." << err << std::endl;
+            continue;
+        }
 
-    if (BLResult err = BLImage::scale(blackman, texture, size, BL_IMAGE_SCALE_FILTER_BLACKMAN, &options); err)
-    {
-        return err;
-    }
+        BLImageCodec codec;
 
-    if (BLResult err = blackman.writeToFile("avir_example_blackman_output.bmp", codec); err)
-    {
-        return err;
+        codec.findByName("BMP");
+
+        if (BLResult err = new_img.writeToFile((filename + "_avir.bmp").c_str(), codec); err)
+        {
+            continue;
+        }
+
+        // Blend2D resize with Blackman
+        BLImage blackman;
+        BLSizeI size { new_width, new_height };
+        BLImageScaleOptions options { .radius = (scale < 1. ? 2. : (scale <= 16. ? scale : 16.)) };
+
+        start_time = std::chrono::high_resolution_clock::now();
+
+        if (BLResult err = BLImage::scale(blackman, texture, size, BL_IMAGE_SCALE_FILTER_BLACKMAN, &options); err)
+        {
+            continue;
+        }
+
+        finish_time = std::chrono::high_resolution_clock::now();
+        run_time = std::chrono::duration_cast<std::chrono::milliseconds>(finish_time - start_time);
+
+        std::cout << "B2D (Blackman) resizing time: " << (static_cast<double>(run_time.count()) / 1000) << " seconds" << std::endl;
+
+        if (BLResult err = blackman.writeToFile((filename + "_blackman.bmp").c_str(), codec); err)
+        {
+            continue;
+        }
+
+        std::cout << "-----------------------------------------------" << std::endl;
     }
 
     return 0;

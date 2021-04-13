@@ -86,3 +86,7 @@
 	path = include/external/freetype/brotli
 	url = https://github.com/google/brotli.git
 	branch = master
+[submodule "include/external/memmap"]
+	path = include/external/memmap
+	url = https://github.com/manuel5975p/memmap.git
+	branch = master
