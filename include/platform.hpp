@@ -24,6 +24,8 @@ SOFTWARE.
     #include <bit>
 #endif
 
+#include <stdint.h>
+
 namespace nstd::platform
 {
 
