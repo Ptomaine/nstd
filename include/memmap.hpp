@@ -49,20 +49,25 @@ using mmap_size_t = DWORD;
 #include <exception>
 #include <filesystem>
 #include <type_traits>
+#include <stdint.h>
 
 namespace nstd
 {
 
 template <typename T>
-requires std::is_pointer_v<T>
-struct memmap
+concept non_pointer_type = !std::is_pointer_v<T>;
+
+template <non_pointer_type T>
+class memmap
 {
 private:
-    static inline constexpr bool is_const_t { std::is_const_v<std::remove_pointer<T>> };
-    T _data;
+    using data_ptr_type = std::add_pointer_t<T>;
+
+    static inline constexpr bool is_const_t { std::is_const_v<T> };
+    data_ptr_type _data;
 
 #ifdef OS_FAMILY_UNIX
-    int filedesc;
+    int _filedesc;
 #elif defined(OS_FAMILY_WINDOWS)
     HANDLE _file;
     HANDLE _mapping;
@@ -74,34 +79,33 @@ public:
     memmap(const std::string& path) : memmap(path.c_str()) {}
     memmap(const char* path) : _data(nullptr),
 #ifdef OS_FAMILY_UNIX
-                                filedesc(-1)
+                               _filedesc(-1)
 #elif defined(OS_FAMILY_WINDOWS)
-                                _file(INVALID_HANDLE_VALUE), _mapping(NULL)
+                               _file(INVALID_HANDLE_VALUE), _mapping(NULL)
 #endif
     {
 #ifdef OS_FAMILY_UNIX
 
-        if constexpr (is_const_t) filedesc = open(path, O_RDONLY); else filedesc = open(path, O_RDWR);
+        if constexpr (is_const_t) _filedesc = open(path, O_RDONLY); else _filedesc = open(path, O_RDWR);
 
-        if (filedesc == -1) throw std::invalid_argument("File could not be opened");
+        if (_filedesc == -1) throw std::invalid_argument("File could not be opened");
         
-        _size = lseek(filedesc, 0, SEEK_END);
+        _size = lseek(_filedesc, 0, SEEK_END);
         
         if (_size == (static_cast<mmap_size_t>(-1))) throw std::invalid_argument("Size could not be determined");
         
         if constexpr (is_const_t)
-            _data = (T*)mmap(0, _size, PROT_READ, MAP_SHARED, filedesc, 0);
+            _data = reinterpret_cast<data_ptr_type>(mmap(0, _size, PROT_READ, MAP_SHARED, _filedesc, 0));
         else
-            _data = (T*)mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, filedesc, 0);
+            _data = reinterpret_cast<data_ptr_type>(mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, _filedesc, 0));
         
         if ((void*)_data == MAP_FAILED)
         {
-            ::close(filedesc);
+            ::close(_filedesc);
             throw std::invalid_argument("File could not be mapped");
         }
 
 #elif defined(OS_FAMILY_WINDOWS)
-        
         
         if constexpr (is_const_t)
             _file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -120,9 +124,9 @@ public:
         if (_mapping == NULL) throw std::invalid_argument("Mapping failed");
 
         if constexpr (is_const_t)
-            _data = reinterpret_cast<T>(MapViewOfFile(_mapping, FILE_MAP_READ, 0, 0, 0));
+            _data = reinterpret_cast<data_ptr_type>(MapViewOfFile(_mapping, FILE_MAP_READ, 0, 0, 0));
         else
-            _data = reinterpret_cast<T>(MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
+            _data = reinterpret_cast<data_ptr_type>(MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
 
 #endif
     }
@@ -157,6 +161,26 @@ public:
         return _data;
     }
 
+    auto& front() requires (!is_const_t)
+    {
+        return *_data;
+    }
+    
+    auto& front() const
+    {
+        return *_data;
+    }
+
+    auto& back() requires (!is_const_t)
+    {
+        return *(_data + _size - 1);
+    }
+    
+    auto& back() const
+    {
+        return *(_data + _size - 1);
+    }
+
     auto& operator[](size_t i) requires (!is_const_t)
     {
         assert(i < _size);
@@ -171,28 +195,26 @@ public:
         return _data[i];
     }
     
-    void resize(mmap_size_t size)
+    
+    mmap_size_t size() const
+    {
+        return _size;
+    }
+
+    void resize(mmap_size_t size) requires (!is_const_t)
     {
 #ifdef OS_FAMILY_UNIX
 
-        static_assert(!is_const_t);
-
-        if (ftruncate(filedesc, size) == -1) throw std::invalid_argument("ftruncate failed");
+        if (ftruncate(_filedesc, size) == -1) throw std::invalid_argument("ftruncate failed");
 
         if (munmap((void*)_data, _size)) throw std::invalid_argument("munmap failed");
 
         _size = size;
-
-        if constexpr (is_const_t)
-            _data = reinterpret_cast<T>(mmap(0, _size, PROT_READ, MAP_SHARED, filedesc, 0));
-        else
-            _data = reinterpret_cast<T>(mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, filedesc, 0));
+        _data = reinterpret_cast<data_ptr_type>(mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, _filedesc, 0));
         
         if ((void*)_data == MAP_FAILED) throw std::invalid_argument("File could not be mapped");
 
 #elif defined(OS_FAMILY_WINDOWS)
-
-        static_assert(!is_const_t);
 
         UnmapViewOfFile(_data);
 
@@ -206,73 +228,34 @@ public:
         SetEndOfFile(_file);
 
         _size = size;
-
-        if constexpr (is_const_t)
-            _mapping = CreateFileMapping(_file, NULL, PAGE_READONLY, 0, 0, NULL);
-        else
-            _mapping = CreateFileMapping(_file, NULL, PAGE_READWRITE, 0, 0, NULL);
+        _mapping = CreateFileMapping(_file, NULL, PAGE_READWRITE, 0, 0, NULL);
 
         if (_mapping == NULL) throw std::invalid_argument("Mapping failed");
 
-        
-        if constexpr (is_const_t)
-            _data = reinterpret_cast<T>(MapViewOfFile(_mapping, FILE_MAP_READ, 0, 0, 0));
-        else
-            _data = reinterpret_cast<T>(MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
+        _data = reinterpret_cast<data_ptr_type>(MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
+
 #endif
     }
 
-    void close()
+    void resize_relational(mmap_size_t amount) requires (!is_const_t)
     {
-#ifdef OS_FAMILY_UNIX
-
-        if (_data)
-        {
-            munmap((void*)_data, _size);
-
-            _data = nullptr;
-        }
-
-        if (filedesc != -1)
-        {
-            ::close(filedesc);
-        
-            filedesc = -1;
-        }
-
-#elif defined(OS_FAMILY_WINDOWS)
-        
-        if (_data)
-        {
-            UnmapViewOfFile(_data);
-        
-            _data = nullptr;
-        }
-        
-        if (_mapping)
-        {
-            CloseHandle(_mapping);
-        
-            _mapping = NULL;
-        }
-        
-        if (_file != INVALID_HANDLE_VALUE)
-        {
-            CloseHandle(_file);
-        
-            _file = INVALID_HANDLE_VALUE;
-        }
-#endif
+        resize(_size + amount);
     }
 
     ~memmap()
     {
-        close();
-    }
-    
-    mmap_size_t size() const
-    {
-        return _size;
+#ifdef OS_FAMILY_UNIX
+
+        if (_data) munmap((void*)_data, _size);
+        if (_filedesc != -1) ::close(_filedesc);
+
+#elif defined(OS_FAMILY_WINDOWS)
+        
+        if (_data) UnmapViewOfFile(_data);
+        if (_mapping) CloseHandle(_mapping);
+        if (_file != INVALID_HANDLE_VALUE) CloseHandle(_file);
+
+#endif
     }
 };
 
