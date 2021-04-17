@@ -38,18 +38,17 @@ using mmap_size_t = off_t;
 
 #elif defined(OS_FAMILY_WINDOWS)
 
-#include <Windows.h>
+#include <windows.h>
 using mmap_size_t = DWORD;
 
 #else
 #error OS not supported
 #endif
 
-#include <cassert>
 #include <exception>
 #include <filesystem>
-#include <type_traits>
-#include <stdint.h>
+#include <string>
+#include <string_view>
 
 namespace nstd
 {
@@ -60,11 +59,10 @@ concept non_pointer_type = !std::is_pointer_v<T>;
 template <non_pointer_type T>
 class memmap
 {
-private:
     using data_ptr_type = std::add_pointer_t<T>;
 
-    static inline constexpr bool is_const_t { std::is_const_v<T> };
     data_ptr_type _data;
+    mmap_size_t _size;
 
 #ifdef OS_FAMILY_UNIX
     int _filedesc;
@@ -72,11 +70,16 @@ private:
     HANDLE _file;
     HANDLE _mapping;
 #endif
-    mmap_size_t _size;
+
+    static inline constexpr const bool is_const_t { std::is_const_v<T> };
+    static inline constexpr const bool is_non_const_t { !is_const_t };
 
 public:
     memmap(const std::filesystem::path& paf) : memmap(paf.c_str()) {}
     memmap(const std::string& path) : memmap(path.c_str()) {}
+    memmap(const std::u8string& path) : memmap(reinterpret_cast<const char*>(path.c_str())) {}
+    memmap(std::string_view path) : memmap(std::data(path)) {}
+    memmap(std::u8string_view path) : memmap(reinterpret_cast<char*>(std::data(path))) {}
     memmap(const char* path) : _data(nullptr),
 #ifdef OS_FAMILY_UNIX
                                _filedesc(-1)
@@ -131,12 +134,12 @@ public:
 #endif
     }
 
-    auto begin() requires (!is_const_t)
+    auto begin() requires (is_non_const_t)
     {
         return _data;
     }
 
-    auto end() requires (!is_const_t)
+    auto end() requires (is_non_const_t)
     {
         return _data + size();
     }
@@ -151,7 +154,7 @@ public:
         return _data + size();
     }
 
-    auto data() requires (!is_const_t)
+    auto data() requires (is_non_const_t)
     {
         return _data;
     }
@@ -161,7 +164,7 @@ public:
         return _data;
     }
 
-    auto& front() requires (!is_const_t)
+    auto& front() requires (is_non_const_t)
     {
         return *_data;
     }
@@ -171,7 +174,7 @@ public:
         return *_data;
     }
 
-    auto& back() requires (!is_const_t)
+    auto& back() requires (is_non_const_t)
     {
         return *(_data + _size - 1);
     }
@@ -181,7 +184,7 @@ public:
         return *(_data + _size - 1);
     }
 
-    auto& operator[](size_t i) requires (!is_const_t)
+    auto& operator[](size_t i) requires (is_non_const_t)
     {
         assert(i < _size);
 
@@ -201,7 +204,7 @@ public:
         return _size;
     }
 
-    void resize(mmap_size_t size) requires (!is_const_t)
+    void resize(mmap_size_t size) requires (is_non_const_t)
     {
 #ifdef OS_FAMILY_UNIX
 
@@ -237,7 +240,7 @@ public:
 #endif
     }
 
-    void resize_relational(mmap_size_t amount) requires (!is_const_t)
+    void resize_relational(mmap_size_t amount) requires (is_non_const_t)
     {
         resize(_size + amount);
     }
