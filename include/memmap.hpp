@@ -75,18 +75,16 @@ class memmap
     static inline constexpr const bool is_non_const_t { !is_const_t };
 
 public:
-    memmap(const std::filesystem::path& paf) : memmap(paf.c_str()) {}
-    memmap(const std::string& path) : memmap(path.c_str()) {}
-    memmap(const std::u8string& path) : memmap(reinterpret_cast<const char*>(path.c_str())) {}
-    memmap(std::string_view path) : memmap(std::data(path)) {}
-    memmap(std::u8string_view path) : memmap(reinterpret_cast<char*>(std::data(path))) {}
-    memmap(const char* path) : _data(nullptr),
+
+    memmap(const std::filesystem::path& p) : _data(nullptr),
 #ifdef OS_FAMILY_UNIX
                                _filedesc(-1)
 #elif defined(OS_FAMILY_WINDOWS)
                                _file(INVALID_HANDLE_VALUE), _mapping(NULL)
 #endif
     {
+        auto path { p.c_str() };
+
 #ifdef OS_FAMILY_UNIX
 
         if constexpr (is_const_t) _filedesc = open(path, O_RDONLY); else _filedesc = open(path, O_RDWR);
@@ -111,9 +109,9 @@ public:
 #elif defined(OS_FAMILY_WINDOWS)
         
         if constexpr (is_const_t)
-            _file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            _file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
         else
-            _file = CreateFileA(path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            _file = CreateFileW(path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
         if (_file == INVALID_HANDLE_VALUE) throw std::runtime_error("Opening file failed");
 
@@ -141,7 +139,7 @@ public:
 
     auto end() requires (is_non_const_t)
     {
-        return _data + size();
+        return _data + _size;
     }
 
     auto begin() const
@@ -151,7 +149,7 @@ public:
 
     auto end() const
     {
-        return _data + size();
+        return _data + _size;
     }
 
     auto data() requires (is_non_const_t)
@@ -186,15 +184,11 @@ public:
 
     auto& operator[](size_t i) requires (is_non_const_t)
     {
-        assert(i < _size);
-
         return _data[i];
     }
     
     auto& operator[](size_t i) const
     {
-        assert(i < _size);
-
         return _data[i];
     }
     
