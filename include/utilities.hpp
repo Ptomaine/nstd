@@ -31,6 +31,7 @@ SOFTWARE.
 #include <fstream>
 #include <future>
 #include <mutex>
+#include <stdint.h>
 #include <string>
 #include <string_view>
 #include <unordered_map>
