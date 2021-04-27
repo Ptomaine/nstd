@@ -39,6 +39,7 @@ using mmap_size_t = off_t;
 #elif defined(OS_FAMILY_WINDOWS)
 
 #include <windows.h>
+
 using mmap_size_t = DWORD;
 
 #else
@@ -47,8 +48,6 @@ using mmap_size_t = DWORD;
 
 #include <exception>
 #include <filesystem>
-#include <string>
-#include <string_view>
 
 namespace nstd
 {
@@ -83,22 +82,24 @@ public:
                                _file(INVALID_HANDLE_VALUE), _mapping(NULL)
 #endif
     {
+        if (!std::filesystem::is_regular_file(p) || !std::filesystem::exists(p)) throw std::invalid_argument("File doesn't exist");
+
         auto path { p.c_str() };
 
 #ifdef OS_FAMILY_UNIX
 
-        if constexpr (is_const_t) _filedesc = open(path, O_RDONLY); else _filedesc = open(path, O_RDWR);
+        if constexpr (is_const_t) _filedesc = ::open(path, O_RDONLY); else _filedesc = open(path, O_RDWR);
 
-        if (_filedesc == -1) throw std::invalid_argument("File could not be opened");
+        if (_filedesc == -1) throw std::invalid_argument("Failed to open the requested file");
         
-        _size = lseek(_filedesc, 0, SEEK_END);
+        _size = ::lseek(_filedesc, 0, SEEK_END);
         
         if (_size == (static_cast<mmap_size_t>(-1))) throw std::invalid_argument("Size could not be determined");
         
         if constexpr (is_const_t)
-            _data = reinterpret_cast<data_ptr_type>(mmap(0, _size, PROT_READ, MAP_SHARED, _filedesc, 0));
+            _data = reinterpret_cast<data_ptr_type>(::mmap(0, _size, PROT_READ, MAP_SHARED, _filedesc, 0));
         else
-            _data = reinterpret_cast<data_ptr_type>(mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, _filedesc, 0));
+            _data = reinterpret_cast<data_ptr_type>(::mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, _filedesc, 0));
         
         if ((void*)_data == MAP_FAILED)
         {
@@ -109,25 +110,29 @@ public:
 #elif defined(OS_FAMILY_WINDOWS)
         
         if constexpr (is_const_t)
-            _file = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            _file = ::CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
         else
-            _file = CreateFileW(path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            _file = ::CreateFileW(path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-        if (_file == INVALID_HANDLE_VALUE) throw std::runtime_error("Opening file failed");
+        if (_file == INVALID_HANDLE_VALUE) throw std::runtime_error("Failed to open the requested file");
 
-        _size = GetFileSize(_file, NULL);
+        _size = ::GetFileSize(_file, NULL);
         
         if constexpr (is_const_t)
-            _mapping = CreateFileMapping(_file, NULL, PAGE_READONLY, 0, 0, NULL);
+            _mapping = ::CreateFileMapping(_file, NULL, PAGE_READONLY, 0, 0, NULL);
         else
-            _mapping = CreateFileMapping(_file, NULL, PAGE_READWRITE, 0, 0, NULL);
+            _mapping = ::CreateFileMapping(_file, NULL, PAGE_READWRITE, 0, 0, NULL);
 
-        if (_mapping == NULL) throw std::invalid_argument("Mapping failed");
+        if (_mapping == NULL)
+        {
+            ::CloseHandle(_file);
+            throw std::invalid_argument("Mapping failed");
+        }
 
         if constexpr (is_const_t)
-            _data = reinterpret_cast<data_ptr_type>(MapViewOfFile(_mapping, FILE_MAP_READ, 0, 0, 0));
+            _data = reinterpret_cast<data_ptr_type>(::MapViewOfFile(_mapping, FILE_MAP_READ, 0, 0, 0));
         else
-            _data = reinterpret_cast<data_ptr_type>(MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
+            _data = reinterpret_cast<data_ptr_type>(::MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
 
 #endif
     }
@@ -202,34 +207,34 @@ public:
     {
 #ifdef OS_FAMILY_UNIX
 
-        if (ftruncate(_filedesc, size) == -1) throw std::invalid_argument("ftruncate failed");
+        if (::ftruncate(_filedesc, size) == -1) throw std::invalid_argument("ftruncate failed");
 
-        if (munmap((void*)_data, _size)) throw std::invalid_argument("munmap failed");
+        if (::munmap((void*)_data, _size)) throw std::invalid_argument("munmap failed");
 
         _size = size;
-        _data = reinterpret_cast<data_ptr_type>(mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, _filedesc, 0));
+        _data = reinterpret_cast<data_ptr_type>(::mmap(0, _size, PROT_READ | PROT_WRITE, MAP_SHARED, _filedesc, 0));
         
         if ((void*)_data == MAP_FAILED) throw std::invalid_argument("File could not be mapped");
 
 #elif defined(OS_FAMILY_WINDOWS)
 
-        UnmapViewOfFile(_data);
+        ::UnmapViewOfFile(_data);
 
         _data = nullptr;
 
-        CloseHandle(_mapping);
+        ::CloseHandle(_mapping);
 
         _mapping = NULL;
 
-        SetFilePointer(_file, size, 0, FILE_BEGIN);
-        SetEndOfFile(_file);
+        ::SetFilePointer(_file, size, 0, FILE_BEGIN);
+        ::SetEndOfFile(_file);
 
         _size = size;
-        _mapping = CreateFileMapping(_file, NULL, PAGE_READWRITE, 0, 0, NULL);
+        _mapping = ::CreateFileMapping(_file, NULL, PAGE_READWRITE, 0, 0, NULL);
 
         if (_mapping == NULL) throw std::invalid_argument("Mapping failed");
 
-        _data = reinterpret_cast<data_ptr_type>(MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
+        _data = reinterpret_cast<data_ptr_type>(::MapViewOfFile(_mapping, FILE_MAP_WRITE, 0, 0, 0));
 
 #endif
     }
@@ -243,14 +248,14 @@ public:
     {
 #ifdef OS_FAMILY_UNIX
 
-        if (_data) munmap((void*)_data, _size);
+        if (_data) ::munmap((void*)_data, _size);
         if (_filedesc != -1) ::close(_filedesc);
 
 #elif defined(OS_FAMILY_WINDOWS)
         
-        if (_data) UnmapViewOfFile(_data);
-        if (_mapping) CloseHandle(_mapping);
-        if (_file != INVALID_HANDLE_VALUE) CloseHandle(_file);
+        if (_data) ::UnmapViewOfFile(_data);
+        if (_mapping) ::CloseHandle(_mapping);
+        if (_file != INVALID_HANDLE_VALUE) ::CloseHandle(_file);
 
 #endif
     }
