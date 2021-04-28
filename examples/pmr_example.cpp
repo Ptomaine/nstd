@@ -27,6 +27,7 @@ SOFTWARE.
 #include "utilities.hpp"
 #include "cmdline_options.hpp"
 #include "process.hpp"
+#include "signal_slot.hpp"
 
 int main(int argc, char **argv)
 {
@@ -86,19 +87,20 @@ int main(int argc, char **argv)
 
     enum command : uint8_t
     {
+        unknown = 0,
         open_file = 100, close_file,
         go_back, go_forward,
         reload
     };
 
-    std::map<uint8_t, std::string> command_map
+    std::map<uint8_t, std::u8string> command_map
     {
-        {0, "Unknown"s},
-        {command::open_file, "Open file"s},
-        {command::close_file, "Close file"s},
-        {command::go_back, "Go back"s},
-        {command::go_forward, "Go forward"s},
-        {command::reload, "Reload"s}
+        {command::unknown, u8"unknown"s},
+        {command::open_file, u8"open_file"s},
+        {command::close_file, u8"close_file"s},
+        {command::go_back, u8"go_back"s},
+        {command::go_forward, u8"go_forward"s},
+        {command::reload, u8"reload"s}
     };
 
     using event = planar_movements_event_provider::event;
@@ -106,6 +108,17 @@ int main(int argc, char **argv)
     planar_movements_event_provider pmep;
     command_recognizer<event, command> cr;
     remove_noise_filter rnf;
+    nstd::signal_slot::connection_bag cons;
+    nstd::signal_slot::signal_set<> command_signals;
+
+    cons = command_signals[u8"unknown"s].connect([](){ std::cout << "Unknown" << std::endl; });
+    cons = command_signals[u8"open_file"s].connect([](){ std::cout << "Open file" << std::endl; });
+    cons = command_signals[u8"close_file"s].connect([](){ std::cout << "Close file" << std::endl; });
+    cons = command_signals[u8"go_back"s].connect([](){ std::cout << "Go back" << std::endl; });
+    cons = command_signals[u8"go_forward"s].connect([](){ std::cout << "Go forward" << std::endl; });
+    cons = command_signals[u8"reload"s].connect([](){ std::cout << "Reload" << std::endl; });
+
+    auto emit_signal = [&command_signals, &command_map, & cr, &rnf](auto &&coords) { command_signals[command_map[cr(rnf(std::move(coords)))]].emit(); };
 
     cr. add_command(command::open_file,  { event::up }).
         add_command(command::close_file, { event::down }).
@@ -117,7 +130,7 @@ int main(int argc, char **argv)
     {
         std::vector<event> coords { pmep(100., 100.), pmep(150., 105.), pmep(200., 103.), pmep(250., 102.), pmep(300., 95.) }; // moving right
 
-        std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
+        emit_signal(std::move(coords));
     }
 
     {
@@ -127,27 +140,34 @@ int main(int argc, char **argv)
          // moving right, but mapping the right event to the left one using event_filter
         std::vector<event> coords { ef(pmep(100., 100.)), ef(pmep(150., 105.)), ef(pmep(200., 103.)), ef(pmep(250., 102.)), ef(pmep(300., 95.)) }; // moving right
 
-        std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
+        emit_signal(std::move(coords));
     }
 
     {
         std::vector<event> coords { pmep(295., 239.), pmep(310., 202.), pmep(300., 150.), pmep(300., 120.), pmep(300., 95.) }; // moving up
 
-        std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
+        emit_signal(std::move(coords));
     }
 
     {
         std::vector<event> coords { pmep(300., 95.), pmep(300., 120.), pmep(300., 150.), pmep(310., 202.), pmep(295., 239.) }; // moving down
 
-        std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
+        emit_signal(std::move(coords));
     }
 
     {
         std::vector<event> coords { pmep(300., 95.), pmep(300., 120.), pmep(300., 150.), pmep(310., 202.), pmep(295., 239.),
                                                                      pmep(295., 239.), pmep(310., 202.), pmep(300., 150.), pmep(300., 120.), pmep(300., 95.) }; // moving down & up
 
-        std::cout << command_map[cr(rnf(std::move(coords)))] << std::endl;
+        emit_signal(std::move(coords));
     }
+
+    {
+        std::vector<event> coords { pmep(300., 95.), pmep(1300., 11.), pmep(30., 5150.), pmep(0., 25.), pmep(0., 129.) }; // Noise / Unknown
+
+        emit_signal(std::move(coords));
+    }
+
 
     return 0;
 }
