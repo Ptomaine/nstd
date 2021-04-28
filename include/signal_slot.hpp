@@ -958,12 +958,13 @@ private:
     }
 };
 
-template<template <typename...> typename SignalType, typename... Args>
+template<typename Key, template <typename...> typename SignalType, typename... Args>
 requires std::derived_from<SignalType<Args...>, signal_base>
 class signal_set_base
 {
 public:
     using signal_type = SignalType<Args...>;
+    using key_type = Key;
 
     signal_set_base() = default;
     virtual ~signal_set_base() = default;
@@ -978,27 +979,27 @@ public:
         emit(args...);
     }
 
-    virtual signal_type &get_signal(const std::u8string &signal_name)
+    virtual signal_type &get_signal(const key_type &key)
     {
-        auto signal { _signals.find(signal_name) };
+        auto signal { _signals.find(key) };
 
         if (signal != _signals.end()) return *signal->second;
 
-        return *_signals.emplace(signal_name, std::make_unique<signal_type>(signal_name)).first->second;
+        return *_signals.emplace(key, std::make_unique<signal_type>()).first->second;
     }
 
-    bool exists(const std::u8string &signal_name) const
+    bool exists(const key_type &key) const
     {
-        return _signals.find(signal_name) != _signals.end();
+        return _signals.find(key) != _signals.end();
     }
 
-    std::unordered_set<std::u8string> get_signal_names() const
+    std::unordered_set<key_type> get_signal_keys() const
     {
-        std::unordered_set<std::u8string> signal_names;
+        std::unordered_set<key_type> signal_keys;
 
-        for (const auto &[key, _] : _signals) signal_names.insert(key);
+        for (const auto &[key, _] : _signals) signal_keys.insert(key);
 
-        return signal_names;
+        return signal_keys;
     }
 
     auto get_signal_count() const
@@ -1006,9 +1007,9 @@ public:
         return std::size(_signals);
     }
 
-    signal_type &operator[](const std::u8string &signal_name)
+    signal_type &operator[](const key_type &key)
     {
-        return get_signal(signal_name);
+        return get_signal(key);
     }
 
     auto begin() const
@@ -1022,21 +1023,22 @@ public:
     }
 
 protected:
-    std::unordered_map<std::u8string, std::unique_ptr<signal_type>> _signals {};
+    std::unordered_map<key_type, std::unique_ptr<signal_type>> _signals {};
 };
 
-template<template <typename...> typename BridgedSignalType, typename... Args>
+template<typename Key, template <typename...> typename BridgedSignalType, typename... Args>
 requires std::derived_from<BridgedSignalType<Args...>, signal_base>
-class bridged_signal_set_base : public signal_set_base<BridgedSignalType, Args...>
+class bridged_signal_set_base : public signal_set_base<Key, BridgedSignalType, Args...>
 {
 public:
-    using base_class = signal_set_base<BridgedSignalType, Args...>;
+    using base_class = signal_set_base<Key, BridgedSignalType, Args...>;
+    using key_type = Key;
 
     bridged_signal_set_base(const std::function<bool(typename base_class::signal_type::bridged_signal_type*)>& emit_functor) : base_class {}, _emit_functor { emit_functor } {}
 
-    virtual typename base_class::signal_type &get_signal(const std::u8string &signal_name) override
+    virtual typename base_class::signal_type &get_signal(const key_type &key) override
     {
-        auto &signal { base_class::get_signal(signal_name) };
+        auto &signal { base_class::get_signal(key) };
 
         if (!signal.get_emit_functor() && _emit_functor) signal.set_emit_functor(_emit_functor);
 
@@ -1057,16 +1059,16 @@ protected:
     std::function<bool(typename base_class::signal_type::bridged_signal_type*)> _emit_functor { nullptr };
 };
 
-template<typename... Args> using signal_set = signal_set_base<signal, Args...>;
-template<typename... Args> using signal_ex_set = signal_set_base<signal_ex, Args...>;
-template<typename... Args> using throttled_signal_set = signal_set_base<throttled_signal, Args...>;
-template<typename... Args> using throttled_signal_ex_set = signal_set_base<throttled_signal_ex, Args...>;
-template<typename... Args> using queued_signal_set = signal_set_base<queued_signal, Args...>;
-template<typename... Args> using queued_signal_ex_set = signal_set_base<queued_signal_ex, Args...>;
-template<typename scope, typename... Args> using queued_signal_scoped_set = signal_set_base<queued_signal_scoped, scope, Args...>;
-template<typename scope, typename... Args> using queued_signal_ex_scoped_set = signal_set_base<queued_signal_ex_scoped, scope, Args...>;
-template<typename... Args> using bridged_signal_set = bridged_signal_set_base<bridged_signal, Args...>;
-template<typename... Args> using bridged_signal_ex_set = bridged_signal_set_base<bridged_signal_ex, Args...>;
+template<typename Key, typename... Args> using signal_set = signal_set_base<Key, signal, Args...>;
+template<typename Key, typename... Args> using signal_ex_set = signal_set_base<Key, signal_ex, Args...>;
+template<typename Key, typename... Args> using throttled_signal_set = signal_set_base<Key, throttled_signal, Args...>;
+template<typename Key, typename... Args> using throttled_signal_ex_set = signal_set_base<Key, throttled_signal_ex, Args...>;
+template<typename Key, typename... Args> using queued_signal_set = signal_set_base<Key, queued_signal, Args...>;
+template<typename Key, typename... Args> using queued_signal_ex_set = signal_set_base<Key, queued_signal_ex, Args...>;
+template<typename Key, typename scope, typename... Args> using queued_signal_scoped_set = signal_set_base<Key, queued_signal_scoped, scope, Args...>;
+template<typename Key, typename scope, typename... Args> using queued_signal_ex_scoped_set = signal_set_base<Key, queued_signal_ex_scoped, scope, Args...>;
+template<typename Key, typename... Args> using bridged_signal_set = bridged_signal_set_base<Key, bridged_signal, Args...>;
+template<typename Key, typename... Args> using bridged_signal_ex_set = bridged_signal_set_base<Key, bridged_signal_ex, Args...>;
 
 struct connection_bag
 {
@@ -1075,16 +1077,4 @@ struct connection_bag
     connection_bag &operator= (connection &&c) { connections.push_front(std::forward<connection>(c)); return *this; }
 };
 
-}
-
-namespace std
-{
-    template<typename... Args>
-    struct hash<std::shared_ptr<nstd::signal_slot::signal<Args...>>>
-    {
-        size_t operator()(const std::shared_ptr<nstd::signal_slot::signal<Args...>> &s) const
-        {
-            return std::hash<std::u8string_view>()(s->name());
-        }
-    };
 }

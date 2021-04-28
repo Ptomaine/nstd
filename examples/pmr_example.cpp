@@ -93,32 +93,22 @@ int main(int argc, char **argv)
         reload
     };
 
-    std::map<uint8_t, std::u8string> command_map
-    {
-        {command::unknown, u8"unknown"s},
-        {command::open_file, u8"open_file"s},
-        {command::close_file, u8"close_file"s},
-        {command::go_back, u8"go_back"s},
-        {command::go_forward, u8"go_forward"s},
-        {command::reload, u8"reload"s}
-    };
-
     using event = planar_movements_event_provider::event;
 
     planar_movements_event_provider pmep;
     command_recognizer<event, command> cr;
     remove_noise_filter rnf;
     nstd::signal_slot::connection_bag cons;
-    nstd::signal_slot::signal_set<> command_signals;
+    nstd::signal_slot::signal_set<command> command_signals;
 
-    cons = command_signals[u8"unknown"s].connect([](){ std::cout << "Unknown" << std::endl; });
-    cons = command_signals[u8"open_file"s].connect([](){ std::cout << "Open file" << std::endl; });
-    cons = command_signals[u8"close_file"s].connect([](){ std::cout << "Close file" << std::endl; });
-    cons = command_signals[u8"go_back"s].connect([](){ std::cout << "Go back" << std::endl; });
-    cons = command_signals[u8"go_forward"s].connect([](){ std::cout << "Go forward" << std::endl; });
-    cons = command_signals[u8"reload"s].connect([](){ std::cout << "Reload" << std::endl; });
+    cons = command_signals[command::unknown].connect([](){ std::cout << "Unknown" << std::endl; });
+    cons = command_signals[command::open_file].connect([](){ std::cout << "Open file" << std::endl; });
+    cons = command_signals[command::close_file].connect([](){ std::cout << "Close file" << std::endl; });
+    cons = command_signals[command::go_back].connect([](){ std::cout << "Go back" << std::endl; });
+    cons = command_signals[command::go_forward].connect([](){ std::cout << "Go forward" << std::endl; });
+    cons = command_signals[command::reload].connect([](){ std::cout << "Reload" << std::endl; });
 
-    auto emit_signal = [&command_signals, &command_map, & cr, &rnf](auto &&coords) { command_signals[command_map[cr(rnf(std::move(coords)))]].emit(); };
+    auto emit_signal = [&command_signals, &cr, &rnf](auto &&coords) { command_signals[cr(rnf(std::move(coords)))].emit(); };
 
     cr. add_command(command::open_file,  { event::up }).
         add_command(command::close_file, { event::down }).

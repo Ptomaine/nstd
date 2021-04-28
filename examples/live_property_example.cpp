@@ -35,7 +35,7 @@ int main()
     auto to_char = [](auto &&u8str) { return reinterpret_cast<const char*>(std::u8string(u8str).c_str()); };
 
     ss::connection_bag cons;
-    ss::bridged_signal_set<std::string> two_step_signal_set([&to_char](auto&& s) { std::cout << "signal: '" << to_char(s->name()) << "' pushed..." << std::endl; return true; });
+    ss::bridged_signal_set<std::u8string, std::string> two_step_signal_set([&to_char](auto&& s) { std::cout << "signal: '" << to_char(s->name()) << "' pushed..." << std::endl; return true; });
 
     using live_int = nstd::live_property<int>;
     using live_string = nstd::live_property<std::string>;
@@ -228,22 +228,22 @@ int main()
     } cs;
 
     //signal_set<throttled_signal<std::string>> ss;
-    ss::signal_set<const std::string&> sss;
+    ss::signal_set<std::u8string, const std::string&> sss;
     cons = sss[u8"/mainwindow/button/ok"s].connect([](auto &&s){ std::cout << s << std::endl; });
     cons = sss[u8"/new/channel"s].connect([](auto &&s){ std::cout << s << std::endl; });
     cons = sss[u8"/other/channel"s].connect([&cs](auto &&s) { cs.call_me(s); });
     cons = sss[u8"/broadcast/channel"s].connect(&cs, &CallableSet::call_me); // the same way to connect as in the previous line
     cons = sss[u8"/broadcast/channel"s].connect([](auto &&) { std::cout << "/broadcast/channel..." << std::endl; });
-    for (auto &&sn : sss.get_signal_names()) std::cout << "signal name: " << to_char(sn) << std::endl;
+    for (auto &&sn : sss.get_signal_keys()) std::cout << "signal name: " << to_char(sn) << std::endl;
     if (sss.exists(u8"/broadcast/channel"s)) std::cout << "/broadcast/channel is created..." << std::endl;
     sss.emit("hello..."s); //broadcasting a signal to all slots of the set
 
-    ss::signal_ex_set<const std::string&> sssx;
+    ss::signal_ex_set<std::u8string, const std::string&> sssx;
     cons = sssx[u8"key_down"s].connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
     cons = sssx[u8"key_up"s].connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
     sssx.emit("smart signal..."s);
 
-    ss::queued_signal_ex_set<std::string> super_signal_set;
+    ss::queued_signal_ex_set<std::u8string, std::string> super_signal_set;
     auto executor { [&to_char](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << to_char(s->name()) << "; value: " << v << std::endl; } };
     cons = super_signal_set[u8"super signal 1"s].connect(executor);
     cons = super_signal_set[u8"super signal 2"s].connect(executor);
@@ -260,7 +260,7 @@ int main()
         struct keyboard_event { int key_code; std::string modifiers; };
         struct event_data { std::type_index event_data_type_index; std::any event_data; };
 
-        ss::queued_signal_ex_set<event_data> ss2;
+        ss::queued_signal_ex_set<std::u8string, event_data> ss2;
 
         cons = ss2[u8"mouse_move"].connect([&to_char](auto &&s, auto &&ev)
         {
@@ -299,7 +299,7 @@ int main()
     }
 
     struct my_scope {};
-    ss::queued_signal_scoped_set<my_scope, std::string> qsss;
+    ss::queued_signal_scoped_set<std::u8string, my_scope, std::string> qsss;
 
     cons = qsss[u8"test"].connect([](auto &&s) { std::cout << s << std::endl; });
 
