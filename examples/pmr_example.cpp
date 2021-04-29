@@ -61,8 +61,8 @@ int main(int argc, char **argv)
     if (exe.was_set() && !is_empty_or_ws(shell_cmd)) { std::cout << "command to execute: " << shell_cmd << std::endl; return 0; }
 
     const std::string app_name { "pmr_example" };
-    at_scope_exit execute_at_scope_exit { [] { const std::u8string_view str { u8"Всё ещё UTF8..." }; std::cout << std::string(std::begin(str), std::end(str))  << std::endl; } };
-    std::vector<at_scope_exit> exit_chain;
+    __at_scope_exit_c(&app_name) { const std::u8string_view str { u8"Всё ещё UTF8..." }; std::cout << std::string(std::begin(str), std::end(str)) << " [" << app_name << "]" << std::endl; };
+    std::vector<at_scope_exit::at_scope_exit<at_scope_exit::always>> exit_chain;
 
     exit_chain.emplace_back([&app_name] { std::cout << std::endl << "#1. exitting " << app_name << "..." << std::endl; });
     exit_chain.emplace_back([] { std::cout << "#2. stopped" << std::endl; });
@@ -81,6 +81,29 @@ int main(int argc, char **argv)
     std::cout << "Compiler: "           << get_current_compiler_name()  << std::endl << std::endl;
 
     exit_chain.emplace_back([]{ std::cout << "#3. ..." << std::endl; });
+
+    try
+    {
+        __at_scope_exit_c() { std::cout << "Always..." << std::endl; };
+        __at_scope_failed_c() { std::cout << "Test for failure is passed..." << std::endl; };
+        __at_scope_succeeded_c() { std::cout << "Test for failure isn't passed..." << std::endl; };
+
+        std::cout << "Making a failure..." << std::endl;
+        throw std::runtime_error("");
+    }
+    catch(const std::runtime_error &)
+    {
+    }
+
+    {
+        __at_scope_exit_c() { std::cout << "Always..." << std::endl; };
+        __at_scope_failed_c() { std::cout << "Test for success isn't passed..." << std::endl; };
+        __at_scope_succeeded_c() { std::cout << "Test for success is passed..." << std::endl; };
+
+        std::cout << "Making a success..." << std::endl;
+    }
+
+    std::cout << std::endl;
 
     using namespace std::string_literals;
     using namespace nstd::pmr;

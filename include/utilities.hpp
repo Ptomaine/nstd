@@ -75,28 +75,56 @@ private:
     std::atomic_bool _cancelled { false };
 };
 
-class at_scope_exit
+namespace at_scope_exit
 {
-public:
+    struct always {}; struct on_exception_only {}; struct on_success_only {};
 
-    at_scope_exit(std::function<void(void)> &&functor) : _functor { std::forward<std::function<void(void)>>(functor) } {}
+	template<typename T>
+    requires (std::same_as<always, T> || std::same_as<on_exception_only, T> || std::same_as<on_success_only, T>)
+	struct should_execute
+	{
+		bool invoke() const noexcept { return std::is_same_v<on_exception_only, T> == (std::uncaught_exceptions() > _number_of_exceptions); }
+		int _number_of_exceptions { std::uncaught_exceptions() };
+	};
 
-    ~at_scope_exit()
+	template<>
+	struct should_execute<always>
+	{
+		constexpr static bool invoke() noexcept { return true; }
+	};
+
+    template<typename T>
+    requires (std::same_as<always, T> || std::same_as<on_exception_only, T> || std::same_as<on_success_only, T>)
+    class at_scope_exit
     {
-        if (_functor) _functor();
-    }
+    public:
+        at_scope_exit(std::function<void(void)> &&functor) : _functor { std::forward<std::function<void(void)>>(functor) } {}
 
-    at_scope_exit() = delete;
-    at_scope_exit(const at_scope_exit&) = delete;
-    at_scope_exit(at_scope_exit&&) = default;
-    at_scope_exit &operator =(const at_scope_exit&) = delete;
-    at_scope_exit &operator =(at_scope_exit&&) = default;
+        ~at_scope_exit()
+        {
+            if (_should_execute.invoke() && _functor) _functor();
+        }
 
-    void reset(std::function<void(void)> &&functor = nullptr) { _functor = std::forward<std::function<void(void)>>(functor); }
+        at_scope_exit() = delete;
+        at_scope_exit(const at_scope_exit&) = delete;
+        at_scope_exit(at_scope_exit&&) = default;
+        at_scope_exit &operator =(const at_scope_exit&) = delete;
+        at_scope_exit &operator =(at_scope_exit&&) = default;
 
-private:
-    std::function<void(void)> _functor;
-};
+        void reset(std::function<void(void)> &&functor = nullptr) { _functor = std::forward<std::function<void(void)>>(functor); }
+
+    private:
+        std::function<void(void)> _functor;
+        should_execute<T> _should_execute;
+    };
+
+	template<typename T>
+    requires (std::same_as<always, T> || std::same_as<on_exception_only, T> || std::same_as<on_success_only, T>)
+	struct at_scope_exit_adaptor
+	{
+		auto operator << (std::function<void(void)>&& functor) { return at_scope_exit<T>(std::forward<std::function<void(void)>>(functor)); }
+	};
+}
 
 // Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
 uint32_t turbulence_hash(uint32_t state)
@@ -802,3 +830,15 @@ std::string html_encode(std::string_view data)
 }
 
 }
+
+#define __concat(a, b) a ## b
+#define __concatenate(a, b) __concat(a, b)
+#define __dynamic_var_name(prefix) __concatenate(prefix, __LINE__)
+
+#define __scope_type(type, captures)    const auto __dynamic_var_name(at_scope_exit) = nstd::utilities::at_scope_exit::at_scope_exit_adaptor<type>() << [captures]()
+#define __at_scope_exit                 __scope_type(nstd::utilities::at_scope_exit::always, &)
+#define __at_scope_failed               __scope_type(nstd::utilities::at_scope_exit::on_exception_only, &) noexcept
+#define __at_scope_succeeded            __scope_type(nstd::utilities::at_scope_exit::on_success_only, &)
+#define __at_scope_exit_c(capture)      __scope_type(nstd::utilities::at_scope_exit::always, capture)
+#define __at_scope_failed_c(capture)    __scope_type(nstd::utilities::at_scope_exit::on_exception_only, capture) noexcept
+#define __at_scope_succeeded_c(capture) __scope_type(nstd::utilities::at_scope_exit::on_success_only, capture)
