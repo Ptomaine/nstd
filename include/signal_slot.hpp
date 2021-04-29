@@ -985,9 +985,9 @@ public:
 
         if (signal != _signals.end()) return *signal->second;
 
-        return *_signals.emplace(key, std::make_unique<signal_type>(
-            [&key]() -> const std::u8string& { if constexpr (std::is_same_v<std::decay_t<key_type>, std::u8string>) return key; else return {}; }()
-        )).first->second;
+        if constexpr (std::is_same_v<std::decay_t<key_type>, std::u8string>) return return *_signals.emplace(key, std::make_unique<signal_type>(key).first->second;
+
+        return *_signals.emplace(key, std::make_unique<signal_type>()).first->second;
     }
 
     bool exists(const key_type &key) const
