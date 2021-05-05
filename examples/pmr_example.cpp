@@ -28,6 +28,8 @@ SOFTWARE.
 #include "cmdline_options.hpp"
 #include "process.hpp"
 #include "signal_slot.hpp"
+#include <sstream>
+#include <iostream>
 
 int main(int argc, char **argv)
 {
@@ -36,6 +38,8 @@ int main(int argc, char **argv)
     using namespace nstd::platform::utilities;
     using namespace nstd::utilities;
     using namespace nstd::process;
+    using namespace std::string_literals;
+    using namespace std::string_view_literals;
 
     scoped_console_utf8 set_console_utf8;
     const std::u8string_view str { u8"Консоль поддерживает UTF-8..." };
@@ -74,6 +78,29 @@ int main(int argc, char **argv)
 
     std::cout << "shell execution result: \"" << trim(res) << "\"" << std::endl << std::endl;
 
+    cmd = "wmic diskdrive get DeviceID,FirmwareRevision,Model,SerialNumber";
+    res = shell_execute(cmd);
+
+    std::cout << "shell execution result: \"" << std::endl << trim(res) << std::endl << "\"" << std::endl << std::endl;
+    std::cout << "-----------------------" << std::endl;
+
+    if constexpr (if_windows)
+    {
+        std::istringstream iss { res };
+        std::string line;
+
+        while (std::getline(iss, line, '\n'))
+        {
+            if (is_empty_or_ws(line)) continue;
+
+            std::cout << "line: " << line << std::endl;
+
+            auto result { nstd::str::split_regex(line, "\\s{2,}"s) };
+
+            for (const auto &l : result) std::cout << "\t[" << l << "]" << std::endl;
+        }
+    }
+    
     std::cout << "Is Little Endian: "   << boolalpha[is_little_endian]  << std::endl;
     std::cout << "Is 64 bit: "          << boolalpha[is_64bit]          << std::endl;
     std::cout << "      OS: "           << get_current_os_type_name()   << std::endl;
@@ -84,7 +111,7 @@ int main(int argc, char **argv)
 
     try
     {
-        __at_scope_exit_c() { std::cout << "Always..." << std::endl; };
+        __at_scope_exit_c() { std::cout << "Test for always is passed..." << std::endl; };
         __at_scope_failed_c() { std::cout << "Test for failure is passed..." << std::endl; };
         __at_scope_succeeded_c() { std::cout << "Test for failure isn't passed..." << std::endl; };
 
@@ -96,7 +123,7 @@ int main(int argc, char **argv)
     }
 
     {
-        __at_scope_exit_c() { std::cout << "Always..." << std::endl; };
+        __at_scope_exit_c() { std::cout << "Test for always is passed..." << std::endl; };
         __at_scope_failed_c() { std::cout << "Test for success isn't passed..." << std::endl; };
         __at_scope_succeeded_c() { std::cout << "Test for success is passed..." << std::endl; };
 
