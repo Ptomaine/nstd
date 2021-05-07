@@ -77,12 +77,12 @@ public:
 			return generator{handle::from_promise(*this)};
 		}
 
-		auto initial_suspend()
+		auto initial_suspend() noexcept(true)
 		{
 			return std::suspend_always{};
 		}
 
-		auto final_suspend()
+		auto final_suspend() noexcept(true)
 		{
 			return std::suspend_always{};
 		}
@@ -96,7 +96,7 @@ public:
 		{
 		}
 
-		auto yield_value(CoroType value)
+		auto yield_value(CoroType value) noexcept(true)
 		{
 			current_value = std::move(value);
 			
@@ -106,7 +106,14 @@ public:
 
 	bool move_next()
 	{
-		return _coro ? (_coro.resume(), !_coro.done()) : false;
+        if (_coro)
+        {
+            _coro.resume();
+            
+            return !_coro.done();
+        }
+        
+        return false;
 	}
 
 	CoroType current_value()
@@ -116,7 +123,7 @@ public:
 
 	generator(generator const&) = delete;
 	
-	generator(generator && rhs) : _coro(rhs._coro)
+	generator(generator && rhs) noexcept(true) : _coro(rhs._coro)
 	{
 		rhs._coro = nullptr;
 	}
@@ -135,36 +142,48 @@ private:
 	handle _coro;
 };
 
-template<typename Container>
-generator<typename Container::value_type> co_from(Container &&container)
-{
-	auto begin { std::begin(container) };
-	auto end { std::end(container) };
-
-	while (begin != end) { co_yield *begin; ++begin; }
-}
-
-template<typename Container>
-generator<typename Container::value_type> co_from(Container &container)
-{
-	return co_from(std::begin(container), std::end(container));
-}
-
 template<typename Iterator>
 generator<typename Iterator::value_type> co_from(Iterator begin, Iterator end)
 {
 	while (begin != end) { co_yield *begin; ++begin; }
 }
 
+template<typename Container>
+generator<typename Container::value_type> co_from(Container container)
+{
+    auto begin{ std::begin(container) }, end{ std::end(container) };
+    
+    while (begin != end) { co_yield *begin; ++begin; }
+}
+
+template<typename Container>
+generator<typename Container::value_type> co_from(Container &container)
+{
+    return co_from(std::begin(container), std::end(container));
+}
+
 template<typename CoroType>
-generator<CoroType> co_concat(generator<CoroType> &&gen1, generator<CoroType> &&gen2)
+generator<CoroType> co_concat(generator<CoroType> gen1, generator<CoroType> gen2)
 {
 	while (gen1.move_next()) co_yield gen1.current_value();
 	while (gen2.move_next()) co_yield gen2.current_value();
 }
 
+template<typename CoroType>
+generator<CoroType> co_mix(generator<CoroType> gen1, generator<CoroType> gen2)
+{
+    bool a{ true }, b{ true };
+
+    do
+    {
+        if (a) { a = gen1.move_next(); if (a) co_yield gen1.current_value(); }
+        if (b) { b = gen2.move_next(); if (b) co_yield gen2.current_value(); }
+
+    } while (a || b);
+}
+
 template<typename CoroType, typename Functor>
-generator<CoroType> co_filter(generator<CoroType> &&gen, Functor func)
+generator<CoroType> co_filter(generator<CoroType> gen, Functor func)
 {
 	while (gen.move_next())
 	{
@@ -175,7 +194,7 @@ generator<CoroType> co_filter(generator<CoroType> &&gen, Functor func)
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_filter_i(generator<CoroType> &&gen, Functor func)
+generator<CoroType> co_filter_i(generator<CoroType> gen, Functor func)
 {
 	uint64_t index { 0 };
 
@@ -188,7 +207,7 @@ generator<CoroType> co_filter_i(generator<CoroType> &&gen, Functor func)
 }
 
 template<typename CoroType>
-generator<CoroType> co_reverse(generator<CoroType> &&gen)
+generator<CoroType> co_reverse(generator<CoroType> gen)
 {
 	default_container<CoroType> v;
 
@@ -206,7 +225,7 @@ generator<CoroType> co_reverse(generator<CoroType> &&gen)
 }
 
 template<typename CoroType>
-generator<CoroType> co_skip(generator<CoroType> &&gen, size_t count)
+generator<CoroType> co_skip(generator<CoroType> gen, size_t count)
 {
 	bool good { true };
 
@@ -216,7 +235,7 @@ generator<CoroType> co_skip(generator<CoroType> &&gen, size_t count)
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_skip_while(generator<CoroType> &&gen, Functor func)
+generator<CoroType> co_skip_while(generator<CoroType> gen, Functor func)
 {
 	bool good { true };
 
@@ -226,7 +245,7 @@ generator<CoroType> co_skip_while(generator<CoroType> &&gen, Functor func)
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_tee(generator<CoroType> &&gen, Functor func)
+generator<CoroType> co_tee(generator<CoroType> gen, Functor func)
 {
 	while (gen.move_next())
 	{
@@ -239,13 +258,13 @@ generator<CoroType> co_tee(generator<CoroType> &&gen, Functor func)
 }
 
 template<typename CoroType, typename Functor>
-auto co_transform(generator<CoroType> &&gen, Functor func) -> generator<decltype(func(CoroType()))>
+auto co_transform(generator<CoroType> gen, Functor func) -> generator<decltype(func(CoroType()))>
 {
 	while (gen.move_next()) co_yield func(gen.current_value());
 }
 
 template<typename CoroType, typename Functor>
-auto co_transform_i(generator<CoroType> &&gen, Functor func) -> generator<decltype(func(CoroType(), 0UL))>
+auto co_transform_i(generator<CoroType> gen, Functor func) -> generator<decltype(func(CoroType(), 0UL))>
 {
 	uint64_t index { 0 };
 
@@ -256,7 +275,7 @@ auto co_transform_i(generator<CoroType> &&gen, Functor func) -> generator<declty
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_limit(generator<CoroType> &&gen, Functor func)
+generator<CoroType> co_limit(generator<CoroType> gen, Functor func)
 {
 	while (gen.move_next())
 	{
@@ -269,7 +288,7 @@ generator<CoroType> co_limit(generator<CoroType> &&gen, Functor func)
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_limit_i(generator<CoroType> &&gen, Functor func)
+generator<CoroType> co_limit_i(generator<CoroType> gen, Functor func)
 {
 	uint64_t index { 0 };
 
@@ -284,7 +303,7 @@ generator<CoroType> co_limit_i(generator<CoroType> &&gen, Functor func)
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_distinct(generator<CoroType> &&gen, Functor func)
+generator<CoroType> co_distinct(generator<CoroType> gen, Functor func)
 {
 	default_set<decltype(func(CoroType()))> processed;
 
@@ -301,7 +320,7 @@ generator<CoroType> co_distinct(generator<CoroType> &&gen, Functor func)
 }
 
 template<typename CoroType, typename Functor>
-auto co_select_many(generator<CoroType> &&gen, Functor func) -> generator<decltype(func(typename CoroType::value_type()))>
+auto co_select_many(generator<CoroType> gen, Functor func) -> generator<decltype(func(typename CoroType::value_type()))>
 {
 	while (gen.move_next())
 	{
@@ -312,7 +331,7 @@ auto co_select_many(generator<CoroType> &&gen, Functor func) -> generator<declty
 }
 
 template<typename CoroType, typename Functor>
-auto co_select_many_i(generator<CoroType> &&gen, Functor func) -> generator<decltype(func(typename CoroType::value_type(), 0UL))>
+auto co_select_many_i(generator<CoroType> gen, Functor func) -> generator<decltype(func(typename CoroType::value_type(), 0UL))>
 {
 	uint64_t index { 0 };
 
@@ -325,7 +344,7 @@ auto co_select_many_i(generator<CoroType> &&gen, Functor func) -> generator<decl
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_except(generator<CoroType> &&gen1, generator<CoroType> &&gen2, Functor func)
+generator<CoroType> co_except(generator<CoroType> gen1, generator<CoroType> &&gen2, Functor func)
 {
 	default_set<CoroType> processed;
 	default_container<CoroType> provided;
@@ -349,7 +368,7 @@ generator<CoroType> co_except(generator<CoroType> &&gen1, generator<CoroType> &&
 }
 
 template<typename CoroType, typename Iterator, typename Functor>
-generator<CoroType> co_except(generator<CoroType> &&gen, Iterator begin, Iterator end, Functor func)
+generator<CoroType> co_except(generator<CoroType> gen, Iterator begin, Iterator end, Functor func)
 {
 	default_set<CoroType> processed;
 
@@ -368,7 +387,7 @@ generator<CoroType> co_except(generator<CoroType> &&gen, Iterator begin, Iterato
 }
 
 template<typename CoroType, typename Functor>
-generator<CoroType> co_intersect(generator<CoroType> &&gen1, generator<CoroType> &&gen2, Functor func)
+generator<CoroType> co_intersect(generator<CoroType> gen1, generator<CoroType> &&gen2, Functor func)
 {
 	default_set<CoroType> processed;
 	default_container<CoroType> provided;
@@ -392,7 +411,7 @@ generator<CoroType> co_intersect(generator<CoroType> &&gen1, generator<CoroType>
 }
 
 template<typename CoroType, typename Iterator, typename Functor>
-generator<CoroType> co_intersect(generator<CoroType> &&gen, Iterator begin, Iterator end, Functor func)
+generator<CoroType> co_intersect(generator<CoroType> gen, Iterator begin, Iterator end, Functor func)
 {
 	default_set<CoroType> processed;
 
@@ -411,7 +430,7 @@ generator<CoroType> co_intersect(generator<CoroType> &&gen, Iterator begin, Iter
 }
 
 template<typename CoroType>
-generator<CoroType> co_default_if_empty(generator<CoroType> &&gen, CoroType default_value)
+generator<CoroType> co_default_if_empty(generator<CoroType> gen, CoroType default_value)
 {
 	if (gen.move_next())
 	{
@@ -424,7 +443,7 @@ generator<CoroType> co_default_if_empty(generator<CoroType> &&gen, CoroType defa
 }
 
 template<typename CoroType>
-generator<CoroType> co_cycle(generator<CoroType> &&gen, int count)
+generator<CoroType> co_cycle(generator<CoroType> gen, int count)
 {
 	if (count != 0)
 	{
@@ -472,13 +491,13 @@ generator<CoroType> co_cycle(generator<CoroType> &&gen, int count)
 }
 
 template<typename CoroType>
-generator<CoroType> co_take(generator<CoroType> &&gen, size_t limit)
+generator<CoroType> co_take(generator<CoroType> gen, size_t limit)
 {
 	while (gen.move_next() && limit--) co_yield gen.current_value();
 }
 
 template<typename CoroType1, typename CoroType2, typename Functor>
-auto co_zip(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, Functor func) -> generator<decltype(func(CoroType1(), CoroType2()))>
+auto co_zip(generator<CoroType1> gen1, generator<CoroType2> gen2, Functor func) -> generator<decltype(func(CoroType1(), CoroType2()))>
 {
 	while (gen1.move_next() && gen2.move_next()) co_yield func(gen1.current_value(), gen2.current_value());
 }
@@ -496,7 +515,7 @@ generator<CoroType> co_repeat(CoroType value, size_t count)
 }
 
 template<typename CoroType, typename JoinIterator, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-auto co_join(generator<CoroType> &&gen, JoinIterator begin, JoinIterator end, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(thisKeyFunctor(CoroType()), otherKeyFunctor(typename JoinIterator::value_type())))>
+auto co_join(generator<CoroType> gen, JoinIterator begin, JoinIterator end, ThisKeyFunctor thisKeyFunctor, OtherKeyFunctor otherKeyFunctor, ResultFunctor resultFunctor, CompareFunctor compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(thisKeyFunctor(CoroType()), otherKeyFunctor(typename JoinIterator::value_type())))>
 {
     using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType()))>::type;
     using joinValueType = typename JoinIterator::value_type;
@@ -515,7 +534,7 @@ auto co_join(generator<CoroType> &&gen, JoinIterator begin, JoinIterator end, Th
 }
 
 template<typename CoroType1, typename CoroType2, typename Container, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-auto co_join(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(thisKeyFunctor(CoroType1()), otherKeyFunctor(CoroType2())))>
+auto co_join(generator<CoroType1> &&gen1, generator<CoroType2> gen2, ThisKeyFunctor thisKeyFunctor, OtherKeyFunctor otherKeyFunctor, ResultFunctor resultFunctor, CompareFunctor compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(thisKeyFunctor(CoroType1()), otherKeyFunctor(CoroType2())))>
 {
     using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType1()))>::type;
 
@@ -540,7 +559,7 @@ auto co_join(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, ThisKeyFu
 }
 
 template<typename CoroType, typename JoinIterator, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-auto co_group_join(generator<CoroType> &&gen, JoinIterator begin, JoinIterator end, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(CoroType(), default_container<typename JoinIterator::value_type>()))>
+auto co_group_join(generator<CoroType> gen, JoinIterator begin, JoinIterator end, ThisKeyFunctor thisKeyFunctor, OtherKeyFunctor otherKeyFunctor, ResultFunctor resultFunctor, CompareFunctor compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(CoroType(), default_container<typename JoinIterator::value_type>()))>
 {
     using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType()))>::type;
     using joinValueType = typename JoinIterator::value_type;
@@ -569,7 +588,7 @@ auto co_group_join(generator<CoroType> &&gen, JoinIterator begin, JoinIterator e
 }
 
 template<typename CoroType1, typename CoroType2, typename JoinIterator, typename ThisKeyFunctor, typename OtherKeyFunctor, typename ResultFunctor, typename CompareFunctor>
-auto co_group_join(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, ThisKeyFunctor &&thisKeyFunctor, OtherKeyFunctor &&otherKeyFunctor, ResultFunctor &&resultFunctor, CompareFunctor &&compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(CoroType1(), default_container<CoroType2>()))>
+auto co_group_join(generator<CoroType1> gen1, generator<CoroType2> gen2, ThisKeyFunctor thisKeyFunctor, OtherKeyFunctor otherKeyFunctor, ResultFunctor resultFunctor, CompareFunctor compareFunctor, bool leftJoin) -> generator<decltype(resultFunctor(CoroType1(), default_container<CoroType2>()))>
 {
     using thisKeyType = typename std::decay<decltype(thisKeyFunctor(CoroType1()))>::type;
 
@@ -604,7 +623,7 @@ auto co_group_join(generator<CoroType1> &&gen1, generator<CoroType2> &&gen2, Thi
 }
 
 template<typename CoroType, typename Functor>
-auto co_group(generator<CoroType> &&gen, Functor func) -> generator<std::pair<decltype(func(CoroType())), default_container<CoroType>>>
+auto co_group(generator<CoroType> gen, Functor func) -> generator<std::pair<decltype(func(CoroType())), default_container<CoroType>>>
 {
 	default_map<decltype(func(CoroType())), default_container<CoroType>> groups;
 
@@ -714,7 +733,7 @@ public:
 	}
 
     template<typename AggregateFunctor>
-    auto aggregate(AggregateFunctor &&aggregateFunctor)
+    auto aggregate(AggregateFunctor aggregateFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -727,7 +746,7 @@ public:
     }
 
     template<typename SeedType, typename AggregateFunctor>
-    auto aggregate(SeedType &&seed, AggregateFunctor &&aggregateFunctor)
+    auto aggregate(SeedType seed, AggregateFunctor aggregateFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -738,7 +757,7 @@ public:
     }
 
     template<typename SeedType, typename AggregateFunctor, typename ResultSelector>
-    auto aggregate(SeedType &&seed, AggregateFunctor &&aggregateFunctor, ResultSelector &&resultSelector)
+    auto aggregate(SeedType seed, AggregateFunctor aggregateFunctor, ResultSelector resultSelector)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -799,7 +818,7 @@ public:
     }    
 
     template<typename ConditionFunctor>
-    auto first(ConditionFunctor &&conditionFunctor)
+    auto first(ConditionFunctor conditionFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -823,7 +842,7 @@ public:
     }
 
     template<typename ConditionFunctor>
-    auto first_or_default(ConditionFunctor &&conditionFunctor, value_type default_value = value_type())
+    auto first_or_default(ConditionFunctor conditionFunctor, value_type default_value = value_type())
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -841,7 +860,7 @@ public:
     }
 
     template<typename Container>
-    auto intersect_with(Container &container, std::function<bool(const CoroType&, const CoroType&)> &&compareFunctor = [](auto &&a, auto &&b) { return a == b; })
+    auto intersect_with(Container &container, std::function<bool(const CoroType&, const CoroType&)> compareFunctor = [](auto &&a, auto &&b) { return a == b; })
     {
     	return co_relinx_object<CoroType>(co_intersect(std::move(_generator), std::begin(container), std::end(container), std::forward<std::function<bool(const CoroType&, const CoroType&)>>(compareFunctor)));
     }    
@@ -876,7 +895,7 @@ public:
     }
 
     template<typename ForeachFunctor>
-    void for_each(ForeachFunctor &&foreachFunctor)
+    void for_each(ForeachFunctor foreachFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -885,7 +904,7 @@ public:
     }
 
     template<typename ForeachFunctor>
-    void for_each_i(ForeachFunctor &&foreachFunctor)
+    void for_each_i(ForeachFunctor foreachFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -895,7 +914,7 @@ public:
     }
 
     template<typename Functor>
-    auto group_by(Functor &&func)
+    auto group_by(Functor func)
     {
     	return co_relinx_object<std::pair<decltype(func(CoroType())), default_container<CoroType>>>(co_group(std::move(_generator), std::forward<Functor>(func)));
     }
@@ -941,7 +960,7 @@ public:
     }
 
     template<typename TransformFunctor>
-    auto max(TransformFunctor &&transformFunctor)
+    auto max(TransformFunctor transformFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -974,7 +993,7 @@ public:
     }
 
     template<typename TransformFunctor>
-    auto min(TransformFunctor &&transformFunctor)
+    auto min(TransformFunctor transformFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -982,6 +1001,23 @@ public:
         if (begin == end) throw no_elements("max"s);
 
         return select(transformFunctor).min();
+    }
+
+    template<typename Container>
+    auto mix(Container &container)
+    {
+    	return co_relinx_object<CoroType>(co_mix(std::move(_generator), co_from(container)));
+    }
+
+    template<typename Container>
+    auto mix(Container &&container)
+    {
+    	return co_relinx_object<CoroType>(co_mix(std::move(_generator), co_from(std::forward<Container>(container))));
+    }
+
+    auto mix(std::initializer_list<CoroType> &&container)
+    {
+    	return co_relinx_object<CoroType>(co_mix(std::move(_generator), co_from(std::forward<std::initializer_list<CoroType>>(container))));
     }
 
     auto reverse()
@@ -1014,7 +1050,16 @@ public:
     }
 
     template<typename Container, typename CompareFunctor>
-    auto sequence_equal(Container &&container, CompareFunctor &&compareFunctor)
+    auto sequence_equal(Container &&container, CompareFunctor compareFunctor)
+    {
+        auto begin{ iterator { this } };
+        auto end{ iterator {} };
+
+        return std::equal(begin, end, std::begin(container), std::forward<CompareFunctor>(compareFunctor));
+    }
+
+    template<typename Container, typename CompareFunctor>
+    auto sequence_equal(Container &container, CompareFunctor compareFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -1023,7 +1068,7 @@ public:
     }
 
 	template<typename Container>
-    auto sequence_equal(Container &&container)
+    auto sequence_equal(Container &container)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -1032,7 +1077,7 @@ public:
     }
 
     template<typename ConditionFunctor>
-    auto single(ConditionFunctor &&conditionFunctor)
+    auto single(ConditionFunctor conditionFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -1066,7 +1111,7 @@ public:
     }
 
     template<typename ConditionFunctor>
-    auto single_or_default(ConditionFunctor &&conditionFunctor, CoroType defaultValue = CoroType())
+    auto single_or_default(ConditionFunctor conditionFunctor, CoroType defaultValue = CoroType())
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -1102,13 +1147,13 @@ public:
     }    
 
     template<typename SkipFunctor>
-    auto skip_while(SkipFunctor &&skipFunctor)
+    auto skip_while(SkipFunctor skipFunctor)
     {
         return co_relinx_object<CoroType>(co_skip_while(std::move(_generator), skipFunctor));
     }
 
     template<typename SkipFunctor>
-    auto skip_while_i(SkipFunctor &&skipFunctor)
+    auto skip_while_i(SkipFunctor skipFunctor)
     {
     	uint64_t index { 0 };
 
@@ -1118,7 +1163,7 @@ public:
     }
 
     template<typename SelectFunctor>
-    auto sum(SelectFunctor &&selectFunctor)
+    auto sum(SelectFunctor selectFunctor)
     {
         auto begin { iterator { this } };
         auto end { iterator {} };
@@ -1149,7 +1194,7 @@ public:
     }
 
     template<typename TeeFunctor>
-    auto tee(TeeFunctor &&teeFunctor)
+    auto tee(TeeFunctor teeFunctor)
     {
     	return co_relinx_object<CoroType>(co_tee(std::move(_generator), teeFunctor));
     }	
@@ -1176,7 +1221,7 @@ public:
     template<   typename KeySelectorFunctor,
                 typename ValueSelectorFunctor = std::function<CoroType(const CoroType&)>,
                 template <typename, typename> class MapType = default_map>
-    auto to_map(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const CoroType &v) { return v; })
+    auto to_map(KeySelectorFunctor keySelectorFunctor, ValueSelectorFunctor valueSelectorFunctor = [](const CoroType &v) { return v; })
     {
         using key_type = typename std::decay<decltype(keySelectorFunctor(CoroType()))>::type;
         using new_value_type = typename std::decay<decltype(valueSelectorFunctor(CoroType()))>::type;
@@ -1198,7 +1243,7 @@ public:
     template<   typename KeySelectorFunctor,
                 typename ValueSelectorFunctor = std::function<CoroType(const CoroType&)>,
                 template <typename, typename> class MultimapType = default_multimap>
-    auto to_multimap(KeySelectorFunctor &&keySelectorFunctor, ValueSelectorFunctor &&valueSelectorFunctor = [](const CoroType &v) { return v; })
+    auto to_multimap(KeySelectorFunctor keySelectorFunctor, ValueSelectorFunctor valueSelectorFunctor = [](const CoroType &v) { return v; })
     {
         return to_map<  KeySelectorFunctor,
                         ValueSelectorFunctor,
@@ -1289,25 +1334,25 @@ private:
 template<typename Iterator>
 auto from(Iterator begin, Iterator end)
 {
-	return co_relinx_object<typename Iterator::value_type>(co_from(begin, end));
+    return co_relinx_object<typename Iterator::value_type>(co_from(begin, end));
 }
 
 template<typename Container>
 auto from(Container &&container)
 {
-	return co_relinx_object<typename Container::value_type>(co_from(std::forward<Container>(container)));
+    return co_relinx_object<typename Container::value_type>(co_from(std::forward<Container>(container)));
 }
 
 template<typename CoroType>
 auto from(std::initializer_list<CoroType> &&container)
 {
-	return co_relinx_object<CoroType>(co_from(std::forward<std::initializer_list<CoroType>>(container)));
+    return co_relinx_object<CoroType>(co_from(std::forward<std::initializer_list<CoroType>>(container)));
 }
 
 template<typename Container>
 auto from(Container &container)
 {
-	return from(std::begin(container), std::end(container));
+    return from(std::begin(container), std::end(container));
 }
 
 template<typename T>
