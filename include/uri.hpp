@@ -54,11 +54,9 @@ public:
         parse(uri);
     }
 
-    uri(const std::string& scheme, const std::string& path_etc) : _scheme(scheme)
+    uri(const std::string& scheme, const std::string& path_etc) : _scheme(scheme), _port(0)
     {
         to_lower_in_place(_scheme);
-
-        _port = get_well_known_port();
 
         auto begin { std::cbegin(path_etc) }, end { std::cend(path_etc) };
 
@@ -98,6 +96,7 @@ public:
 
     uri(const uri& uri) = default;
     uri(uri&& uri) = default;
+    uri& operator = (const uri&& uri) noexcept(true) = default;
 
     uri(const uri& base_uri, const std::string& relative_uri) : _scheme(base_uri._scheme), _user_info(base_uri._user_info), _host(base_uri._host), _port(base_uri._port), _path(base_uri._path), _query(base_uri._query), _fragment(base_uri._fragment)
     {
@@ -207,8 +206,6 @@ public:
         _scheme = scheme;
 
         to_lower_in_place(_scheme);
-
-        if (_port == 0) _port = get_well_known_port();
     }
 
     const std::string& get_user_info() const { return _user_info; }
@@ -237,6 +234,11 @@ public:
     void set_port(unsigned short port)
     {
         _port = port;
+    }
+
+    unsigned short get_specified_port() const
+    {
+        return _port;
     }
 
     std::string get_authority() const
@@ -723,9 +725,9 @@ protected:
                 if (nport > 0 && nport < 65536) _port = (unsigned short) nport;
                 else throw uri_exception("bad or invalid port number");
             }
-            else _port = get_well_known_port();
+            else _port = 0;
         }
-        else _port = get_well_known_port();
+        else _port = 0;
 
         _host = host;
 
