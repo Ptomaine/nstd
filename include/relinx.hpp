@@ -1711,7 +1711,7 @@ public:
 
     /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
 
-        Iterates over the current relinx_object elements and calls a user-defined functor for each element.
+        Iterates over the current relinx_object elements and calls a user-defined functor for each element along with the element index.
 
         \param foreachFunctor A functor that is called for each element.
     */
