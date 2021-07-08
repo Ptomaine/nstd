@@ -1700,25 +1700,29 @@ public:
     /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
 
         Iterates over the current relinx_object elements and calls a user-defined functor for each element.
+        The foreachFunctor must return boolean. Returning false from it will break the loop.
 
         \param foreachFunctor A functor that is called for each element.
     */
     template<typename ForeachFunctor>
     auto for_each(ForeachFunctor &&foreachFunctor) const noexcept -> void
     {
-        std::for_each(_begin, _end, std::forward<ForeachFunctor>(foreachFunctor));
+        for (auto begin = _begin, end = _end; begin != end; ++begin) if (!foreachFunctor(*begin)) break;
     }
 
     /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
 
         Iterates over the current relinx_object elements and calls a user-defined functor for each element along with the element index.
+        The foreachFunctor must return boolean. Returning false from it will break the loop.
 
         \param foreachFunctor A functor that is called for each element.
     */
     template<typename ForeachFunctor>
     auto for_each_i(ForeachFunctor &&foreachFunctor) const noexcept -> void
     {
-        std::for_each(_begin, _end, [_indexer = 0, &foreachFunctor](auto &&v) mutable { foreachFunctor(v, _indexer); ++_indexer;});
+        uint64_t _indexer { 0 };
+
+        for (auto begin = _begin, end = _end; begin != end; ++begin) if (!foreachFunctor(*begin, _indexer++)) break;
     }
 
     /** \brief Groups the elements of a sequence according to a specified key selector functor.

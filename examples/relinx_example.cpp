@@ -411,7 +411,7 @@ TEST_CASE( "for_each(f)", "[relinx]" )
     std::ostringstream ostr;
     auto t1_data = range(0, 9);
 
-    t1_data->for_each([&ostr](auto &&v) { ostr << v; });
+    t1_data->for_each([&ostr](auto &&v) { ostr << v; return true; });
 
     CHECK(ostr.str() == t1_data->to_string());
 }
@@ -461,7 +461,7 @@ TEST_CASE( "for_each_i(f)", "[relinx]" )
     std::ostringstream ostr;
     auto t1_data = range(0, 9);
 
-    t1_data->for_each_i([&ostr](auto &&v, auto &&idx) { ostr << idx << v; });
+    t1_data->for_each_i([&ostr](auto &&v, auto &&idx) { ostr << idx << v; return true; });
 
     CHECK(ostr.str() == t1_data->concat(range(0, 9))->order_by()->to_string());
 }
