@@ -34,9 +34,10 @@ int main()
 {
 	using namespace std::chrono_literals;
 
+	nstd::signal_slot::connection_bag cons;
 	nstd::expiry_cache<std::string, Item*> a(800ms);
 	a.set_vacuum_idle_period(200ms);
-	auto c = a.signal_data_expired.connect([](auto &k, auto &v)
+	cons = a.signal_data_expired.connect([](auto &k, auto &v)
     {
         std::cout << "Key: '" << k << "' expired: " << v << std::endl;
         delete v;
@@ -44,8 +45,9 @@ int main()
 
 	a.start_auto_vacuum();
 
-	const auto key { "My item"s };
+	const auto key { "My item"s }, key2 { "Item to delete on destruction"s };
 	a.put(key, new Item, 0.790s);
+	a.put(key2, new Item, std::chrono::high_resolution_clock::now() + 3s);
 
 	if (Item* b = nullptr; a.get(key, b))
     {

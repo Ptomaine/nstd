@@ -41,12 +41,17 @@ public:
     using data_type = std::tuple<time_point_type, std::chrono::milliseconds, value_type>;
 
     expiry_cache() = default;
-    ~expiry_cache() { stop_auto_vacuum(); }
+    ~expiry_cache() { stop_auto_vacuum(); clear(); }
 
     template<typename duration_type>
     expiry_cache(const duration_type &duration)
     {
         set_expiry(duration);
+    }
+
+    void put(const key_type &key, const value_type &value, const time_point_type &time_point)
+    {
+        put(key, value, std::chrono::duration_cast<std::chrono::milliseconds>(time_point - std::chrono::high_resolution_clock::now()));
     }
 
     template<typename duration_type = std::chrono::milliseconds>
@@ -123,6 +128,15 @@ public:
         _expiry_duration_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration), std::memory_order_relaxed);
     }
 
+    void set_expiry(const key_type &key, const time_point_type &time_point)
+    {
+        std::scoped_lock lock {_mutex};
+
+        auto it{ _data.find(key) };
+
+        if (it != std::end(_data)) std::get<1>(it->second) = std::chrono::duration_cast<std::chrono::milliseconds>(time_point - std::chrono::high_resolution_clock::now());
+    }
+
     template<typename duration_type>
     void set_expiry(const key_type &key, const duration_type &duration)
     {
@@ -149,9 +163,24 @@ public:
         return _expiry_duration_ms.load(std::memory_order_relaxed);
     }
 
+    const time_point_type get_expiry_time_point(const key_type &key) const
+    {
+        std::scoped_lock lock {_mutex};
+
+        auto it{ _data.find(key) };
+
+        if (it != std::end(_data)) return std::get<0>(it->second) + std::get<1>(it->second);
+
+        return std::chrono::high_resolution_clock::now();
+    }
+
     void clear()
     {
         std::scoped_lock lock {_mutex};
+
+        _vacuum();
+
+        for (auto &data : _data) signal_data_expired.emit(data.first, std::get<2>(data.second));
 
         _data.clear();
     }
@@ -166,18 +195,8 @@ public:
     void vacuum()
     {
         std::scoped_lock lock {_mutex};
-        auto now{ std::chrono::high_resolution_clock::now() };
-        std::vector<decltype(std::begin(_data))> expired;
-
-        for (auto it{ std::begin(_data) }, end{std::end(_data)}; it != end; ++it)
-        {
-            const auto &val = it->second;
-
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - std::get<0>(val)) > std::get<1>(val))
-                expired.emplace_back(it);
-        }
-
-        for (auto &it : expired) _erase(it);
+        
+        _vacuum();
     }
 
     template<typename duration_type>
@@ -252,6 +271,22 @@ private:
         signal_data_expired.emit(it->first, std::get<2>(val));
 
         _data.erase(it);
+    }
+
+    void _vacuum()
+    {
+        auto now{ std::chrono::high_resolution_clock::now() };
+        std::vector<decltype(std::begin(_data))> expired;
+
+        for (auto it{ std::begin(_data) }, end{std::end(_data)}; it != end; ++it)
+        {
+            const auto &val = it->second;
+
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(now - std::get<0>(val)) > std::get<1>(val))
+                expired.push_back(it);
+        }
+
+        for (auto &it : expired) _erase(it);
     }
 
     std::atomic<std::chrono::milliseconds> _expiry_duration_ms { 10min };
