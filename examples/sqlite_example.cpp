@@ -118,7 +118,7 @@ int main()
 
     std::cout << js_o << std::endl;
 
-    auto iff { js_o.value("8", "***") };
+    auto iff { js_o.is_array() ? js_o[0].value("8", "***") : js_o.value("8", "***") };
     std::cout << iff << std::endl;
 
     nstd::db::sqlite::backup_database(db, nstd::db::sqlite::database { "sqlite_example_backup.db" }); //from memory to file
