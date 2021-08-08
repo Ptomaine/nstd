@@ -100,7 +100,7 @@ private:
     }
 
     nstd::net::tcp_client _client {};
-    nstd::signal_slot::queued_signal_ex_scoped_set<scope, std::shared_ptr<std::vector<uint8_t>>> _signal_queue {};
+    nstd::signal_slot::queued_signal_ex_scoped_set<std::u8string, scope, std::shared_ptr<std::vector<uint8_t>>> _signal_queue {};
 };
 
 }
