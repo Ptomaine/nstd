@@ -78,14 +78,14 @@ int main(int argc, char **argv)
 
     std::cout << "shell execution result: \"" << trim(res) << "\"" << std::endl << std::endl;
 
-    cmd = "wmic diskdrive get DeviceID,FirmwareRevision,Model,SerialNumber";
-    res = shell_execute(cmd);
-
-    std::cout << "shell execution result: \"" << std::endl << trim(res) << std::endl << "\"" << std::endl << std::endl;
-    std::cout << "-----------------------" << std::endl;
-
     if constexpr (if_windows)
     {
+        cmd = "wmic diskdrive get DeviceID,FirmwareRevision,Model,SerialNumber";
+        res = shell_execute(cmd);
+
+        std::cout << "shell execution result: \"" << std::endl << trim(res) << std::endl << "\"" << std::endl << std::endl;
+        std::cout << "-----------------------" << std::endl;
+
         std::istringstream iss { res };
         std::string line;
 
