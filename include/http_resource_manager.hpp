@@ -285,7 +285,7 @@ public:
 protected:
 
     tcp_server<> _server;
-    std::unordered_map<http_request_parser::http_method_id, signal_set<request_ptr>> _signals;
+    std::unordered_map<http_request_parser::http_method_id, signal_set<std::u8string, request_ptr>> _signals;
     std::unordered_map<int, signal<request_ptr>> _status_signals;
     std::unordered_map<std::string, std::regex> _regexes;
     nstd::signal_slot::signal<request_ptr> _not_found_signal;
