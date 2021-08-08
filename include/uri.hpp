@@ -96,7 +96,7 @@ public:
 
     uri(const uri& uri) = default;
     uri(uri&& uri) = default;
-    uri& operator = (const uri&& uri) noexcept(true) = default;
+    uri& operator = (uri&& uri) noexcept(true) = default;
 
     uri(const uri& base_uri, const std::string& relative_uri) : _scheme(base_uri._scheme), _user_info(base_uri._user_info), _host(base_uri._host), _port(base_uri._port), _path(base_uri._path), _query(base_uri._query), _fragment(base_uri._fragment)
     {

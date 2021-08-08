@@ -1700,14 +1700,40 @@ public:
     /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
 
         Iterates over the current relinx_object elements and calls a user-defined functor for each element.
-        The foreachFunctor must return boolean. Returning false from it will break the loop.
 
         \param foreachFunctor A functor that is called for each element.
     */
     template<typename ForeachFunctor>
     auto for_each(ForeachFunctor &&foreachFunctor) const noexcept -> void
     {
+        for (auto begin = _begin, end = _end; begin != end; ++begin) foreachFunctor(*begin);
+    }
+
+    /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
+
+        Iterates over the current relinx_object elements and calls a user-defined functor for each element.
+        The foreachFunctor must return boolean. Returning false from it will break the loop.
+
+        \param foreachFunctor A functor that is called for each element.
+    */
+    template<typename ForeachFunctor>
+    auto for_each_breakable(ForeachFunctor &&foreachFunctor) const noexcept -> void
+    {
         for (auto begin = _begin, end = _end; begin != end; ++begin) if (!foreachFunctor(*begin)) break;
+    }
+
+    /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
+
+        Iterates over the current relinx_object elements and calls a user-defined functor for each element along with the element index.
+
+        \param foreachFunctor A functor that is called for each element.
+    */
+    template<typename ForeachFunctor>
+    auto for_each_i(ForeachFunctor &&foreachFunctor) const noexcept -> void
+    {
+        uint64_t _indexer { 0 };
+
+        for (auto begin = _begin, end = _end; begin != end; ++begin) foreachFunctor(*begin, _indexer++);
     }
 
     /** \brief Iterates over the current relinx_object elements and calls a user-defined functor for each element.
@@ -1718,7 +1744,7 @@ public:
         \param foreachFunctor A functor that is called for each element.
     */
     template<typename ForeachFunctor>
-    auto for_each_i(ForeachFunctor &&foreachFunctor) const noexcept -> void
+    auto for_each_i_breakable(ForeachFunctor &&foreachFunctor) const noexcept -> void
     {
         uint64_t _indexer { 0 };
 
