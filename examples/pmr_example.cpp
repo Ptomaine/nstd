@@ -111,9 +111,9 @@ int main(int argc, char **argv)
 
     try
     {
-        __at_scope_exit_c() { std::cout << "Test for always is passed..." << std::endl; };
-        __at_scope_failed_c() { std::cout << "Test for failure is passed..." << std::endl; };
-        __at_scope_succeeded_c() { std::cout << "Test for failure isn't passed..." << std::endl; };
+        __at_scope_exit { std::cout << "Test for always is passed..." << std::endl; };
+        __at_scope_failed { std::cout << "Test for failure is passed..." << std::endl; };
+        __at_scope_succeeded { std::cout << "Test for failure isn't passed..." << std::endl; };
 
         std::cout << "Making a failure..." << std::endl;
         throw std::runtime_error("");
@@ -123,9 +123,9 @@ int main(int argc, char **argv)
     }
 
     {
-        __at_scope_exit_c() { std::cout << "Test for always is passed..." << std::endl; };
-        __at_scope_failed_c() { std::cout << "Test for success isn't passed..." << std::endl; };
-        __at_scope_succeeded_c() { std::cout << "Test for success is passed..." << std::endl; };
+        __at_scope_exit { std::cout << "Test for always is passed..." << std::endl; };
+        __at_scope_failed { std::cout << "Test for success isn't passed..." << std::endl; };
+        __at_scope_succeeded { std::cout << "Test for success is passed..." << std::endl; };
 
         std::cout << "Making a success..." << std::endl;
     }

@@ -835,10 +835,10 @@ std::string html_encode(std::string_view data)
 #define __concatenate(a, b) __concat(a, b)
 #define __dynamic_var_name(prefix) __concatenate(prefix, __LINE__)
 
-#define __scope_type(type, captures)    const auto __dynamic_var_name(at_scope_exit) = nstd::utilities::at_scope_exit::at_scope_exit_adaptor<type>() << [captures]()
-#define __at_scope_exit                 __scope_type(nstd::utilities::at_scope_exit::always, &)
-#define __at_scope_failed               __scope_type(nstd::utilities::at_scope_exit::on_exception_only, &) noexcept
-#define __at_scope_succeeded            __scope_type(nstd::utilities::at_scope_exit::on_success_only, &)
-#define __at_scope_exit_c(capture)      __scope_type(nstd::utilities::at_scope_exit::always, capture)
-#define __at_scope_failed_c(capture)    __scope_type(nstd::utilities::at_scope_exit::on_exception_only, capture) noexcept
-#define __at_scope_succeeded_c(capture) __scope_type(nstd::utilities::at_scope_exit::on_success_only, capture)
+#define __scope_type(type, ...)         const auto __dynamic_var_name(at_scope_exit) = nstd::utilities::at_scope_exit::at_scope_exit_adaptor<type>() << [__VA_ARGS__]()
+#define __at_scope_exit                 __scope_type(nstd::utilities::at_scope_exit::always)
+#define __at_scope_failed               __scope_type(nstd::utilities::at_scope_exit::on_exception_only) noexcept
+#define __at_scope_succeeded            __scope_type(nstd::utilities::at_scope_exit::on_success_only)
+#define __at_scope_exit_c(...)          __scope_type(nstd::utilities::at_scope_exit::always, __VA_ARGS__)
+#define __at_scope_failed_c(...)        __scope_type(nstd::utilities::at_scope_exit::on_exception_only, __VA_ARGS__) noexcept
+#define __at_scope_succeeded_c(...)     __scope_type(nstd::utilities::at_scope_exit::on_success_only, __VA_ARGS__)
