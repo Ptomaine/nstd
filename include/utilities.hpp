@@ -31,6 +31,7 @@ SOFTWARE.
 #include <fstream>
 #include <future>
 #include <mutex>
+#include <span>
 #include <stdint.h>
 #include <string>
 #include <string_view>
@@ -387,6 +388,48 @@ template<typename Iterator, typename Container>
 void permute(Container &result, const Iterator &begin, const Iterator &end)
 {
     permute(result, begin, begin, end);
+}
+
+template<typename T>
+requires std::is_arithmetic_v<T>
+bool needs_parity_fix(std::span<T> span)
+{
+    size_t parity { 0 };
+    const size_t nr_of_elements { std::size(span) };
+
+    for (size_t idx { 0 }; idx < nr_of_elements - 1; ++idx)
+        for (size_t fwd { idx + 1 }; fwd < nr_of_elements; ++fwd)
+            if (span[idx] > span[fwd]) ++parity;
+
+    return ((nr_of_elements & 1 && parity & 1) || (!(nr_of_elements & 1) && !(parity & 1)));
+}
+
+template<typename T, typename Map>
+requires std::is_arithmetic_v<std::result_of_t<Map(T&)>>
+bool needs_parity_fix(std::span<T> span, Map func)
+{
+    size_t parity { 0 };
+    const size_t nr_of_elements { std::size(span) };
+
+    for (size_t idx { 0 }; idx < nr_of_elements - 1; ++idx)
+        for (size_t fwd { idx + 1 }; fwd < nr_of_elements; ++fwd)
+            if (func(span[idx]) > func(span[fwd])) ++parity;
+
+    return ((nr_of_elements & 1 && parity & 1) || (!(nr_of_elements & 1) && !(parity & 1)));
+}
+
+template<typename T>
+requires std::is_arithmetic_v<T>
+void fix_parity_if_needed(std::span<T> span)
+{
+    if (std::size(span) >= 2 && needs_parity_fix(span)) std::swap(span[0], span[1]);
+}
+
+template<typename T, typename Map>
+requires std::is_arithmetic_v<std::result_of_t<Map(T&)>>
+void fix_parity_if_needed(std::span<T> span, Map func)
+{
+    if (std::size(span) >= 2 && needs_parity_fix(span, func)) std::swap(span[0], span[1]);
 }
 
 namespace fibonacci
