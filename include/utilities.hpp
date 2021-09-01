@@ -401,7 +401,7 @@ bool needs_parity_fix(std::span<T> span)
         for (size_t fwd { idx + 1 }; fwd < nr_of_elements; ++fwd)
             if (span[idx] > span[fwd]) ++parity;
 
-    return ((nr_of_elements & 1 && parity & 1) || (!(nr_of_elements & 1) && !(parity & 1)));
+    return parity & 1;
 }
 
 template<typename T, typename Map>
@@ -415,7 +415,7 @@ bool needs_parity_fix(std::span<T> span, Map func)
         for (size_t fwd { idx + 1 }; fwd < nr_of_elements; ++fwd)
             if (func(span[idx]) > func(span[fwd])) ++parity;
 
-    return ((nr_of_elements & 1 && parity & 1) || (!(nr_of_elements & 1) && !(parity & 1)));
+    return parity & 1;
 }
 
 template<typename T>
