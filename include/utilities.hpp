@@ -432,6 +432,13 @@ void fix_parity_if_needed(std::span<T> span, Map func)
     if (std::size(span) >= 2 && needs_parity_fix(span, func)) std::swap(span[0], span[1]);
 }
 
+template<typename T>
+requires std::is_floating_point_v<T>
+int get_number_of_digits(T number)
+{
+    return std::log10(T) + 1;
+}
+
 namespace fibonacci
 {
 
