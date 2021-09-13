@@ -21,6 +21,7 @@ SOFTWARE.
 */
 
 #include <chrono>
+#include <type_traits>
 #include <mutex>
 #include <random>
 
@@ -28,6 +29,7 @@ namespace nstd
 {
 
 template<typename T = uint64_t>
+requires std::is_integral_v<T> || std::is_floating_point_v<T>
 class random_provider_default
 {
 public:
@@ -42,6 +44,19 @@ private:
     inline static std::mt19937_64 rand_gen{ static_cast<T>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()) };
     inline static std::uniform_int_distribution<T> rand_dist{ 1 };
     inline static std::mutex _mutex;
+};
+
+template<typename T>
+requires std::is_integral_v<T> || std::is_floating_point_v<T>
+auto random_number_between = [](T low, T high)
+{
+    auto random_func = [distribution  = std::uniform_int_distribution<T>(low, high), 
+                        random_engine = std::mt19937{ std::random_device{}() }]() mutable
+    {
+        return distribution(random_engine);
+    };
+
+    return random_func;
 };
 
 }
