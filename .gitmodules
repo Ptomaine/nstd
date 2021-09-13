@@ -86,3 +86,6 @@
 	path = include/external/freetype/brotli
 	url = https://github.com/google/brotli.git
 	branch = master
+[submodule "include/external/intx"]
+	path = include/external/intx
+	url = https://github.com/chfast/intx.git

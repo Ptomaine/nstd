@@ -21,6 +21,7 @@ SOFTWARE.
 */
 
 #include <cstdint>
+#include "external/intx/include/intx/int128.hpp"
 
 namespace nstd
 {
@@ -71,12 +72,12 @@ public:
     {
         lehmer64_state *= UINT64_C(0xda942042e4dd58b5);
 
-        return lehmer64_state >> 64;
+        return static_cast<uint64_t>(lehmer64_state >> 64);
     }
 
 private:
     uint64_t splitmix64_x { 0 };
-    __uint128_t lehmer64_state { 0 };
+    intx::uint128 lehmer64_state { 0 };
 };
 
 }

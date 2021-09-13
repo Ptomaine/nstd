@@ -19,9 +19,11 @@ SOFTWARE.
 */
 
 #include <iostream>
+#include <chrono>
 #include "relinx_generator_uuid.hpp"
 #include "relinx_generator_random.hpp"
-#include "random_provider_quantum.hpp"
+#include "random_provider_lehmer64.hpp"
+//#include "random_provider_quantum.hpp"
 
 int main()
 {
@@ -35,13 +37,20 @@ int main()
         std::cout << u << std::endl;
     });
 
-    std::cout << std::endl << "From the quantum provider:" << std::endl;
-    nstd::from_random<nstd::random_provider_quantum<>>()->take(200)->for_each([](auto &&u)
+    std::cout << std::endl << "Lehmer64:" << std::endl;
+    //auto time_pt { static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()) };
+    nstd::from_random<nstd::random_provider_lehmer64>()->take(200)->for_each([](auto &&u)
     {
         std::cout << u << std::endl;
     });
 
-	std::cout << "exitting..." << std::endl;
+    /*std::cout << std::endl << "From the quantum provider:" << std::endl;
+    nstd::from_random<nstd::random_provider_quantum<>>()->take(200)->for_each([](auto &&u)
+    {
+        std::cout << u << std::endl;
+    });*/
+
+    std::cout << "exitting..." << std::endl;
 
     return 0;
 }
