@@ -30,6 +30,7 @@ SOFTWARE.
 #include <functional>
 #include <fstream>
 #include <future>
+#include <cmath>
 #include <mutex>
 #include <span>
 #include <stdint.h>
@@ -436,7 +437,7 @@ template<typename T>
 requires std::is_floating_point_v<T>
 int get_number_of_digits(T number)
 {
-    return std::log10(T) + 1;
+    return std::log10(number) + 1;
 }
 
 namespace fibonacci
