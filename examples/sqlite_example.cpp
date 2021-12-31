@@ -23,10 +23,10 @@ SOFTWARE.
 #include <string>
 #include <tuple>
 #include "random_provider_default.hpp"
-#include "relinx.hpp"
-#include "relinx_generator_uuid.hpp"
+#include "uuid.hpp"
 #include "sqlite.hpp"
 #include "json.hpp"
+#include <ranges>
 
 int main()
 {
@@ -37,7 +37,7 @@ int main()
     {
         nstd::db::sqlite::scoped_transaction tr(db, true);
 
-        nstd::relinx::range(1, 100)->for_each([&db](auto &&idx)
+        std::ranges::for_each(std::views::iota(1, 100), [&db](auto &&idx)
         {
             auto name { std::to_string(nstd::random_provider_default<>()()) };
             auto password { std::to_string(nstd::random_provider_default<>()()) };
@@ -52,7 +52,7 @@ int main()
 
     db << "select id, name, password from example where id between 30 and 80" >> records;
 
-    nstd::relinx::from(std::data(records))->for_each([](auto &&row)
+    std::ranges::for_each(std::data(records), [](auto &&row)
     {
         auto &[id, name, password] = row;
 
@@ -76,7 +76,7 @@ int main()
         };
         nstd::db::object_records<Rec, int, std::string, std::string> orecs;
         db << "select id, name, password from example where id between 30 and 80 order by id desc" >> orecs;
-        nstd::relinx::from(std::data(orecs))->for_each([] (auto &&obj)
+        std::ranges::for_each(std::data(orecs), [] (auto &&obj)
         {
             std::cout << "id: " << obj.id << ";\tname: " << obj.name << ";\tpassword: " << obj.pass << std::endl;
         });
@@ -86,11 +86,12 @@ int main()
     db << "create table example(id text primary key, name text, password text, json_data text)";
 
     {
+        nstd::uuid::uuid::init_random();
         nstd::db::sqlite::scoped_transaction tr(db, true);
 
-        nstd::from_uuid()->take(100)->for_each([&db](auto &&uuid)
+        std::ranges::for_each(std::views::iota(0, 100), [&db](auto &&uuid)
         {
-            auto uuid_str { uuid.to_string() };
+            auto uuid_str { nstd::uuid::uuid().generate_random().to_string() };
             auto name { std::to_string(nstd::random_provider_default<>()()) };
             auto password { std::to_string(nstd::random_provider_default<>()()) };
             nstd::json::json json_data;
