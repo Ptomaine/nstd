@@ -85,8 +85,11 @@ int main()
     db << "create table example(id text primary key, name text, password text, json_data text)";
 
     {
-        nstd::uuid::uuid::init_random();
         nstd::db::sqlite::scoped_transaction tr(db, true);
+        
+        if (!nstd::uuid::uuid::was_random_inited()) nstd::uuid::uuid::init_random();
+
+        using random_uint64 = nstd::random_provider_default<>;
 
         std::ranges::for_each(std::views::iota(0, 100), [&db](auto &&uuid)
         {
@@ -96,7 +99,7 @@ int main()
             nstd::json::json json_data;
             std::optional<std::string> json_data_str;
 
-            if (nstd::random_provider_default<>()() & 1)
+            if (random_uint64()() & 1)
             {
                 json_data["id"] = uuid_str;
                 json_data["name"] = name;

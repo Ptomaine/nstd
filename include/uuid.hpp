@@ -165,6 +165,11 @@ public:
         return uuid_bytes;
     }
 
+    static bool was_random_inited()
+    {
+        return random_was_inited;
+    }
+
     inline static constexpr std::array<uint8_t, 16> null_uuid { 0 };
 
 private:
