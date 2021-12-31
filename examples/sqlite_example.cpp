@@ -20,13 +20,12 @@ SOFTWARE.
 
 #include <iostream>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <tuple>
-#include "random_provider_default.hpp"
 #include "uuid.hpp"
 #include "sqlite.hpp"
 #include "json.hpp"
-#include <ranges>
 
 int main()
 {
@@ -52,7 +51,7 @@ int main()
 
     db << "select id, name, password from example where id between 30 and 80" >> records;
 
-    std::ranges::for_each(std::data(records), [](auto &&row)
+    std::ranges::for_each(records, [](auto &&row)
     {
         auto &[id, name, password] = row;
 
@@ -76,7 +75,7 @@ int main()
         };
         nstd::db::object_records<Rec, int, std::string, std::string> orecs;
         db << "select id, name, password from example where id between 30 and 80 order by id desc" >> orecs;
-        std::ranges::for_each(std::data(orecs), [] (auto &&obj)
+        std::ranges::for_each(orecs, [] (auto &&obj)
         {
             std::cout << "id: " << obj.id << ";\tname: " << obj.name << ";\tpassword: " << obj.pass << std::endl;
         });
