@@ -104,6 +104,26 @@ struct object_records
         records.emplace_back(std::forward<ConstructorArgs>(args)...);
     };
 
+    auto begin()
+    {
+        return std::begin(records);
+    }
+
+    auto end()
+    {
+        return std::end(records);
+    }
+
+    auto begin() const
+    {
+        return std::cbegin(records);
+    }
+
+    auto end() const
+    {
+        return std::cend(records);
+    }
+
     data_container_type &data()
     {
         return records;
@@ -125,6 +145,26 @@ struct tuple_records
         records.emplace_back(std::forward_as_tuple(std::move(args)...));
     };
 
+    auto begin()
+    {
+        return std::begin(records);
+    }
+
+    auto end()
+    {
+        return std::end(records);
+    }
+
+    auto begin() const
+    {
+        return std::cbegin(records);
+    }
+
+    auto end() const
+    {
+        return std::cend(records);
+    }
+
     data_container_type &data()
     {
         return records;
@@ -132,4 +172,3 @@ struct tuple_records
 };
 
 }
-
