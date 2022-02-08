@@ -128,6 +128,10 @@ namespace at_scope_exit
 	};
 }
 
+using at_scope_exit_t = at_scope_exit::at_scope_exit<at_scope_exit::always>;
+using at_scope_failed_t = at_scope_exit::at_scope_exit<at_scope_exit::on_exception_only>;
+using at_scope_succeeded_t = at_scope_exit::at_scope_exit<at_scope_exit::on_success_only>;
+
 // Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
 uint32_t turbulence_hash(uint32_t state)
 {
