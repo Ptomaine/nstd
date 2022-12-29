@@ -45,18 +45,18 @@ struct layout_calculator
         
         for (size_t i = 0; i < _row_column_width_proportions.size(); ++i)
         {
-            const int num_columns = _row_column_width_proportions[i].size();
-            const int row_height = std::round(_row_height_proportions[i] * parent_rect.height * scaling_factor);
+            const size_t num_columns = _row_column_width_proportions[i].size();
+            const int row_height = static_cast<int>(std::round(_row_height_proportions[i] * parent_rect.height * scaling_factor));
             const int row_height_scaled = row_height / scaling_factor;
             int x = parent_rect.x;
             std::vector<rect> row;
             
             row.reserve(num_columns);
             
-            for (int j = 0; j < num_columns; ++j)
+            for (size_t j = 0; j < num_columns; ++j)
             {
                 const float column_width_proportion = _row_column_width_proportions[i][j];
-                const int column_width = std::round(column_width_proportion * parent_rect.width * scaling_factor);
+                const int column_width = static_cast<int>(std::round(column_width_proportion * parent_rect.width * scaling_factor));
                 const int column_width_scaled = column_width / scaling_factor;
                 
                 row.emplace_back(rect{ x, y, column_width_scaled, row_height_scaled });
