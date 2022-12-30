@@ -25,53 +25,72 @@ SOFTWARE.
 #include <tuple>
 #include <vector>
 
-struct layout_calculator
+namespace nstd
 {
-    struct rect
+    struct layout_calculator
     {
-        int x, y, width, height;
-    };
-
-    layout_calculator(const std::vector<std::vector<float>>& row_column_width_proportions, const std::vector<float>& row_height_proportions)
-        : _row_column_width_proportions(row_column_width_proportions), _row_height_proportions(row_height_proportions) {}
-
-    std::vector<std::vector<rect>> calculate_layout(const rect& parent_rect) const
-    {
-        std::vector<std::vector<rect>> child_rects;
-        child_rects.reserve(_row_column_width_proportions.size());
-
-        int y = parent_rect.y;
-        const int scaling_factor = 10000;
-        
-        for (size_t i = 0; i < _row_column_width_proportions.size(); ++i)
+        struct rect
         {
-            const size_t num_columns = _row_column_width_proportions[i].size();
-            const int row_height = static_cast<int>(std::round(_row_height_proportions[i] * parent_rect.height * scaling_factor));
-            const int row_height_scaled = row_height / scaling_factor;
-            int x = parent_rect.x;
-            std::vector<rect> row;
-            
-            row.reserve(num_columns);
-            
-            for (size_t j = 0; j < num_columns; ++j)
+            int x, y, width, height;
+        };
+
+        layout_calculator(const std::vector<std::vector<float>>& row_column_width_proportions, const std::vector<float>& row_height_proportions)
+            : _row_column_width_proportions(row_column_width_proportions), _row_height_proportions(row_height_proportions) {}
+
+        std::vector<std::vector<rect>> calculate_layout(const rect& parent_rect, bool fit_width_into_parent_rectangle = false, bool fit_height_into_parent_rectangle = false)
+        {
+            std::vector<std::vector<rect>> child_rects;
+            child_rects.reserve(_row_height_proportions.size());
+
+            if (fit_height_into_parent_rectangle)
             {
-                const float column_width_proportion = _row_column_width_proportions[i][j];
-                const int column_width = static_cast<int>(std::round(column_width_proportion * parent_rect.width * scaling_factor));
-                const int column_width_scaled = column_width / scaling_factor;
-                
-                row.emplace_back(rect{ x, y, column_width_scaled, row_height_scaled });
-                
-                x += column_width_scaled;
+                float row_height_proportions_sum = std::accumulate(_row_height_proportions.begin(), _row_height_proportions.end(), 0.0f);
+
+                if (row_height_proportions_sum != 1.0)
+                {
+                    std::transform(_row_height_proportions.begin(), _row_height_proportions.end(), _row_height_proportions.begin(), [row_height_proportions_sum](float proportion) { return proportion / row_height_proportions_sum; });
+                }
             }
 
-            child_rects.emplace_back(std::move(row));
-            y += row_height_scaled;
+            int y = parent_rect.y;
+            const int scaling_factor = 10000;
+
+            for (size_t i = 0; i < _row_column_width_proportions.size(); ++i)
+            {
+                const int num_columns = _row_column_width_proportions[i].size();
+                int row_height = std::round(_row_height_proportions[i] * parent_rect.height * scaling_factor);
+                row_height = row_height / scaling_factor;
+                int x = parent_rect.x;
+                std::vector<rect> row;
+                row.reserve(num_columns);
+
+                if (fit_width_into_parent_rectangle)
+                {
+                    float column_width_proportions_sum = std::accumulate(_row_column_width_proportions[i].begin(), _row_column_width_proportions[i].end(), 0.0f);
+
+                    if (fit_width_into_parent_rectangle && column_width_proportions_sum != 1.0)
+                    {
+                        std::transform(_row_column_width_proportions[i].begin(), _row_column_width_proportions[i].end(), _row_column_width_proportions[i].begin(), [column_width_proportions_sum](float proportion) { return proportion / column_width_proportions_sum; });
+                    }
+                }
+
+                for (int j = 0; j < num_columns; ++j)
+                {
+                    int column_width = std::round(_row_column_width_proportions[i][j] * parent_rect.width * scaling_factor);
+                    column_width = column_width / scaling_factor;
+                    row.emplace_back(x, y, column_width, row_height);
+                    x += column_width;
+                }
+
+                child_rects.push_back(std::move(row));
+                y += row_height;
+            }
+
+            return child_rects;
         }
 
-        return child_rects;
-    }
-
-private:
-    std::vector<std::vector<float>> _row_column_width_proportions;
-    std::vector<float> _row_height_proportions;
-};
+    private:
+        std::vector<std::vector<float>> _row_column_width_proportions;
+        std::vector<float> _row_height_proportions;
+    };
+}
