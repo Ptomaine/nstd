@@ -22,7 +22,6 @@ SOFTWARE.
 
 #include <algorithm>
 #include <cmath>
-#include <tuple>
 #include <vector>
 
 namespace nstd
