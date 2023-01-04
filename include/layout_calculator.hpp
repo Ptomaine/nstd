@@ -56,8 +56,8 @@ namespace nstd
 
             for (size_t i = 0; i < _row_column_width_proportions.size(); ++i)
             {
-                const int num_columns = _row_column_width_proportions[i].size();
-                int row_height = std::round(_row_height_proportions[i] * parent_rect.height * scaling_factor);
+                const int num_columns = static_cast<int>(_row_column_width_proportions[i].size());
+                int row_height = static_cast<int>(std::round(_row_height_proportions[i] * parent_rect.height * scaling_factor));
                 row_height = row_height / scaling_factor;
                 int x = parent_rect.x;
                 std::vector<rect> row;
@@ -75,7 +75,7 @@ namespace nstd
 
                 for (int j = 0; j < num_columns; ++j)
                 {
-                    int column_width = std::round(_row_column_width_proportions[i][j] * parent_rect.width * scaling_factor);
+                    int column_width = static_cast<int>(std::round(_row_column_width_proportions[i][j] * parent_rect.width * scaling_factor));
                     column_width = column_width / scaling_factor;
                     row.emplace_back(x, y, column_width, row_height);
                     x += column_width;
