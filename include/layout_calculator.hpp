@@ -35,51 +35,82 @@ namespace nstd
 
         layout_calculator(const std::vector<std::pair<std::vector<float>, float>>& rows) : _rows(rows) {}
 
-        std::vector<std::vector<rect>> calculate_layout(rect parent_rect, bool fit_width_into_parent_rectangle = false, bool fit_height_into_parent_rectangle = false)
+        std::vector<std::vector<rect>> calculate_layout(rect parent_rect)
         {
-            std::vector<std::vector<rect>> child_rects;
-            child_rects.reserve(_rows.size());
+            int fixed_pixel_rows_size = 0;
+            float row_height_proportions_sum = 0.f;
+            for (auto& row : _rows)
+            {
+                if (row.second < 0.f)
+                {
+                    fixed_pixel_rows_size += std::abs(row.second);
+                }
+                else
+                {
+                    row_height_proportions_sum += row.second;
+                }
+            }
+
+            int parent_height = fixed_pixel_rows_size < parent_rect.height ? parent_rect.height - fixed_pixel_rows_size : 0;
+
+            if (row_height_proportions_sum != 1.0)
+            {
+                for (auto& row : _rows)
+                {
+                    if (row.second >= 0.f)
+                    {
+                        row.second /= row_height_proportions_sum;
+                    }
+                }
+            }
 
             int y = parent_rect.y;
-            const int scaling_factor = 10000;
-            for (size_t i = 0; i < _rows.size(); ++i)
+            std::vector<std::vector<rect>> child_rects;
+            child_rects.reserve(std::size(_rows));
+
+            for (auto& row : _rows)
             {
-                const int num_columns = _rows[i].first.size();
-                int row_height = std::round(_rows[i].second * parent_rect.height * scaling_factor);
-                row_height = row_height / scaling_factor;
+                int fixed_pixel_columns_size = 0;
+                float column_width_proportions_sum = 0.f;
+                for (auto column_width : row.first)
+                {
+                    if (column_width < 0.f)
+                    {
+                        fixed_pixel_columns_size += std::abs(column_width);
+                    }
+                    else
+                    {
+                        column_width_proportions_sum += column_width;
+                    }
+                }
+
+                int parent_width = (fixed_pixel_columns_size < parent_rect.width) ? parent_rect.width - fixed_pixel_columns_size : 0;
+
+                if (column_width_proportions_sum != 1.f)
+                {
+                    for (auto& col : row.first)
+                    {
+                        if (col >= 0.f)
+                        {
+                            col /= column_width_proportions_sum;
+                        }
+                    }
+                }
+
+                int row_height = static_cast<int>(row.second < 0.f ? std::abs(row.second) : row.second * parent_height);
                 int x = parent_rect.x;
-                std::vector<rect> row;
-                row.reserve(num_columns);
+                std::vector<rect> child_row;
+                child_row.reserve(std::size(row.first));
 
-                if (fit_width_into_parent_rectangle)
+                for (const auto col : row.first)
                 {
-                    float column_width_proportions_sum = std::accumulate(_rows[i].first.begin(), _rows[i].first.end(), 0.0f);
+                    int column_width = static_cast<int>(col < 0.f ? std::abs(col) : col * parent_width);
 
-                    if (column_width_proportions_sum != 1.0)
-                    {
-                        std::transform(_rows[i].first.begin(), _rows[i].first.end(), _rows[i].first.begin(), [column_width_proportions_sum](float proportion) { return proportion / column_width_proportions_sum; });
-                    }
-                }
-
-                if (fit_height_into_parent_rectangle)
-                {
-                    float row_height_proportions_sum = std::accumulate(_rows.begin(), _rows.end(), 0.0f, [](float sum, const auto& row) { return sum + row.second; });
-
-                    if (row_height_proportions_sum != 1.0)
-                    {
-                        std::transform(_rows.begin(), _rows.end(), _rows.begin(), [row_height_proportions_sum](auto& row) { row.second /= row_height_proportions_sum; return row; });
-                    }
-                }
-
-                for (size_t j = 0; j < num_columns; ++j)
-                {
-                    int column_width = std::round(_rows[i].first[j] * parent_rect.width * scaling_factor);
-                    column_width = column_width / scaling_factor;
-                    row.emplace_back(rect{ x, y, column_width, row_height });
+                    child_row.emplace_back(x, y, column_width, row_height);
                     x += column_width;
                 }
 
-                child_rects.emplace_back(std::move(row));
+                child_rects.emplace_back(std::move(child_row));
                 y += row_height;
             }
 
