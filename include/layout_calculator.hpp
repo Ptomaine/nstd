@@ -37,8 +37,11 @@ namespace nstd
 
         std::vector<std::vector<rect>> calculate_layout(rect parent_rect)
         {
+            std::vector<std::vector<rect>> child_rects;
             int fixed_pixel_rows_size = 0;
+            int y = parent_rect.y;
             float row_height_proportions_sum = 0.f;
+
             for (auto& row : _rows)
             {
                 if (row.second < 0.f)
@@ -64,8 +67,6 @@ namespace nstd
                 }
             }
 
-            int y = parent_rect.y;
-            std::vector<std::vector<rect>> child_rects;
             child_rects.reserve(std::size(_rows));
 
             for (auto& row : _rows)
@@ -99,7 +100,7 @@ namespace nstd
 
                 int row_height = static_cast<int>(row.second < 0.f ? std::abs(row.second) : row.second * parent_height);
                 int x = parent_rect.x;
-                std::vector<rect> child_row;
+                auto& child_row{ child_rects.emplace_back() };
                 child_row.reserve(std::size(row.first));
 
                 for (const auto col : row.first)
@@ -110,7 +111,6 @@ namespace nstd
                     x += column_width;
                 }
 
-                child_rects.emplace_back(std::move(child_row));
                 y += row_height;
             }
 
