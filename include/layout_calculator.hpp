@@ -46,7 +46,7 @@ namespace nstd
             {
                 if (row.second < 0.f)
                 {
-                    fixed_pixel_rows_size += std::abs(row.second);
+                    fixed_pixel_rows_size += static_cast<int>(std::abs(row.second));
                 }
                 else
                 {
@@ -77,7 +77,7 @@ namespace nstd
                 {
                     if (column_width < 0.f)
                     {
-                        fixed_pixel_columns_size += std::abs(column_width);
+                        fixed_pixel_columns_size += static_cast<int>(std::abs(column_width));
                     }
                     else
                     {
