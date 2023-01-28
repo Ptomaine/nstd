@@ -28,19 +28,23 @@ namespace nstd
 {
     struct layout_calculator
     {
+        using row_height_type = float;
+        using column_width_type = float;
+        using row_type = std::pair<std::vector<column_width_type>, row_height_type>;
+
         struct rect
         {
             int x, y, width, height;
         };
 
-        layout_calculator(const std::vector<std::pair<std::vector<float>, float>>& rows) : _rows(rows) {}
+        layout_calculator(const std::vector<row_type>& rows) : _rows(rows) {}
 
         std::vector<std::vector<rect>> calculate_layout(rect parent_rect)
         {
             std::vector<std::vector<rect>> child_rects;
             int fixed_pixel_rows_size = 0;
             int y = parent_rect.y;
-            float row_height_proportions_sum = 0.f;
+            row_height_type row_height_proportions_sum = 0.f;
 
             for (auto& row : _rows)
             {
@@ -72,7 +76,8 @@ namespace nstd
             for (auto& row : _rows)
             {
                 int fixed_pixel_columns_size = 0;
-                float column_width_proportions_sum = 0.f;
+                column_width_type column_width_proportions_sum = 0.f;
+
                 for (auto column_width : row.first)
                 {
                     if (column_width < 0.f)
@@ -137,14 +142,14 @@ namespace nstd
             return std::size(_rows);
         }
 
-        void add_row(std::pair<std::vector<float>, float> row)
+        void add_row(row_type row)
         {
             _rows.push_back(std::move(row));
         }
 
-        auto replace_row(size_t row_index, std::pair<std::vector<float>, float> row)
+        auto replace_row(size_t row_index, row_type row)
         {
-            std::pair<std::vector<float>, float> result{ std::move(_rows[row_index]) };
+            row_type result{ std::move(_rows[row_index]) };
 
             _rows[row_index] = std::move(row);
 
@@ -153,7 +158,7 @@ namespace nstd
 
         auto remove_row(size_t row_index)
         {
-            std::pair<std::vector<float>, float> result{ std::move(_rows[row_index]) };
+            row_type result{ std::move(_rows[row_index]) };
 
             _rows.erase(std::begin(_rows) + row_index);
 
@@ -162,7 +167,7 @@ namespace nstd
 
         auto pop_back()
         {
-            std::pair<std::vector<float>, float> result{ std::move(_rows.back()) };
+            row_type result{ std::move(_rows.back()) };
 
             _rows.pop_back();
 
@@ -171,7 +176,7 @@ namespace nstd
 
         auto pop_front()
         {
-            std::pair<std::vector<float>, float> result{ std::move(_rows.front()) };
+            row_type result{ std::move(_rows.front()) };
 
             _rows.erase(std::begin(_rows));
 
@@ -179,6 +184,6 @@ namespace nstd
         }
 
     private:
-        std::vector<std::pair<std::vector<float>, float>> _rows;
+        std::vector<row_type> _rows;
     };
 }
