@@ -311,12 +311,12 @@ public:
     {
         if (!_enabled) return;
 
-        std::scoped_lock<std::mutex> lock { _emit_lock };
+        std::scoped_lock<std::mutex> lock_emit { _emit_lock };
 
         if (!_enabled) return;
 
         {
-            std::scoped_lock<std::mutex> lock { _connect_lock };
+            std::scoped_lock<std::mutex> lock_con { _connect_lock };
 
             if (!std::empty(_pending_connections))
             {
