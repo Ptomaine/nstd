@@ -884,6 +884,46 @@ std::string html_encode(std::string_view data)
 
 }
 
+namespace img
+{
+    template<int Size = 256>
+    float get_image_difference(unsigned char *first_gray_values, unsigned char *second_gray_values, int threshold)
+    {
+        float diff_pixels { 0.f };
+
+        for (int idx {0}; idx < Size; ++idx)
+        {
+            if (std::abs(int(first_gray_values[idx]) - int(second_gray_values[idx])) > threshold)
+            {
+                ++diff_pixels;
+            }
+        }
+
+        return diff_pixels / Size;
+    }
+
+    template<int Size = 256>
+    float get_image_difference_for_two(unsigned char *first_gray_values, unsigned char *second_gray_values, unsigned char *third_gray_values, int threshold)
+    {
+        float diff_pixels { 0.f }, diff_pixels2 { 0.f };
+
+        for (int idx {0}; idx < Size; ++idx)
+        {
+            if (std::abs(int(first_gray_values[idx]) - int(third_gray_values[idx])) > threshold)
+            {
+                ++diff_pixels;
+            }
+
+            if (std::abs(int(second_gray_values[idx]) - int(third_gray_values[idx])) > threshold)
+            {
+                ++diff_pixels2;
+            }
+        }
+
+        return std::min(diff_pixels / Size, diff_pixels2 / Size);
+    }
+}
+
 }
 
 #define __concat(a, b) a ## b

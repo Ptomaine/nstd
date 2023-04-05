@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
     const std::string app_name { "pmr_example" };
     __at_scope_exit_c(&app_name) { const std::u8string_view str { u8"Всё ещё UTF8..." }; std::cout << std::string(std::begin(str), std::end(str)) << " [" << app_name << "]" << std::endl; };
-    std::vector<at_scope_exit::at_scope_exit<at_scope_exit::always>> exit_chain;
+    std::vector<at_scope_exit_t> exit_chain;
 
     exit_chain.emplace_back([&app_name] { std::cout << std::endl << "#1. exitting " << app_name << "..." << std::endl; });
     exit_chain.emplace_back([] { std::cout << "#2. stopped" << std::endl; });
@@ -207,7 +207,6 @@ int main(int argc, char **argv)
 
         emit_signal(std::move(coords));
     }
-
 
     return 0;
 }
