@@ -888,7 +888,7 @@ namespace img
 {
     template<uint32_t Size = 256, typename RealType = double>
     requires std::is_floating_point_v<RealType>
-    RealType get_image_difference(unsigned char *gray_values, unsigned char *original_gray_values, int threshold = 64)
+    RealType get_image_difference(uint8_t *gray_values, uint8_t *original_gray_values, int threshold = 64)
     {
         RealType diff_pixels {};
 
@@ -905,7 +905,7 @@ namespace img
 
     template<uint32_t Size = 256, typename RealType = double>
     requires std::is_floating_point_v<RealType>
-    RealType get_image_difference_for_two(unsigned char *first_gray_values, unsigned char *second_gray_values, unsigned char *original_gray_values, int threshold = 64)
+    RealType get_image_difference_for_two(uint8_t *first_gray_values, uint8_t *second_gray_values, uint8_t *original_gray_values, int threshold = 64)
     {
         RealType diff_pixels {}, diff_pixels2 {};
 
