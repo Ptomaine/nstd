@@ -39,8 +39,8 @@ namespace nstd::platform::utilities
 auto set_console_utf8()
 {
 #ifdef _WIN32
-    ::SetConsoleCP(65001);
-    ::SetConsoleOutputCP(65001);
+    if (::GetConsoleCP() != CP_UTF8) ::SetConsoleCP(CP_UTF8);
+    if (::GetConsoleOutputCP() != CP_UTF8) ::SetConsoleOutputCP(CP_UTF8);
 #endif // _WIN32
 }
 

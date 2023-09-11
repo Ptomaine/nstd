@@ -81,19 +81,19 @@ namespace at_scope_exit
 {
     struct always {}; struct on_exception_only {}; struct on_success_only {};
 
-	template<typename T>
+    template<typename T>
     requires (std::same_as<always, T> || std::same_as<on_exception_only, T> || std::same_as<on_success_only, T>)
-	struct should_execute
-	{
-		bool invoke() const noexcept { return std::is_same_v<on_exception_only, T> == (std::uncaught_exceptions() > _number_of_exceptions); }
-		int _number_of_exceptions { std::uncaught_exceptions() };
-	};
+    struct should_execute
+    {
+        bool invoke() const noexcept { return std::is_same_v<on_exception_only, T> == (std::uncaught_exceptions() > _number_of_exceptions); }
+        int _number_of_exceptions { std::uncaught_exceptions() };
+    };
 
-	template<>
-	struct should_execute<always>
-	{
-		constexpr static bool invoke() noexcept { return true; }
-	};
+    template<>
+    struct should_execute<always>
+    {
+        constexpr static bool invoke() noexcept { return true; }
+    };
 
     template<typename T>
     requires (std::same_as<always, T> || std::same_as<on_exception_only, T> || std::same_as<on_success_only, T>)
@@ -923,6 +923,59 @@ namespace img
         }
 
         return std::min(diff_pixels / static_cast<RealType>(Size), diff_pixels2 / static_cast<RealType>(Size));
+    }
+
+
+    std::vector<uint8_t> get_histogram_equalized_grayscale(uint8_t *color_values, int width, int height, int pixel_size, int r_idx, int g_idx, int b_idx)
+    {
+        int histogram[256];
+
+        std::memset(histogram, 0, sizeof(histogram));
+
+        int total_pixels = width * height;
+        std::vector<uint8_t> output(total_pixels);
+
+        uint8_t *color_values_ptr { color_values };
+        for (int i{0}; i < total_pixels; ++i)
+        {
+            uint8_t r = color_values_ptr[r_idx];
+            uint8_t g = color_values_ptr[g_idx];
+            uint8_t b = color_values_ptr[b_idx];
+
+            ++histogram[(int)(0.299 * r + 0.587 * g + 0.114 * b)];
+
+            color_values_ptr += pixel_size;
+        }
+
+        // Calculate the cumulative distribution function (CDF) of the histogram
+        int cdf[256];
+
+        cdf[0] = histogram[0];
+
+        for (int i{1}; i < 256; ++i)
+        {
+            cdf[i] = cdf[i - 1] + histogram[i];
+        }
+
+        // Normalize the CDF to the range [0, 255]
+        for (int i = 0; i < 256; ++i)
+        {
+            cdf[i] = static_cast<int>((cdf[i] / (double)totalPixels) * 255);
+        }
+
+        color_values_ptr = color_values;
+        for (int i{0}; i < total_pixels; ++i)
+        {
+            uint8_t r = color_values_ptr[r_idx];
+            uint8_t g = color_values_ptr[g_idx];
+            uint8_t b = color_values_ptr[b_idx];
+
+            output[idx] = static_cast<uint8_t>(cdf[(int)(0.299 * r + 0.587 * g + 0.114 * b)]);
+
+            color_values_ptr += pixel_size;
+        }
+
+        return output;
     }
 }
 
