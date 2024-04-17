@@ -447,12 +447,34 @@ int get_number_of_digits(T number)
 namespace fibonacci
 {
 
-uint64_t recursive_fibonacci(const uint64_t n)
+constexpr uint64_t dynamic_fibonacci(const uint64_t n)
+{
+    uint64_t f[n + 2];
+
+    f[0] = 0;
+    f[1] = 1;
+
+    for (int i = 2; i <= n; i++)
+    {
+        f[i] = f[i - 1] + f[i - 2];
+    }
+
+    return f[n];
+}
+
+constexpr uint64_t closed_form_fibonacci(const uint64_t n)
+{
+    static constexpr const double phi { (1 + sqrt(5)) / 2 };
+
+    return std::round(std::pow(phi, n) / std::sqrt(5));
+}
+
+constexpr uint64_t recursive_fibonacci(const uint64_t n)
 {
     return n < 2 ? n : recursive_fibonacci(n - 1) + recursive_fibonacci(n - 2);
 }
 
-uint64_t non_recursive_fibonacci(const uint64_t n)
+constexpr uint64_t non_recursive_fibonacci(const uint64_t n)
 {
     if (n < 2) return n;
     if (n == 2) return 1;
@@ -925,52 +947,68 @@ namespace img
         return std::min(diff_pixels / static_cast<RealType>(Size), diff_pixels2 / static_cast<RealType>(Size));
     }
 
-
     std::vector<uint8_t> get_histogram_equalized_grayscale(uint8_t *color_values, int width, int height, int pixel_size, int r_idx, int g_idx, int b_idx)
     {
-        int histogram[256];
+        static uint8_t grayscale_lut[256 * 3];
+        static bool initialized = false;
 
-        std::memset(histogram, 0, sizeof(histogram));
+        if (!initialized)
+        {
+            for (int i = 0; i < 256; ++i)
+            {
+                grayscale_lut[i * 3 + 0] = static_cast<uint8_t>(0.299 * i);
+                grayscale_lut[i * 3 + 1] = static_cast<uint8_t>(0.587 * i);
+                grayscale_lut[i * 3 + 2] = static_cast<uint8_t>(0.114 * i);
+            }
+
+            initialized = true;
+        }
+
+        int histogram[256] = {0}; // Initialize all elements to zero
 
         int total_pixels = width * height;
-        std::vector<uint8_t> output(total_pixels);
+        std::vector<uint8_t> output;
+        output.reserve(total_pixels); // Reserve capacity to avoid reallocation
 
-        uint8_t *color_values_ptr { color_values };
-        for (int i{0}; i < total_pixels; ++i)
+        // Compute histogram
+        uint8_t *color_values_ptr = color_values;
+        for (int i = 0; i < total_pixels; ++i)
         {
             uint8_t r = color_values_ptr[r_idx];
             uint8_t g = color_values_ptr[g_idx];
             uint8_t b = color_values_ptr[b_idx];
 
-            ++histogram[(int)(0.299 * r + 0.587 * g + 0.114 * b)];
+            uint8_t grayscale = grayscale_lut[r * 3 + 0] + grayscale_lut[g * 3 + 1] + grayscale_lut[b * 3 + 2];
+            ++histogram[grayscale];
 
             color_values_ptr += pixel_size;
         }
 
         // Calculate the cumulative distribution function (CDF) of the histogram
-        int cdf[256];
+        int cdf[256] = {histogram[0]}; // Initialize first element
 
-        cdf[0] = histogram[0];
-
-        for (int i{1}; i < 256; ++i)
+        for (int i = 1; i < 256; ++i)
         {
             cdf[i] = cdf[i - 1] + histogram[i];
         }
 
         // Normalize the CDF to the range [0, 255]
+        double normalization_factor = 255.0 / total_pixels;
         for (int i = 0; i < 256; ++i)
         {
-            cdf[i] = static_cast<int>((cdf[i] / (double)totalPixels) * 255);
+            cdf[i] = static_cast<int>(cdf[i] * normalization_factor);
         }
 
+        // Apply the equalized histogram to the output
         color_values_ptr = color_values;
-        for (int i{0}; i < total_pixels; ++i)
+        for (int idx = 0; idx < total_pixels; ++idx)
         {
             uint8_t r = color_values_ptr[r_idx];
             uint8_t g = color_values_ptr[g_idx];
             uint8_t b = color_values_ptr[b_idx];
 
-            output[idx] = static_cast<uint8_t>(cdf[(int)(0.299 * r + 0.587 * g + 0.114 * b)]);
+            uint8_t grayscale = grayscale_lut[r * 3 + 0] + grayscale_lut[g * 3 + 1] + grayscale_lut[b * 3 + 2];
+            output.push_back(static_cast<uint8_t>(cdf[grayscale]));
 
             color_values_ptr += pixel_size;
         }
