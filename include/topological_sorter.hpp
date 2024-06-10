@@ -36,8 +36,8 @@ public:
 protected:
     struct relations
     {
-        std::size_t dependencies { 0 };
-        std::unordered_set<value_type> dependents {};
+        std::size_t dependency_count { 0 };
+        std::unordered_set<value_type> dependants {};
     };
 
     std::unordered_map<value_type, relations> _map {};
@@ -52,13 +52,13 @@ public:
     {
         if (dependency == object) return;
 
-        auto &dependents = _map[dependency].dependents;
+        auto &dependants = _map[dependency].dependants;
 
-        if (dependents.find(object) == std::end(dependents))
+        if (dependants.find(object) == std::end(dependants))
         {
-            dependents.insert(object);
+            dependants.insert(object);
 
-            ++_map[object].dependencies;
+            ++_map[object].dependency_count;
         }
     }
 
@@ -79,18 +79,18 @@ public:
         (add(object, dependencies), ...);
     }
 
-    auto sort()
+    auto sort() const
     {
         std::vector<value_type> sorted, cycled;
         auto map { _map };
 
-        for (const auto &[object, relations] : map) if (!relations.dependencies) sorted.emplace_back(object);
+        for (const auto &[object, relations] : map) if (!relations.dependency_count) sorted.push_back(object);
 
         for (decltype(std::size(sorted)) idx = 0; idx < std::size(sorted); ++idx)
-            for (auto const& object : map[sorted[idx]].dependents)
-                if (!--map[object].dependencies) sorted.emplace_back(object);
+            for (auto const& object : map[sorted[idx]].dependants)
+                if (!--map[object].dependency_count) sorted.emplace_back(object);
 
-        for (const auto &[object, relations] : map) if(relations.dependencies) cycled.emplace_back(std::move(object));
+        for (const auto &[object, relations] : map) if(relations.dependency_count) cycled.emplace_back(std::move(object));
 
         return std::pair(std::move(sorted), std::move(cycled));
     }

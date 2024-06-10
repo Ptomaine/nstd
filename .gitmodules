@@ -12,7 +12,7 @@
 	branch = master
 [submodule "include/external/giant"]
 	path = include/external/giant
-	url = https://github.com/r-lyeh/giant.git
+	url = https://github.com/r-lyeh-archived/giant.git
 	branch = master
 [submodule "include/external/sqlite_modern_cpp"]
 	path = include/external/sqlite_modern_cpp
@@ -72,7 +72,7 @@
 	branch = master
 [submodule "include/external/quickjs"]
 	path = include/external/quickjs
-	url = https://github.com/horhof/quickjs.git
+	url = https://github.com/bellard/quickjs.git
 	branch = master
 [submodule "include/external/avir"]
 	path = include/external/avir
