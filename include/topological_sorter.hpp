@@ -37,7 +37,7 @@ protected:
     struct relations
     {
         std::size_t dependency_count { 0 };
-        std::unordered_set<value_type> dependants {};
+        std::unordered_set<value_type> dependents {};
     };
 
     std::unordered_map<value_type, relations> _map {};
@@ -52,11 +52,11 @@ public:
     {
         if (dependency == object) return;
 
-        auto &dependants = _map[dependency].dependants;
+        auto &dependents = _map[dependency].dependents;
 
-        if (dependants.find(object) == std::end(dependants))
+        if (dependents.find(object) == std::end(dependents))
         {
-            dependants.insert(object);
+            dependents.insert(object);
 
             ++_map[object].dependency_count;
         }
@@ -87,7 +87,7 @@ public:
         for (const auto &[object, relations] : map) if (!relations.dependency_count) sorted.push_back(object);
 
         for (decltype(std::size(sorted)) idx = 0; idx < std::size(sorted); ++idx)
-            for (auto const& object : map[sorted[idx]].dependants)
+            for (auto const& object : map[sorted[idx]].dependents)
                 if (!--map[object].dependency_count) sorted.emplace_back(object);
 
         for (const auto &[object, relations] : map) if(relations.dependency_count) cycled.emplace_back(std::move(object));
