@@ -518,7 +518,7 @@ struct compile_time_fibonacci
 {
     enum : uint64_t
     {
-        value = compile_time_fibonacci<N - 1>::value + compile_time_fibonacci<N - 2>::value
+        value = static_cast<uint64_t>(compile_time_fibonacci<N - 1>::value) + static_cast<uint64_t>(compile_time_fibonacci<N - 2>::value)
     };
 };
 
