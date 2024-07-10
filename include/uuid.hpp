@@ -117,8 +117,6 @@ public:
             seed[0] = random_provider();
             seed[1] = random_provider();
         } while (!(seed[0] && seed[1]));
-
-        random_was_inited = true;
     }
 
     static constexpr bool validate_uuid_string(std::string_view str, bool strict = false)
@@ -165,11 +163,6 @@ public:
         return uuid_bytes;
     }
 
-    static bool was_random_inited()
-    {
-        return random_was_inited;
-    }
-
     inline static constexpr std::array<uint8_t, 16> null_uuid { 0 };
 
 private:
@@ -205,7 +198,6 @@ private:
     inline static uint64_t seed[2] { 0 };
     inline static constexpr std::array<size_t, 4> dash_positions {8, 13, 18, 23};
     inline static constexpr const char sep_char { '-' }, op_brace { '{' }, cl_brace { '}' };
-    inline static bool random_was_inited { false };
 };
 
 namespace literals
@@ -215,6 +207,8 @@ namespace literals
         return uuid::parse(std::string_view { str, N });
     }
 }
+
+inline static auto random_inited = []() { nstd::uuid::uuid::init_random(); return true; }();
 
 }
 

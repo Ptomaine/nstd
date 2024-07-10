@@ -26,8 +26,6 @@ using namespace nstd::uuid::literals;
 
 int main()
 {
-    nstd::uuid::uuid::init_random();
-
     auto uuid { nstd::uuid::uuid::generate_random() };
 
     std::cout << "Generated uuid (dashes/lower case, default): " << uuid.to_string() << std::endl;
