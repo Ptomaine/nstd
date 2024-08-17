@@ -20,9 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <algorithm>
-#include <cmath>
 #include <vector>
+#include <utility>
+#include <cmath>
 
 namespace nstd
 {
@@ -37,82 +37,74 @@ namespace nstd
             int x, y, width, height;
         };
 
-        layout_calculator(const std::vector<row_type>& rows) : _rows(rows) {}
+        explicit layout_calculator(std::vector<row_type> rows)
+            : _rows(std::move(rows))
+        {
+        }
 
-        std::vector<std::vector<rect>> calculate_layout(rect parent_rect)
+        std::vector<std::vector<rect>> calculate_layout(const rect& parent_rect)
         {
             std::vector<std::vector<rect>> child_rects;
-            int fixed_pixel_rows_size = 0;
+            child_rects.reserve(_rows.size());
+
+            int fixed_pixel_rows_height = 0;
+            int remaining_height = parent_rect.height;
             int y = parent_rect.y;
             row_height_type row_height_proportions_sum = 0.f;
 
-            for (auto& row : _rows)
+            for (const auto& row : _rows)
             {
                 if (row.second < 0.f)
-                {
-                    fixed_pixel_rows_size += static_cast<int>(std::abs(row.second));
-                }
+                    fixed_pixel_rows_height += static_cast<int>(std::abs(row.second));
                 else
-                {
                     row_height_proportions_sum += row.second;
-                }
             }
 
-            int parent_height = fixed_pixel_rows_size < parent_rect.height ? parent_rect.height - fixed_pixel_rows_size : 0;
+            remaining_height -= fixed_pixel_rows_height;
 
-            if (row_height_proportions_sum != 1.0)
+            if (row_height_proportions_sum != 1.0f && row_height_proportions_sum > 0.f)
             {
                 for (auto& row : _rows)
                 {
                     if (row.second >= 0.f)
-                    {
                         row.second /= row_height_proportions_sum;
-                    }
                 }
             }
 
-            child_rects.reserve(std::size(_rows));
-
             for (auto& row : _rows)
             {
-                int fixed_pixel_columns_size = 0;
+                int fixed_pixel_columns_width = 0;
+                int remaining_width = parent_rect.width;
                 column_width_type column_width_proportions_sum = 0.f;
 
-                for (auto column_width : row.first)
+                for (const auto& column_width : row.first)
                 {
                     if (column_width < 0.f)
-                    {
-                        fixed_pixel_columns_size += static_cast<int>(std::abs(column_width));
-                    }
+                        fixed_pixel_columns_width += static_cast<int>(std::abs(column_width));
                     else
-                    {
                         column_width_proportions_sum += column_width;
-                    }
                 }
 
-                int parent_width = (fixed_pixel_columns_size < parent_rect.width) ? parent_rect.width - fixed_pixel_columns_size : 0;
+                remaining_width -= fixed_pixel_columns_width;
 
-                if (column_width_proportions_sum != 1.f)
+                if (column_width_proportions_sum != 1.0f && column_width_proportions_sum > 0.f)
                 {
                     for (auto& col : row.first)
                     {
                         if (col >= 0.f)
-                        {
                             col /= column_width_proportions_sum;
-                        }
                     }
                 }
 
-                int row_height = static_cast<int>(row.second < 0.f ? std::abs(row.second) : row.second * parent_height);
+                int row_height = static_cast<int>((row.second < 0.f) ? std::abs(row.second) : row.second * remaining_height);
                 int x = parent_rect.x;
-                auto& child_row{ child_rects.emplace_back() };
-                child_row.reserve(std::size(row.first));
+                auto& child_row = child_rects.emplace_back();
+                child_row.reserve(row.first.size());
 
-                for (const auto col : row.first)
+                for (const auto& col : row.first)
                 {
-                    int column_width = static_cast<int>(col < 0.f ? std::abs(col) : col * parent_width);
-
-                    child_row.emplace_back(x, y, column_width, row_height);
+                    int column_width = static_cast<int>((col < 0.f) ? std::abs(col) : col * remaining_width);
+                    child_row.emplace_back(rect{ x, y, column_width, row_height });
                     x += column_width;
                 }
 
@@ -127,19 +119,19 @@ namespace nstd
             _rows.clear();
         }
 
-        auto& get_row(size_t row_index)
+        row_type& get_row(size_t row_index)
         {
-            return _rows[row_index];
+            return _rows.at(row_index);
         }
 
-        auto& get_rows()
+        const std::vector<row_type>& get_rows() const
         {
             return _rows;
         }
 
-        auto get_row_count() const
+        size_t get_row_count() const
         {
-            return std::size(_rows);
+            return _rows.size();
         }
 
         void add_row(row_type row)
@@ -147,39 +139,31 @@ namespace nstd
             _rows.push_back(std::move(row));
         }
 
-        auto replace_row(size_t row_index, row_type row)
+        row_type replace_row(size_t row_index, row_type row)
         {
-            row_type result{ std::move(_rows[row_index]) };
-
-            _rows[row_index] = std::move(row);
-
+            row_type result = std::move(_rows.at(row_index));
+            _rows.at(row_index) = std::move(row);
             return result;
         }
 
-        auto remove_row(size_t row_index)
+        row_type remove_row(size_t row_index)
         {
-            row_type result{ std::move(_rows[row_index]) };
-
-            _rows.erase(std::begin(_rows) + row_index);
-
+            row_type result = std::move(_rows.at(row_index));
+            _rows.erase(_rows.begin() + row_index);
             return result;
         }
 
-        auto pop_back()
+        row_type pop_back()
         {
-            row_type result{ std::move(_rows.back()) };
-
+            row_type result = std::move(_rows.back());
             _rows.pop_back();
-
             return result;
         }
 
-        auto pop_front()
+        row_type pop_front()
         {
-            row_type result{ std::move(_rows.front()) };
-
-            _rows.erase(std::begin(_rows));
-
+            row_type result = std::move(_rows.front());
+            _rows.erase(_rows.begin());
             return result;
         }
 
