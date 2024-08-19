@@ -23,6 +23,7 @@ SOFTWARE.
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cwctype>
 #include <cmath>
 #include <condition_variable>
 #include <cstdlib>
@@ -410,7 +411,7 @@ bool needs_parity_fix(std::span<T> span)
 }
 
 template<typename T, typename Map>
-requires std::is_arithmetic_v<std::result_of_t<Map(T&)>>
+requires std::is_arithmetic_v<std::invoke_result_t<Map,T&>>
 bool needs_parity_fix(std::span<T> span, Map func)
 {
     size_t parity { 0 };
@@ -431,7 +432,7 @@ void fix_parity_if_needed(std::span<T> span)
 }
 
 template<typename T, typename Map>
-requires std::is_arithmetic_v<std::result_of_t<Map(T&)>>
+requires std::is_arithmetic_v<std::invoke_result_t<Map, T&>>
 void fix_parity_if_needed(std::span<T> span, Map func)
 {
     if (std::size(span) >= 2 && needs_parity_fix(span, func)) std::swap(span[0], span[1]);
@@ -447,7 +448,8 @@ int get_number_of_digits(T number)
 namespace fibonacci
 {
 
-constexpr uint64_t dynamic_fibonacci(const uint64_t n)
+template<uint64_t n>
+constexpr uint64_t dynamic_fibonacci()
 {
     uint64_t f[n + 2];
 
@@ -462,7 +464,8 @@ constexpr uint64_t dynamic_fibonacci(const uint64_t n)
     return f[n];
 }
 
-constexpr uint64_t closed_form_fibonacci(const uint64_t n)
+template<uint64_t n>
+constexpr uint64_t closed_form_fibonacci()
 {
     static constexpr const double phi { (1 + sqrt(5)) / 2 };
 
@@ -549,9 +552,10 @@ struct compile_time_fibonacci<2>
     };
 };
 
-constexpr uint64_t binets_fibonacci(const uint64_t n)
+template<uint64_t n>
+constexpr uint64_t binets_fibonacci()
 {
-    constexpr auto sqrt_5 { std::sqrt(5) };
+    auto sqrt_5 { std::sqrt(5) };
 
     if (n < 2) return n;
 
