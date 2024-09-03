@@ -86,8 +86,6 @@ int main()
 
     {
         nstd::db::sqlite::scoped_transaction tr(db, true);
-        
-        if (!nstd::uuid::uuid::was_random_inited()) nstd::uuid::uuid::init_random();
 
         using random_uint64 = nstd::random_provider_default<>;
 
