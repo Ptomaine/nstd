@@ -21,7 +21,7 @@ SOFTWARE.
 */
 
 #include <cstdint>
-#include "external/intx/include/intx/int128.hpp"
+#include "external/intx/include/intx/intx.hpp"
 
 namespace nstd
 {
@@ -65,7 +65,7 @@ public:
 
     void lehmer64_seed(uint64_t seed)
     {
-        lehmer64_state = ((static_cast<__uint128_t>(splitmix64_stateless(seed))) << 64) + splitmix64_stateless(seed + 1);
+        lehmer64_state = ((static_cast<intx::uint128>(splitmix64_stateless(seed))) << 64) + splitmix64_stateless(seed + 1);
     }
 
     uint64_t lehmer64()
