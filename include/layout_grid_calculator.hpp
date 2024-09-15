@@ -21,10 +21,11 @@ SOFTWARE.
 */
 
 #include <vector>
+#include <stdexcept>
+#include <algorithm>
 
 namespace nstd
 {
-
     enum class SizeType
     {
         Fixed,
@@ -39,50 +40,176 @@ namespace nstd
     class Column
     {
     public:
-        double size;
-        SizeType sizeType;
-
+        // Constructors
         Column(double size, SizeType sizeType)
-            : size(size), sizeType(sizeType) {}
+            : size_(size), sizeType_(sizeType) {}
+
+        // Getters
+        double getSize() const { return size_; }
+        SizeType getSizeType() const { return sizeType_; }
+
+        // Setters
+        void setSize(double size) { size_ = size; }
+        void setSizeType(SizeType sizeType) { sizeType_ = sizeType; }
+
+    private:
+        double size_;
+        SizeType sizeType_;
     };
 
     class Row
     {
     public:
-        double size;
-        SizeType sizeType;
-        std::vector<Column> columns;
+        // Constructors
+        Row(double size, SizeType sizeType)
+            : size_(size), sizeType_(sizeType) {}
 
         Row(double size, SizeType sizeType, std::initializer_list<Column> cols)
-            : size(size), sizeType(sizeType), columns(cols) {}
+            : size_(size), sizeType_(sizeType), columns_(cols) {}
+
+        // Getters
+        double getSize() const { return size_; }
+        SizeType getSizeType() const { return sizeType_; }
+        const std::vector<Column>& getColumns() const { return columns_; }
+        std::vector<Column>& getColumns() { return columns_; }
+
+        // Setters
+        void setSize(double size) { size_ = size; }
+        void setSizeType(SizeType sizeType) { sizeType_ = sizeType; }
+
+        // Column Manipulation Methods
+        void addColumn(const Column& column)
+        {
+            columns_.push_back(column);
+        }
+
+        void insertColumn(size_t index, const Column& column)
+        {
+            if (index <= columns_.size())
+            {
+                columns_.insert(columns_.begin() + index, column);
+            }
+        }
+
+        void removeColumn(size_t index)
+        {
+            if (index < columns_.size())
+            {
+                columns_.erase(columns_.begin() + index);
+            }
+        }
+
+        void swapColumns(size_t index1, size_t index2)
+        {
+            if (index1 < columns_.size() && index2 < columns_.size())
+            {
+                std::swap(columns_[index1], columns_[index2]);
+            }
+        }
+
+        void clearColumns()
+        {
+            columns_.clear();
+        }
+
+        Column& getColumn(size_t index)
+        {
+            if (index >= columns_.size())
+            {
+                throw std::out_of_range("Column index out of range");
+            }
+
+            return columns_[index];
+        }
+
+    private:
+        double size_;
+        SizeType sizeType_;
+        std::vector<Column> columns_;
     };
 
     class Grid
     {
     public:
-        std::vector<Row> rows;
+        // Constructors
+        Grid() = default;
 
         Grid(std::initializer_list<Row> rws)
-            : rows(rws) {}
+            : rows_(rws) {}
 
+        // Getters
+        const std::vector<Row>& getRows() const { return rows_; }
+        std::vector<Row>& getRows() { return rows_; }
+
+        // Row Manipulation Methods
+        void addRow(const Row& row)
+        {
+            rows_.push_back(row);
+        }
+
+        void insertRow(size_t index, const Row& row)
+        {
+            if (index <= rows_.size())
+            {
+                rows_.insert(rows_.begin() + index, row);
+            }
+        }
+
+        void removeRow(size_t index)
+        {
+            if (index < rows_.size())
+            {
+                rows_.erase(rows_.begin() + index);
+            }
+        }
+
+        void swapRows(size_t index1, size_t index2)
+        {
+            if (index1 < rows_.size() && index2 < rows_.size())
+            {
+                std::swap(rows_[index1], rows_[index2]);
+            }
+        }
+
+        void clearRows()
+        {
+            rows_.clear();
+        }
+
+        Row& getRow(size_t index)
+        {
+            if (index >= rows_.size())
+            {
+                throw std::out_of_range("Row index out of range");
+            }
+            return rows_[index];
+        }
+
+        // Clear the entire grid
+        void clear()
+        {
+            rows_.clear();
+        }
+
+        // Layout Calculation
         std::vector<std::vector<Cell>> calculateLayout(int x, int y, int width, int height) const
         {
             std::vector<std::vector<Cell>> layout;
-            layout.reserve(rows.size());
+            layout.reserve(rows_.size());
 
             // Calculate total fixed and proportional sizes for rows
             double totalFixedHeight = 0.0;
             double totalProportionalHeight = 0.0;
 
-            for (const auto& row : rows)
+            for (const auto& row : rows_)
             {
-                if (row.sizeType == SizeType::Fixed)
+                if (row.getSizeType() == SizeType::Fixed)
                 {
-                    totalFixedHeight += row.size;
+                    totalFixedHeight += row.getSize();
                 }
                 else
                 {
-                    totalProportionalHeight += row.size;
+                    totalProportionalHeight += row.getSize();
                 }
             }
 
@@ -92,32 +219,32 @@ namespace nstd
             int currentY = y;
 
             // Calculate heights for each row
-            for (const auto& row : rows)
+            for (const auto& row : rows_)
             {
                 double rowHeight = 0.0;
-                if (row.sizeType == SizeType::Fixed)
+                if (row.getSizeType() == SizeType::Fixed)
                 {
-                    rowHeight = row.size;
+                    rowHeight = row.getSize();
                 }
                 else if (totalProportionalHeight > 0.0)
                 {
-                    rowHeight = (row.size / totalProportionalHeight) * remainingHeight;
+                    rowHeight = (row.getSize() / totalProportionalHeight) * remainingHeight;
                 }
 
                 // Calculate total fixed and proportional sizes for columns
-                const auto& columns = row.columns;
+                const auto& columns = row.getColumns();
                 double totalFixedWidth = 0.0;
                 double totalProportionalWidth = 0.0;
 
                 for (const auto& column : columns)
                 {
-                    if (column.sizeType == SizeType::Fixed)
+                    if (column.getSizeType() == SizeType::Fixed)
                     {
-                        totalFixedWidth += column.size;
+                        totalFixedWidth += column.getSize();
                     }
                     else
                     {
-                        totalProportionalWidth += column.size;
+                        totalProportionalWidth += column.getSize();
                     }
                 }
 
@@ -131,13 +258,13 @@ namespace nstd
                 for (const auto& column : columns)
                 {
                     double columnWidth = 0.0;
-                    if (column.sizeType == SizeType::Fixed)
+                    if (column.getSizeType() == SizeType::Fixed)
                     {
-                        columnWidth = column.size;
+                        columnWidth = column.getSize();
                     }
                     else if (totalProportionalWidth > 0.0)
                     {
-                        columnWidth = (column.size / totalProportionalWidth) * remainingWidth;
+                        columnWidth = (column.getSize() / totalProportionalWidth) * remainingWidth;
                     }
 
                     // Create the cell
@@ -148,7 +275,6 @@ namespace nstd
                         static_cast<int>(columnWidth + 0.5), // Rounding
                         static_cast<int>(rowHeight + 0.5)    // Rounding
                     };
-
                     rowCells.push_back(cell);
                     currentX += cell.width;
                 }
@@ -159,5 +285,8 @@ namespace nstd
 
             return layout;
         }
+
+    private:
+        std::vector<Row> rows_;
     };
 }
