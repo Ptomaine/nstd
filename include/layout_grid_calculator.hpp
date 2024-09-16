@@ -286,6 +286,12 @@ namespace nstd
             return layout;
         }
 
+        std::vector<std::vector<Cell>> calculateLayout(const Cell& cell) const
+        {
+            return calculateLayout(cell.x, cell.y, cell.width, cell.height);
+        }
+
+
     private:
         std::vector<Row> rows_;
     };
