@@ -134,7 +134,7 @@ using at_scope_failed_t = at_scope_exit::at_scope_exit<at_scope_exit::on_excepti
 using at_scope_succeeded_t = at_scope_exit::at_scope_exit<at_scope_exit::on_success_only>;
 
 // Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
-uint32_t turbulence_hash(uint32_t state)
+inline static uint32_t turbulence_hash(uint32_t state)
 {
     state ^= 2747636419u;
     state *= 2654435769u;
@@ -833,7 +833,7 @@ static const std::unordered_map<uint8_t, std::string_view> char_to_entities
     { 255, "&yuml;"sv }
 };
 
-std::string html_decode(std::string_view data)
+inline static std::string html_decode(std::string_view data)
 {
     std::ostringstream oss;
     auto size { std::size(data) };
@@ -894,7 +894,7 @@ std::string html_decode(std::string_view data)
     return oss.str();
 }
 
-std::string html_encode(std::string_view data)
+inline static std::string html_encode(std::string_view data)
 {
     std::ostringstream oss;
 
@@ -951,7 +951,7 @@ namespace img
         return std::min(diff_pixels / static_cast<RealType>(Size), diff_pixels2 / static_cast<RealType>(Size));
     }
 
-    std::vector<uint8_t> get_histogram_equalized_grayscale(uint8_t *color_values, int width, int height, int pixel_size, int r_idx, int g_idx, int b_idx)
+    inline static std::vector<uint8_t> get_histogram_equalized_grayscale(uint8_t *color_values, int width, int height, int pixel_size, int r_idx, int g_idx, int b_idx)
     {
         static uint8_t grayscale_lut[256 * 3];
         static bool initialized = false;
