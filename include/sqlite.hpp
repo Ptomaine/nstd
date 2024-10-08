@@ -171,4 +171,45 @@ struct tuple_records
     }
 };
 
+template<typename ColType>
+struct column_records
+{
+    using data_container_type = std::vector<ColType>;
+    data_container_type records;
+
+    column_records() = default;
+    column_records(std::size_t preallocate) { records.reserve(preallocate); }
+    ~column_records() = default;
+
+    void operator()(ColType arg)
+    {
+        records.push_back(std::forward<ColType>(arg));
+    };
+
+    auto begin()
+    {
+        return std::begin(records);
+    }
+
+    auto end()
+    {
+        return std::end(records);
+    }
+
+    auto begin() const
+    {
+        return std::cbegin(records);
+    }
+
+    auto end() const
+    {
+        return std::cend(records);
+    }
+
+    data_container_type& data()
+    {
+        return records;
+    }
+};
+
 }
