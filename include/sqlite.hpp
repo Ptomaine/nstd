@@ -33,6 +33,8 @@ extern "C"
 #include <tuple>
 #include <vector>
 
+#define into_var(varName) [&varName](decltype(varName) data) { varName = data; }
+
 namespace sqlite
 {
 
