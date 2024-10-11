@@ -52,9 +52,9 @@ struct scoped_transaction
     void commit() { _rollback = false; }
 
 private:
-    inline constexpr static const char* const _begin_cmd { "begin transaction;" };
-    inline constexpr static const char* const _rollback_cmd { "rollback;" };
-    inline constexpr static const char* const _commit_cmd { "commit;" };
+    inline constexpr static const char* const _begin_cmd { "begin" };
+    inline constexpr static const char* const _rollback_cmd { "rollback" };
+    inline constexpr static const char* const _commit_cmd { "commit" };
     database &_db;
     bool _rollback { true };
 };
