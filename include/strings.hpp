@@ -319,7 +319,7 @@ inline any_string<T> reverse(const any_string<T>& str)
 template <typename T>
 inline any_string<T>& reverse_inplace(any_string<T>& str)
 {
-    auto idx_back { std::size(str) }, idx { 0ul }, half_size { idx_back / 2 };
+    std::size_t idx_back { std::size(str) }, idx { 0ul }, half_size { idx_back / 2 };
 
     while (half_size--) std::swap(str[idx++], str[--idx_back]);
 
