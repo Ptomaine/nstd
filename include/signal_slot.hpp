@@ -25,10 +25,11 @@ SOFTWARE.
 #include <chrono>
 #include <concepts>
 #include <condition_variable>
+#include <deque>
 #include <functional>
 #include <iterator>
 #include <mutex>
-#include <deque>
+#include <set>
 #include <shared_mutex>
 #include <string>
 #include <string_view>
@@ -195,8 +196,8 @@ protected:
     bool _enabled { true };
 
 public:
-    void enabled(bool is_enabled) { _enabled = is_enabled; }
-    bool enabled() const { return _enabled; }
+    void set_enabled(bool is_enabled) { _enabled = is_enabled; }
+    bool is_enabled() const { return _enabled; }
 };
 
 template<typename... Args>
@@ -204,12 +205,14 @@ class slot : public slot_base
 {
 protected:
     std::function<void (Args...)> _functor {};
+    int64_t _priority{ std::numeric_limits<int64_t>::max() / 2 };
 
     friend class connection;
 
 public:
     slot() = default;
     slot(std::function<void(Args...)> &&f) : _functor{ std::forward<std::function<void(Args...)>>(f) }{}
+    slot(std::function<void(Args...)>&& f, int64_t priority) : _functor{ std::forward<std::function<void(Args...)>>(f) }, _priority{ priority } {}
     void operator()(const Args &... args) { _functor(args...); }
     bool is_disconnected() const { return !_connection; }
     void clear() { _connection.disconnect(); }
@@ -223,6 +226,16 @@ public:
     {
         return operator ==(s._connection);
     }
+
+    bool operator < (const slot& s) const
+    {
+        return _priority < s._priority;
+    }
+
+    bool operator > (const slot& s) const
+    {
+        return _priority > s._priority;
+    }
 };
 
 class signal_base
@@ -230,8 +243,8 @@ class signal_base
 public:
     virtual ~signal_base() = default;
     virtual std::u8string_view name() const = 0;
-    virtual bool enabled() const = 0;
-    virtual void enabled(bool) const = 0;
+    virtual void set_enabled(bool) = 0;
+    virtual bool is_enabled() const = 0;
     virtual size_t size() const = 0;
     virtual std::any &payload() = 0;
     virtual void enable_slot(const slot_base&, bool enabled) = 0;
@@ -282,12 +295,12 @@ public:
         return *_signal;
     }
 
-    void enabled(bool enabled)
+    void set_enabled(bool enabled)
     {
         const_cast<signal_base*>(_signal)->enable_slot(_slot, enabled);
     }
 
-    bool enabled() const
+    bool is_enabled() const
     {
         return _signal->is_slot_enabled(_slot);
     }
@@ -320,7 +333,7 @@ public:
 
             if (!std::empty(_pending_connections))
             {
-                std::move(std::begin(_pending_connections), std::end(_pending_connections), std::back_inserter(_slots));
+                std::move(std::begin(_pending_connections), std::end(_pending_connections), std::inserter(_slots, std::end(_slots)));
 
                 _pending_connections.clear();
             }
@@ -330,14 +343,14 @@ public:
         {
             auto end = _slots.end();
 
-            _slots.erase(std::remove_if(std::begin(_slots), end, [&args...](auto &callable)
+            std::erase_if(_slots, [&args...](auto &callable)
             {
                 if (callable.is_disconnected()) return true;
 
-                if (callable.enabled()) callable(args...);
+                if (callable.is_enabled()) const_cast<slot<Args...>&>(callable)(args...);
 
                 return callable.is_disconnected();
-            }), end);
+            });
         }
     }
 
@@ -346,13 +359,13 @@ public:
         emit(args...);
     }
 
-    virtual connection connect(std::function<void(Args...)> &&callable)
+    virtual connection connect(std::function<void(Args...)> &&callable, int64_t priority = std::numeric_limits<int64_t>::max() / 2)
     {
         std::scoped_lock<std::mutex> lock { _connect_lock };
         auto end { std::end(_pending_connections) };
 
         _pending_connections.erase(std::remove_if(std::begin(_pending_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
-        _pending_connections.emplace_back(std::forward<std::function<void(Args...)>>(callable));
+        _pending_connections.emplace_back(std::forward<std::function<void(Args...)>>(callable), priority);
 
         return { this, _pending_connections.back() };
     }
@@ -363,9 +376,9 @@ public:
     }
 
     template<typename T>
-    connection connect(T *instance, void (T::*member_function)(Args...))
+    connection connect(T *instance, void (T::*member_function)(Args...), int64_t priority = std::numeric_limits<int64_t>::max() / 2)
     {
-        return connect([instance, member_function](Args... args) { (instance->*member_function)(args...); });
+        return connect([instance, member_function](Args... args) { (instance->*member_function)(args...); }, priority);
     }
 
     virtual void clear()
@@ -397,14 +410,14 @@ public:
         return _name;
     }
 
-    virtual bool enabled() const override
-    {
-        return _enabled;
-    }
-
-    virtual void enabled(bool enabled) const override
+    virtual void set_enabled(bool enabled) override
     {
         _enabled = enabled;
+    }
+
+    virtual bool is_enabled() const override
+    {
+        return _enabled;
     }
 
     virtual std::any &payload() override
@@ -417,12 +430,13 @@ public:
         enable_slot(slot._connection, enabled);
     }
 
-    virtual void enable_slot(const paired_ptr<> &slot, bool enabled) override
+    virtual void enable_slot(const paired_ptr<> &s, bool enabled) override
     {
         auto send { std::end(_slots) };
-        auto sit { std::find(std::begin(_slots), send, slot) };
+        auto sit { std::find(std::begin(_slots), send, s) };
+        auto& slt{ const_cast<slot<Args...>&>(*sit)};
 
-        if (sit != send) sit->enabled(enabled);
+        if (sit != send) slt.set_enabled(enabled);
     }
 
     virtual bool is_slot_enabled(const slot_base &slot) const override
@@ -435,203 +449,19 @@ public:
         auto send { std::cend(_slots) };
         auto sit { std::find(std::cbegin(_slots), send, slot) };
 
-        if (sit != send) return sit->enabled();
+        if (sit != send) return sit->is_enabled();
 
         return false;
     }
 
 protected:
     std::u8string _name {};
-    std::vector<slot<Args...>> _slots {}, _pending_connections {};
+    std::vector<slot<Args...>> _pending_connections {};
+    std::multiset<slot<Args...>> _slots {};
     mutable std::mutex _connect_lock {}, _emit_lock {};
     mutable std::shared_mutex _name_lock {};
     mutable std::atomic_bool _enabled { true };
     std::any _payload;
-};
-
-template<typename... Args>
-class signal_with_priority : public signal<Args...>
-{
-public:
-    using base_class = signal<Args...>;
-
-    connection connect_pre(std::function<void(Args...)>&& callable)
-    {
-        std::scoped_lock<std::mutex> lock{ base_class::_connect_lock };
-        auto end{ std::end(_pending_pre_connections) };
-
-        _pending_pre_connections.erase(std::remove_if(std::begin(_pending_pre_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
-        _pending_pre_connections.emplace_back(std::forward<std::function<void(Args...)>>(callable));
-
-        return { this, _pending_pre_connections.back() };
-    }
-
-    template<typename T>
-    connection connect_pre(T* instance, void (T::* member_function)(Args...))
-    {
-        return connect_pre([instance, member_function](Args... args) { (instance->*member_function)(args...); });
-    }
-
-    connection connect_post(std::function<void(Args...)>&& callable)
-    {
-        std::scoped_lock<std::mutex> lock{ base_class::_connect_lock };
-        auto end{ std::end(_pending_post_connections) };
-
-        _pending_post_connections.erase(std::remove_if(std::begin(_pending_post_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
-        _pending_post_connections.emplace_back(std::forward<std::function<void(Args...)>>(callable));
-
-        return { this, _pending_post_connections.back() };
-    }
-
-    template<typename T>
-    connection connect_post(T* instance, void (T::* member_function)(Args...))
-    {
-        return connect_post([instance, member_function](Args... args) { (instance->*member_function)(args...); });
-    }
-
-    void emit(const Args &... args)
-    {
-        if (!base_class::_enabled) return;
-
-        std::scoped_lock<std::mutex> lock_emit{ base_class::_emit_lock };
-
-        if (!base_class::_enabled) return;
-
-        {
-            std::scoped_lock<std::mutex> lock_con{ base_class::_connect_lock };
-
-            if (!std::empty(_pending_pre_connections))
-            {
-                std::move(std::begin(_pending_pre_connections), std::end(_pending_pre_connections), std::back_inserter(_pre_slots));
-
-                _pending_pre_connections.clear();
-            }
-
-            if (!std::empty(base_class::_pending_connections))
-            {
-                std::move(std::begin(base_class::_pending_connections), std::end(base_class::_pending_connections), std::back_inserter(base_class::_slots));
-
-                base_class::_pending_connections.clear();
-            }
-
-            if (!std::empty(_pending_post_connections))
-            {
-                std::move(std::begin(_pending_post_connections), std::end(_pending_post_connections), std::back_inserter(_post_slots));
-
-                _pending_post_connections.clear();
-            }
-        }
-
-        if (!std::empty(_pre_slots))
-        {
-            auto end = _pre_slots.end();
-
-            _pre_slots.erase(std::remove_if(std::begin(_pre_slots), end, [&args...](auto& callable)
-                {
-                    if (callable.is_disconnected()) return true;
-
-                    if (callable.enabled()) callable(args...);
-
-                    return callable.is_disconnected();
-                }), end);
-        }
-
-        if (!std::empty(base_class::_slots))
-        {
-            auto end = base_class::_slots.end();
-
-            base_class::_slots.erase(std::remove_if(std::begin(base_class::_slots), end, [&args...](auto& callable)
-                {
-                    if (callable.is_disconnected()) return true;
-
-                    if (callable.enabled()) callable(args...);
-
-                    return callable.is_disconnected();
-                }), end);
-        }
-
-        if (!std::empty(_post_slots))
-        {
-            auto end = _post_slots.end();
-
-            _post_slots.erase(std::remove_if(std::begin(_post_slots), end, [&args...](auto& callable)
-                {
-                    if (callable.is_disconnected()) return true;
-
-                    if (callable.enabled()) callable(args...);
-
-                    return callable.is_disconnected();
-                }), end);
-        }
-    }
-
-    virtual void clear()
-    {
-        std::scoped_lock<std::mutex, std::mutex> lock{ base_class::_connect_lock, base_class::_emit_lock };
-
-        _pending_pre_connections.clear();
-        base_class::_pending_connections.clear();
-        _pending_post_connections.clear();
-        _pre_slots.clear();
-        base_class::_slots.clear();
-        _post_slots.clear();
-    }
-
-    virtual size_t size() const override
-    {
-        std::scoped_lock<std::mutex> lock{ base_class::_emit_lock };
-
-        return std::size(_pre_slots) + std::size(base_class::_slots) + std::size(_post_slots);
-    }
-
-    virtual void enable_slot(const paired_ptr<>& slot, bool enabled) override
-    {
-        auto send{ std::end(_pre_slots) };
-        auto sit{ std::find(std::begin(_pre_slots), send, slot) };
-
-        if (sit != send) sit->enabled(enabled);
-        else
-        {
-            send = std::end(base_class::_slots);
-            sit = std::find(std::begin(base_class::_slots), send, slot);
-
-            if (sit != send) sit->enabled(enabled);
-            else
-            {
-                send = std::end(_post_slots);
-                sit = std::find(std::begin(_post_slots), send, slot);
-
-                if (sit != send) sit->enabled(enabled);
-            }
-        }
-    }
-
-    virtual bool is_slot_enabled(const paired_ptr<>& slot) const override
-    {
-        auto send{ std::cend(_pre_slots) };
-        auto sit{ std::find(std::cbegin(_pre_slots), send, slot) };
-
-        if (sit != send) sit->enabled();
-        else
-        {
-            send = std::cend(base_class::_slots);
-            sit = std::find(std::cbegin(base_class::_slots), send, slot);
-
-            if (sit != send) sit->enabled();
-            else
-            {
-                send = std::cend(_post_slots);
-                sit = std::find(std::cbegin(_post_slots), send, slot);
-
-                if (sit != send) sit->enabled();
-            }
-        }
-
-        return false;
-    }
-
-protected:
-    std::vector<slot<Args...>> _pre_slots{}, _post_slots{}, _pending_pre_connections{}, _pending_post_connections{};
 };
 
 template<typename... Args>
