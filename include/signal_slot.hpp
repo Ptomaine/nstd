@@ -153,7 +153,6 @@ public:
 
 protected:
 	connected_paired_ptr_type *_connected_paired_ptr = nullptr;
-
 };
 
 template<typename T1, typename T2>
@@ -205,15 +204,15 @@ class slot : public slot_base
 {
 protected:
     std::function<void (Args...)> _functor {};
-    int64_t _priority{ std::numeric_limits<int64_t>::max() / 2 };
+    int64_t _priority{ 0 };
 
     friend class connection;
 
 public:
     slot() = default;
-    slot(std::function<void(Args...)> &&f) : _functor{ std::forward<std::function<void(Args...)>>(f) }{}
-    slot(std::function<void(Args...)>&& f, int64_t priority) : _functor{ std::forward<std::function<void(Args...)>>(f) }, _priority{ priority } {}
-    void operator()(const Args &... args) { _functor(args...); }
+    slot(std::function<void(Args...)>&& f, int64_t priority = 0) : _functor{ std::forward<std::function<void(Args...)>>(f) }, _priority{ priority } {}
+    void invoke(const Args &... args) const { _functor(args...); }
+    void operator()(const Args &... args) const { invoke(args...); }
     bool is_disconnected() const { return !_connection; }
     void clear() { _connection.disconnect(); }
 
@@ -347,7 +346,7 @@ public:
             {
                 if (callable.is_disconnected()) return true;
 
-                if (callable.is_enabled()) const_cast<slot<Args...>&>(callable)(args...);
+                if (callable.is_enabled()) callable.invoke(args...);
 
                 return callable.is_disconnected();
             });
@@ -359,7 +358,7 @@ public:
         emit(args...);
     }
 
-    virtual connection connect(std::function<void(Args...)> &&callable, int64_t priority = std::numeric_limits<int64_t>::max() / 2)
+    virtual connection connect(std::function<void(Args...)> &&callable, int64_t priority = 0)
     {
         std::scoped_lock<std::mutex> lock { _connect_lock };
         auto end { std::end(_pending_connections) };
@@ -637,10 +636,6 @@ public:
 
     virtual ~throttled_signal_base() override
     {
-        _dispatcher_thread.request_stop();
-
-        if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
-
         if (_dispatch_all_on_destroy)
         {
             std::scoped_lock<std::mutex> lock { _emit_lock };
@@ -750,10 +745,6 @@ public:
     {
         std::scoped_lock<std::mutex> lock_ { _destruct_lock };
 
-        _dispatcher_thread.request_stop();
-
-        if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
-
         if (_dispatch_all_on_destroy)
         {
             std::scoped_lock<std::mutex> lock { _emit_lock };
@@ -838,7 +829,7 @@ protected:
 
     static void queue_dispatcher(std::stop_token cancelled)
     {
-        while (cancelled.stop_requested())
+        while (cancelled.stop_requested() == false)
         {
             {
                 std::scoped_lock<std::mutex> lock { _emit_lock };
