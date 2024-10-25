@@ -313,6 +313,8 @@ template<typename... Args>
 class signal : public signal_base
 {
 public:
+    using slot_container = std::multiset<slot<Args...>, std::less<slot<Args...>>, std::allocator<slot<Args...>>>;
+
     signal() = default;
     signal(const std::u8string &name) : _name{ name } {}
     signal(signal &&other) noexcept = default;
@@ -456,7 +458,7 @@ public:
 protected:
     std::u8string _name {};
     std::vector<slot<Args...>> _pending_connections {};
-    std::multiset<slot<Args...>> _slots {};
+    slot_container _slots {};
     mutable std::mutex _connect_lock {}, _emit_lock {};
     mutable std::shared_mutex _name_lock {};
     mutable std::atomic_bool _enabled { true };
