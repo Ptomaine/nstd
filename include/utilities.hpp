@@ -467,7 +467,7 @@ constexpr uint64_t dynamic_fibonacci()
 template<uint64_t n>
 constexpr uint64_t closed_form_fibonacci()
 {
-    static constexpr const double phi { (1 + sqrt(5)) / 2 };
+    static const double phi { (1 + sqrt(5)) / 2 };
 
     return std::round(std::pow(phi, n) / std::sqrt(5));
 }
