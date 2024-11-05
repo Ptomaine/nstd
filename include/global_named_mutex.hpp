@@ -72,7 +72,7 @@ namespace nstd::thread
 #endif
 
 #ifndef WINDOWS_OS
-    int __csgx__clock_get_time_realtime(struct timespec *ts)
+    static int __csgx__clock_get_time_realtime(struct timespec* ts)
     {
 #ifdef __APPLE__
         clock_serv_t cclock;
@@ -92,12 +92,12 @@ namespace nstd::thread
     }
 #endif
 
-	class helper
+    class helper
 	{
 	public:
 		static inline constexpr const uint32_t WaitInfinitely = 0xffffffff;
 
-		static thread_id_type get_current_thread_id()
+        static thread_id_type get_current_thread_id()
         {
 #ifdef WINDOWS_OS
             return ::GetCurrentThreadId();
