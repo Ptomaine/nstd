@@ -215,6 +215,8 @@ public:
     void operator()(const Args &... args) const { invoke(args...); }
     bool is_disconnected() const { return !_connection; }
     void clear() { _connection.disconnect(); }
+    int64_t get_priority() const { return _priority; }
+    int64_t set_priority(int64_t priority) { std::swap(_priority, priority); return priority; }
 
     bool operator == (const paired_ptr<> &s) const
     {
@@ -250,6 +252,8 @@ public:
     virtual void enable_slot(const paired_ptr<>&, bool enabled) = 0;
     virtual bool is_slot_enabled(const slot_base&) const = 0;
     virtual bool is_slot_enabled(const paired_ptr<>&) const = 0;
+    virtual int64_t get_connection_priority(const paired_ptr<>&) const = 0;
+    virtual bool set_connection_priority(const paired_ptr<>&, int64_t) = 0;
 };
 
 class connection
@@ -304,6 +308,16 @@ public:
         return _signal->is_slot_enabled(_slot);
     }
 
+    int64_t get_connection_priority() const
+    {
+        return _signal->get_connection_priority(_slot);
+    }
+
+    bool set_connection_priority(int64_t priority)
+    {
+        return const_cast<signal_base*>(_signal)->set_connection_priority(_slot, priority);
+    }
+
 protected:
     paired_ptr<> _slot {};
     const signal_base *_signal { nullptr };
@@ -313,7 +327,8 @@ template<typename... Args>
 class signal : public signal_base
 {
 public:
-    using slot_container = std::multiset<slot<Args...>, std::less<slot<Args...>>, std::allocator<slot<Args...>>>;
+    using slot_type = slot<Args...>;
+    using slot_container = std::multiset<slot_type, std::less<slot<Args...>>, std::allocator<slot<Args...>>>;
 
     signal() = default;
     signal(const std::u8string &name) : _name{ name } {}
@@ -447,10 +462,26 @@ public:
 
     virtual bool is_slot_enabled(const paired_ptr<> &slot) const override
     {
-        auto send { std::cend(_slots) };
-        auto sit { std::find(std::cbegin(_slots), send, slot) };
+        if (auto s_ptr = find_slot(slot); s_ptr != nullptr) return s_ptr->is_enabled();
 
-        if (sit != send) return sit->is_enabled();
+        return false;
+    }
+
+    virtual int64_t get_connection_priority(const paired_ptr<>& con) const override
+    {
+        if (auto s_ptr = find_slot(con); s_ptr != nullptr) return s_ptr->get_priority();
+
+        return {};
+    }
+
+    virtual bool set_connection_priority(const paired_ptr<>& con, int64_t priority) override
+    {
+        if (auto s_ptr = find_slot(con); s_ptr != nullptr)
+        {
+            const_cast<slot_type*>(s_ptr)->set_priority(priority);
+
+            return true;
+        }
 
         return false;
     }
@@ -463,6 +494,21 @@ protected:
     mutable std::shared_mutex _name_lock {};
     mutable std::atomic_bool _enabled { true };
     std::any _payload;
+
+    const slot_type* find_slot(const paired_ptr<>& slot) const
+    {
+        auto send{ std::cend(_slots) };
+        auto sit{ std::find(std::cbegin(_slots), send, slot) };
+
+        if (sit != send) return &(*sit);
+
+        auto vsend{ std::cend(_pending_connections) };
+        auto vsit{ std::find(std::cbegin(_pending_connections), vsend, slot) };
+
+        if (vsit != vsend) return &(*vsit);
+
+        return nullptr;
+    }
 };
 
 template<typename... Args>
