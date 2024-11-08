@@ -197,6 +197,8 @@ protected:
 public:
     void set_enabled(bool is_enabled) { _enabled = is_enabled; }
     bool is_enabled() const { return _enabled; }
+    bool is_disconnected() const { return !_connection; }
+    void disconnect() { _connection.disconnect(); }
 };
 
 template<typename... Args>
@@ -213,8 +215,6 @@ public:
     slot(std::function<void(Args...)>&& f, int64_t priority = 0) : _functor{ std::forward<std::function<void(Args...)>>(f) }, _priority{ priority } {}
     void invoke(const Args &... args) const { _functor(args...); }
     void operator()(const Args &... args) const { invoke(args...); }
-    bool is_disconnected() const { return !_connection; }
-    void clear() { _connection.disconnect(); }
     int64_t get_priority() const { return _priority; }
     int64_t set_priority(int64_t priority) { std::swap(_priority, priority); return priority; }
 
@@ -262,7 +262,7 @@ public:
     connection() = default;
 
     template<typename... Args>
-    connection(const signal_base *signal, slot<Args...> &s) : _slot{ &s._connection }, _signal { signal }
+    connection(const signal_base *signal, slot<Args...> &s) : _connection{ &s._connection }, _signal { signal }
     {
     }
 
@@ -273,7 +273,7 @@ public:
     {
         disconnect();
 
-        _slot = std::move(other._slot);
+        _connection = std::move(other._connection);
         _signal = std::move(other._signal);
 
         return *this;
@@ -286,12 +286,12 @@ public:
 
     void disconnect()
     {
-        if (_slot) _slot.disconnect();
+        if (_connection) _connection.disconnect();
 
         _signal = nullptr;
     }
 
-    bool is_disconnected() const { return !_slot; }
+    bool is_disconnected() const { return !_connection; }
 
     const signal_base &signal() const
     {
@@ -300,26 +300,26 @@ public:
 
     void set_enabled(bool enabled)
     {
-        const_cast<signal_base*>(_signal)->enable_slot(_slot, enabled);
+        const_cast<signal_base*>(_signal)->enable_slot(_connection, enabled);
     }
 
     bool is_enabled() const
     {
-        return _signal->is_slot_enabled(_slot);
+        return _signal->is_slot_enabled(_connection);
     }
 
     int64_t get_connection_priority() const
     {
-        return _signal->get_connection_priority(_slot);
+        return _signal->get_connection_priority(_connection);
     }
 
     bool set_connection_priority(int64_t priority)
     {
-        return const_cast<signal_base*>(_signal)->set_connection_priority(_slot, priority);
+        return const_cast<signal_base*>(_signal)->set_connection_priority(_connection, priority);
     }
 
 protected:
-    paired_ptr<> _slot {};
+    paired_ptr<> _connection {};
     const signal_base *_signal { nullptr };
 };
 
@@ -495,17 +495,17 @@ protected:
     mutable std::atomic_bool _enabled { true };
     std::any _payload;
 
-    const slot_type* find_slot(const paired_ptr<>& slot) const
+    const slot_type* find_slot(const paired_ptr<>& con) const
     {
         auto send{ std::cend(_slots) };
-        auto sit{ std::find(std::cbegin(_slots), send, slot) };
+        auto sit{ std::find(std::cbegin(_slots), send, con) };
 
         if (sit != send) return &(*sit);
 
-        auto vsend{ std::cend(_pending_connections) };
-        auto vsit{ std::find(std::cbegin(_pending_connections), vsend, slot) };
+        auto psend{ std::cend(_pending_connections) };
+        auto psit{ std::find(std::cbegin(_pending_connections), psend, con) };
 
-        if (vsit != vsend) return &(*vsit);
+        if (psit != psend) return &(*psit);
 
         return nullptr;
     }
