@@ -151,20 +151,8 @@ public:
         	return !(_connected_paired_ptr);
 	}
 
-    int64_t get_priority() const
-    {
-        return _priority;
-    }
-
-    int64_t set_priority(int64_t priority)
-    {
-        std::swap(_priority, priority);
-        return priority;
-    }
-
 protected:
-    connected_paired_ptr_type* _connected_paired_ptr{ nullptr };
-    int64_t _priority{ 0 };
+	connected_paired_ptr_type *_connected_paired_ptr = nullptr;
 };
 
 template<typename T1, typename T2>
@@ -201,18 +189,16 @@ bool operator!=(std::nullptr_t, const paired_ptr<T1, T2> & rhs)
 class slot_base
 {
 protected:
+    template<typename... Args> friend class signal;
+
     paired_ptr<> _connection {};
     bool _enabled { true };
-
-    template<typename... Args> friend class signal;
 
 public:
     void set_enabled(bool is_enabled) { _enabled = is_enabled; }
     bool is_enabled() const { return _enabled; }
     bool is_disconnected() const { return !_connection; }
     void disconnect() { _connection.disconnect(); }
-    int64_t get_priority() const { return _connection.get_priority(); }
-    int64_t set_priority(int64_t priority) { return _connection.set_priority(priority); }
 };
 
 template<typename... Args>
@@ -220,14 +206,17 @@ class slot : public slot_base
 {
 protected:
     std::function<void (Args...)> _functor {};
+    int64_t _priority{ 0 };
 
     friend class connection;
 
 public:
     slot() = default;
-    slot(std::function<void(Args...)>&& f, int64_t priority = 0) : _functor{ std::forward<std::function<void(Args...)>>(f) } { _connection.set_priority(priority); }
+    slot(std::function<void(Args...)>&& f, int64_t priority = 0) : _functor{ std::forward<std::function<void(Args...)>>(f) }, _priority{ priority } {}
     void invoke(const Args &... args) const { _functor(args...); }
     void operator()(const Args &... args) const { invoke(args...); }
+    int64_t get_priority() const { return _priority; }
+    int64_t set_priority(int64_t priority) { std::swap(_priority, priority); return priority; }
 
     bool operator == (const paired_ptr<> &s) const
     {
@@ -241,12 +230,12 @@ public:
 
     bool operator < (const slot& s) const
     {
-        return _connection.get_priority() < s._connection.get_priority();
+        return _priority < s._priority;
     }
 
     bool operator > (const slot& s) const
     {
-        return _connection.get_priority() > s._connection.get_priority();
+        return _priority > s._priority;
     }
 };
 
@@ -263,6 +252,8 @@ public:
     virtual void enable_slot(const paired_ptr<>&, bool enabled) = 0;
     virtual bool is_slot_enabled(const slot_base&) const = 0;
     virtual bool is_slot_enabled(const paired_ptr<>&) const = 0;
+    virtual int64_t get_connection_priority(const paired_ptr<>&) const = 0;
+    virtual bool set_connection_priority(const paired_ptr<>&, int64_t) = 0;
 };
 
 class connection
@@ -319,12 +310,12 @@ public:
 
     int64_t get_connection_priority() const
     {
-        return _connection.get_priority();
+        return _signal->get_connection_priority(_connection);
     }
 
-    int64_t set_connection_priority(int64_t priority)
+    bool set_connection_priority(int64_t priority)
     {
-        return _connection.set_priority(priority);
+        return const_cast<signal_base*>(_signal)->set_connection_priority(_connection, priority);
     }
 
 protected:
@@ -395,15 +386,15 @@ public:
         return { this, _pending_connections.back() };
     }
 
-    template<typename T>
-    connection connect(T* instance, void (T::* member_function)(Args...), int64_t priority = 0)
-    {
-        return connect([instance, member_function](Args... args) { (instance->*member_function)(args...); }, priority);
-    }
-
     virtual connection operator += (std::function<void(Args...)> &&callable)
     {
         return connect(std::forward<std::function<void(Args...)>>(callable));
+    }
+
+    template<typename T>
+    connection connect(T *instance, void (T::*member_function)(Args...), int64_t priority = std::numeric_limits<int64_t>::max() / 2)
+    {
+        return connect([instance, member_function](Args... args) { (instance->*member_function)(args...); }, priority);
     }
 
     virtual void clear()
@@ -472,6 +463,25 @@ public:
     virtual bool is_slot_enabled(const paired_ptr<> &slot) const override
     {
         if (auto s_ptr = find_slot(slot); s_ptr != nullptr) return s_ptr->is_enabled();
+
+        return false;
+    }
+
+    virtual int64_t get_connection_priority(const paired_ptr<>& con) const override
+    {
+        if (auto s_ptr = find_slot(con); s_ptr != nullptr) return s_ptr->get_priority();
+
+        return {};
+    }
+
+    virtual bool set_connection_priority(const paired_ptr<>& con, int64_t priority) override
+    {
+        if (auto s_ptr = find_slot(con); s_ptr != nullptr)
+        {
+            const_cast<slot_type*>(s_ptr)->set_priority(priority);
+
+            return true;
+        }
 
         return false;
     }
