@@ -89,3 +89,6 @@
 [submodule "include/external/intx"]
 	path = include/external/intx
 	url = https://github.com/chfast/intx.git
+[submodule "include/external/ChaiScript_Extras"]
+	path = include/external/ChaiScript_Extras
+	url = https://github.com/ChaiScript/ChaiScript_Extras.git
