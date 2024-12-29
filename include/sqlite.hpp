@@ -29,6 +29,9 @@ extern "C"
 #include "external/sqlite_modern_cpp/hdr/sqlite_modern_cpp.h"
 #include <chrono>
 #include <exception>
+#include <filesystem>
+#include <string>
+#include <string_view>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -43,7 +46,7 @@ struct scoped_transaction
     scoped_transaction(database &db, bool autocommit = false) : _db(db), _rollback(!autocommit) { _db << _begin_cmd; };
     ~scoped_transaction()
     {
-        if (std::uncaught_exceptions() && !_rollback) _rollback = true;
+        if (::std::uncaught_exceptions() && !_rollback) _rollback = true;
 
         _db << (_rollback ? _rollback_cmd : _commit_cmd);
     };
@@ -59,10 +62,10 @@ private:
     bool _rollback { true };
 };
 
-using namespace std::chrono_literals;
+using namespace ::std::chrono_literals;
 
 template <int page_size = -1, uint32_t sleep_time_ms = 0>
-inline auto backup_database(const database &from, const database &to, const std::string_view from_db_name = "main", const std::string_view to_db_name = "main")
+inline auto backup_database(const database &from, const database &to, const ::std::string_view from_db_name = "main", const ::std::string_view to_db_name = "main")
 {
     using namespace std::literals;
 
@@ -82,6 +85,16 @@ inline auto backup_database(const database &from, const database &to, const std:
     }
 
     return rc;
+}
+
+static inline auto attach_database(database& db, ::std::filesystem::path db_path, const ::std::string& as_schema_name)
+{
+    db << "attach database ? as ?;" << db_path.generic_string() << as_schema_name;
+}
+
+static inline auto detach_database(database& db, const ::std::string& as_schema_name)
+{
+    db << "detach database ?;" << as_schema_name;
 }
 
 }
