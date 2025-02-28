@@ -1,9 +1,35 @@
+/*
+MIT License
+
+Copyright (c) 2025 Arlen Keshabyan (arlen.albert@gmail.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cassert>
 #include "../include/relinx_self.hpp"
 
 using namespace nstd::relinx_self;
+using namespace std::literals;
 
 // A simple Person struct to demonstrate operations on custom types
 struct Person {
@@ -20,148 +46,178 @@ struct Person {
         os << p.name << " (" << p.age << ")";
         return os;
     }
+
+    bool operator==(const Person& other) const {
+        return name == other.name && age == other.age;
+    }
 };
 
-int main() {
-    // Example 1: Basic operations with numbers
-    std::cout << "Example 1: Basic operations with numbers\n";
-    std::vector<int> numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    
-    // Using where and select
-    auto result1 = from(numbers)
-        ->where([](int n) { return n % 2 == 0; })     // Filter even numbers
-        ->select([](int n) { return n * n; })         // Square them
-        ->to_vector();                                // Materialize as vector
-    
-    std::cout << "Even numbers squared (first 3): ";
-    for (auto num : result1) {
-        std::cout << num << " ";
+// Structure that simulates the one causing the error
+struct StaticBlockProperties {
+    void updateUI() {
+        std::vector<int> data = {1, 2, 3, 4, 5};
+        // This is the kind of operation that causes the error in VS2022
+        auto result = from(data)->select([](int val) { return val * 2; })->to_vector();
+        
+        std::cout << "StaticBlockProperties::updateUI test passed!" << std::endl;
     }
-    std::cout << "\n\n";
+};
+
+void test_transform_iterator_adapter() {
+    std::cout << "Testing transform_iterator_adapter..." << std::endl;
     
-    // Example 2: Working with custom types
-    std::cout << "Example 2: Working with custom types\n";
+    // Test with vector<int> and lambda that transforms to int
+    std::vector<int> data = {1, 2, 3, 4, 5};
+    auto result1 = from(data)->select([](int val) { return val * 2; })->to_vector();
+    assert(result1.size() == 5);
+    assert(result1[0] == 2);
+    assert(result1[4] == 10);
+    
+    // Test with vector<string> and lambda that transforms to string
+    std::vector<std::string> strings = {"a", "b", "c"};
+    auto result2 = from(strings)->select([](const std::string& s) { return s + s; })->to_vector();
+    assert(result2.size() == 3);
+    assert(result2[0] == "aa");
+    assert(result2[2] == "cc");
+    
+    // Test with vector<int> and lambda that transforms to string
+    auto result3 = from(data)->select([](int val) { return std::to_string(val); })->to_vector();
+    assert(result3.size() == 5);
+    assert(result3[0] == "1");
+    assert(result3[4] == "5");
+    
+    // Test with vector<Person> and lambda that transforms to string
     std::vector<Person> people = {
         {"Alice", 25},
         {"Bob", 30},
-        {"Charlie", 22},
-        {"David", 35},
-        {"Eve", 28}
+        {"Charlie", 22}
     };
+    auto result4 = from(people)->select([](const Person& p) { return p.name; })->to_vector();
+    assert(result4.size() == 3);
+    assert(result4[0] == "Alice");
+    assert(result4[2] == "Charlie");
     
-    // Filter by age and project to name
-    auto result2 = from(people)
-        ->where([](const Person& p) { return p.age > 25; })
-        ->select([](const Person& p) { return p.name; })
+    // Test with vector<Person> and lambda that transforms to int
+    auto result5 = from(people)->select([](const Person& p) { return p.age; })->to_vector();
+    assert(result5.size() == 3);
+    assert(result5[0] == 25);
+    assert(result5[2] == 22);
+    
+    // Test with vector<Person> and lambda that transforms to another Person
+    auto result6 = from(people)->select([](const Person& p) { 
+        return Person(p.name + " Jr.", p.age - 20); 
+    })->to_vector();
+    assert(result6.size() == 3);
+    assert(result6[0].name == "Alice Jr.");
+    assert(result6[2].age == 2);
+    
+    // Test chaining multiple select operations
+    auto result7 = from(data)
+        ->select([](int val) { return val * 2; })
+        ->select([](int val) { return std::to_string(val) + "!"; })
         ->to_vector();
+    assert(result7.size() == 5);
+    assert(result7[0] == "2!");
+    assert(result7[4] == "10!");
     
-    std::cout << "Names of people older than 25: ";
-    for (const auto& name : result2) {
-        std::cout << name << " ";
-    }
-    std::cout << "\n\n";
-    
-    // Example 3: Chaining multiple operations
-    std::cout << "Example 3: Chaining multiple operations\n";
-    
-    // Generate range, filter, transform and count
-    auto count = range(1, 100)  // Numbers 1-100
-        ->where([](int n) { return n % 3 == 0 || n % 5 == 0; })  // Divisible by 3 or 5
-        ->select([](int n) { return n * 2; })  // Double each value
-        ->where([](int n) { return n < 100; }) // Less than 100
-        ->count();
-    
-    std::cout << "Count of numbers (1-100) divisible by 3 or 5, doubled, and less than 100: " 
-              << count << "\n\n";
-    
-    // Example 4: Using tee for debugging and side effects
-    std::cout << "Example 4: Using tee for debugging\n";
-    
-    auto result4 = from(numbers)
-        ->where([](int n) { return n > 5; })
-        ->tee([](int n) { std::cout << "After where: " << n << "\n"; })
-        ->select([](int n) { return n * 10; })
-        ->tee([](int n) { std::cout << "After select: " << n << "\n"; })
-        ->to_vector();
-    
-    std::cout << "\nFinal result: ";
-    for (auto num : result4) {
-        std::cout << num << " ";
-    }
-    std::cout << "\n\n";
-    
-    // Example 5: Using distinct 
-    std::cout << "Example 5: Distinct values\n";
-    
-    std::vector<int> duplicates = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5};
-    
-    auto result5 = from(duplicates)
-        ->distinct()
-        ->to_vector();
-    
-    std::cout << "Distinct numbers: ";
-    for (auto num : result5) {
-        std::cout << num << " ";
-    }
-    std::cout << "\n\n";
+    std::cout << "All transform_iterator_adapter tests passed!" << std::endl;
+}
 
-    // Example 6: Using concat
-    std::cout << "Example 6: Concatenating sequences\n";
+void test_transform_iterator_adapter_constructor() {
+    std::cout << "Testing transform_iterator_adapter constructor specifically..." << std::endl;
     
-    std::vector<int> first = {1, 2, 3};
-    std::vector<int> second = {4, 5, 6};
+    std::vector<int> data = {1, 2, 3, 4, 5};
     
-    auto result6 = from(first)
-        ->concat(second)
+    // This is what causes problems in Visual Studio 2022
+    auto doubler = [](const int& val) { return val * 2; };
+    
+    // Create a basic transform operation
+    auto results = from(data)
+        ->select(doubler)
         ->to_vector();
     
-    std::cout << "Concatenated vectors: ";
-    for (auto num : result6) {
-        std::cout << num << " ";
-    }
-    std::cout << "\n\n";
+    // Verify the results
+    assert(results.size() == 5);
+    assert(results[0] == 2);
+    assert(results[4] == 10);
     
-    // Example 7: Using aggregate
-    std::cout << "Example 7: Aggregate operations\n";
+    std::cout << "All transform_iterator_adapter constructor tests passed!" << std::endl;
+}
+
+// Test the basic container operations
+void test_basic_container_ops() {
+    std::cout << "Testing basic container operations..." << std::endl;
     
-    auto sum = from(numbers)->aggregate([](int acc, int val) { 
-        return acc + val; 
-    });
+    // Test to_vector
+    auto vec = from({1, 2, 3})->to_vector();
+    assert(vec.size() == 3);
+    assert(vec[0] == 1);
     
-    std::cout << "Sum of all numbers: " << sum << "\n";
+    // Test to_list
+    auto list = from({1, 2, 3})->to_list();
+    assert(list.size() == 3);
+    assert(*list.begin() == 1);
     
-    auto commaSeparated = from(numbers)
-        ->aggregate(std::string(), [](const std::string& acc, int val) {
-            return acc.empty() ? std::to_string(val) : acc + ", " + std::to_string(val);
-        });
+    // Test to_string
+    auto str = from({1, 2, 3})->to_string();
+    assert(str == "123");
     
-    std::cout << "Comma-separated numbers: " << commaSeparated << "\n\n";
+    auto str_with_delim = from({1, 2, 3})->to_string(",");
+    assert(str_with_delim == "1,2,3");
     
-    // Example 8: Combining multiple operations with People
-    std::cout << "Example 8: Complex operations with custom types\n";
+    std::cout << "All basic container operations tests passed!" << std::endl;
+}
+
+// Test sequence operations
+void test_sequence_ops() {
+    std::cout << "Testing sequence operations..." << std::endl;
     
-    // Add more people to the collection
-    people.push_back({"Frank", 42});
-    people.push_back({"Grace", 25});
-    people.push_back({"Helen", 30});
+    // Test where
+    auto filtered = from({1, 2, 3, 4, 5, 6})->where([](int i) { return i % 2 == 0; })->to_vector();
+    assert(filtered.size() == 3);
+    assert(filtered[0] == 2);
+    assert(filtered[1] == 4);
+    assert(filtered[2] == 6);
     
-    // Find names of people over 25, take only first 3, make uppercase
-    auto result8 = from(people)
-        ->where([](const Person& p) { return p.age > 25; })
-        ->take(3)
-        ->select([](const Person& p) { 
-            std::string name = p.name;
-            std::transform(name.begin(), name.end(), name.begin(), 
-                          [](unsigned char c) { return std::toupper(c); });
-            return name;
-        })
-        ->to_vector();
+    // Test take
+    auto taken = from({1, 2, 3, 4, 5, 6})->take(3)->to_vector();
+    assert(taken.size() == 3);
+    assert(taken[0] == 1);
+    assert(taken[2] == 3);
     
-    std::cout << "First 3 names of people over 25 (uppercase): ";
-    for (const auto& name : result8) {
-        std::cout << name << " ";
-    }
-    std::cout << "\n";
+    // Test skip
+    auto skipped = from({1, 2, 3, 4, 5, 6})->skip(3)->to_vector();
+    assert(skipped.size() == 3);
+    assert(skipped[0] == 4);
+    assert(skipped[2] == 6);
+    
+    // Test distinct
+    auto distinct = from({1, 2, 2, 3, 3, 3, 4})->distinct()->to_vector();
+    assert(distinct.size() == 4);
+    
+    std::cout << "All sequence operations tests passed!" << std::endl;
+}
+
+int main() {
+    std::cout << "Running tests for relinx_self.hpp..." << std::endl;
+    
+    // Test the transform_iterator_adapter
+    test_transform_iterator_adapter();
+    
+    // Test transform_iterator_adapter constructor specifically
+    test_transform_iterator_adapter_constructor();
+    
+    // Test basic container operations
+    test_basic_container_ops();
+    
+    // Test sequence operations
+    test_sequence_ops();
+    
+    // Simulate the issue scenario
+    StaticBlockProperties props;
+    props.updateUI();
+    
+    std::cout << "All tests completed successfully!" << std::endl;
     
     return 0;
 }

@@ -705,9 +705,131 @@ void benchmark_to_map_operations(const std::vector<int>& data, int iterations) {
     }
 }
 
-// Benchmark 14: Additional methods
+// Benchmark 14: Select operations with different return types
+void benchmark_select_operations(const std::vector<int>& data, int iterations) {
+    std::cout << "\n=== Benchmark 14: Select Operations (" << iterations << " iterations) ===\n";
+    
+    // Simple select with same return type
+    {
+        Timer timer("Original: select (same type)");
+        for (int i = 0; i < iterations; i++) {
+            auto result = orig::from(data)
+                ->select([](int n) { return n * 2; })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    {
+        Timer timer("Self-reference: select (same type)");
+        for (int i = 0; i < iterations; i++) {
+            auto result = self::from(data)
+                ->select([](int n) { return n * 2; })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    // Select with different return type (int to string)
+    {
+        Timer timer("Original: select (type conversion to string)");
+        for (int i = 0; i < iterations; i++) {
+            auto result = orig::from(data)
+                ->select([](int n) { return std::to_string(n); })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    {
+        Timer timer("Self-reference: select (type conversion to string)");
+        for (int i = 0; i < iterations; i++) {
+            auto result = self::from(data)
+                ->select([](int n) { return std::to_string(n); })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    // Select with complex type (struct/class)
+    {
+        Timer timer("Original: select (to complex type)");
+        for (int i = 0; i < iterations; i++) {
+            auto result = orig::from(data)
+                ->select([](int n) { 
+                    struct Result { int value; bool even; };
+                    return Result{n, n % 2 == 0}; 
+                })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    {
+        Timer timer("Self-reference: select (to complex type)");
+        for (int i = 0; i < iterations; i++) {
+            auto result = self::from(data)
+                ->select([](int n) { 
+                    struct Result { int value; bool even; };
+                    return Result{n, n % 2 == 0}; 
+                })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    // Chained selects
+    {
+        Timer timer("Original: chained selects");
+        for (int i = 0; i < iterations; i++) {
+            auto result = orig::from(data)
+                ->select([](int n) { return n * n; })
+                ->select([](int n) { return std::to_string(n); })
+                ->select([](const std::string& s) { return "Number: " + s; })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    {
+        Timer timer("Self-reference: chained selects");
+        for (int i = 0; i < iterations; i++) {
+            auto result = self::from(data)
+                ->select([](int n) { return n * n; })
+                ->select([](int n) { return std::to_string(n); })
+                ->select([](const std::string& s) { return "Number: " + s; })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    // Select with where filter before
+    {
+        Timer timer("Original: where->select");
+        for (int i = 0; i < iterations; i++) {
+            auto result = orig::from(data)
+                ->where([](int n) { return n % 3 == 0; })
+                ->select([](int n) { return n * n; })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+    
+    {
+        Timer timer("Self-reference: where->select");
+        for (int i = 0; i < iterations; i++) {
+            auto result = self::from(data)
+                ->where([](int n) { return n % 3 == 0; })
+                ->select([](int n) { return n * n; })
+                ->to_vector();
+            prevent_optimize(result.size());
+        }
+    }
+}
+
+// Benchmark 15: Additional methods
 void benchmark_additional_methods(const std::vector<int>& data, int iterations) {
-    std::cout << "\n=== Benchmark 14: Additional Methods (" << iterations << " iterations) ===\n";
+    std::cout << "\n=== Benchmark 15: Additional Methods (" << iterations << " iterations) ===\n";
     
     // sequence_equal
     {
@@ -835,6 +957,7 @@ int main() {
     benchmark_reverse_operations(data, iterations);
     benchmark_orderby_operations(data, iterations);
     benchmark_to_map_operations(data, iterations);
+    benchmark_select_operations(data, iterations);    // New benchmark for select operations
     benchmark_additional_methods(data, iterations);
     
     std::cout << "\nBenchmark complete. Lower numbers are better.\n";
