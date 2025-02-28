@@ -284,20 +284,21 @@ protected:
 public:
     using self_type = transform_iterator_adapter<ParentIterator, TransformFunctor>;
     using parent_value_type = typename std::decay<decltype(*std::declval<ParentIterator>())>::type;
-    using value_type = decltype(std::declval<TransformFunctor>()(std::declval<parent_value_type>()));
+    using value_type = std::decay_t<decltype(std::declval<TransformFunctor>()(std::declval<parent_value_type>()))>;
     using difference_type = std::ptrdiff_t;
     using pointer = const value_type*;
     using reference = const value_type&;
     using iterator_category = default_iterator_adapter_tag;
 
-    transform_iterator_adapter() = default;
+    // Default constructor must be explicitly defined due to mutable value_type
+    transform_iterator_adapter() : _transformFunctor(), _begin(), _end(), _transformedValue() {}
     transform_iterator_adapter(const self_type &) = default;
     transform_iterator_adapter(self_type &&) noexcept = default;
     transform_iterator_adapter &operator=(const self_type &) = default;
     transform_iterator_adapter &operator=(self_type &&) noexcept = default;
 
-    transform_iterator_adapter(ParentIterator begin, ParentIterator end, TransformFunctor &&transformFunctor)
-    : _transformFunctor(std::forward<TransformFunctor>(transformFunctor)), _begin(begin), _end(end)
+    transform_iterator_adapter(ParentIterator begin, ParentIterator end, const TransformFunctor &transformFunctor)
+    : _transformFunctor(transformFunctor), _begin(begin), _end(end), _transformedValue()
     {
     }
 
@@ -314,12 +315,14 @@ public:
 
     auto operator*() const -> const value_type&
     {
-        return (_transformedValue = _transformFunctor(*_begin));
+        _transformedValue = _transformFunctor(*_begin);
+        return _transformedValue;
     }
 
-    auto operator->() -> const value_type
+    auto operator->() const -> const value_type*
     {
-        return *(*this);
+        _transformedValue = _transformFunctor(*_begin);
+        return &_transformedValue;
     }
 
     auto operator++() -> self_type&
@@ -1585,9 +1588,13 @@ public:
         using adapter_type = transform_iterator_adapter<iterator_type, std::decay_t<TransformFunctor>>;
         using next_relinx_type = relinx_object<self_type, adapter_type, ContainerType>;
 
-        auto result = std::make_shared<next_relinx_type>(_self_ptr, 
-                                                       adapter_type(_begin, _end, std::forward<TransformFunctor>(transformFunctor)), 
-                                                       adapter_type(_end, _end, std::decay_t<TransformFunctor>()));
+        // Store the transform functor in a shared_ptr so it can be used in both iterators
+        auto sharedFunctor = std::make_shared<std::decay_t<TransformFunctor>>(std::forward<TransformFunctor>(transformFunctor));
+        
+        auto begin_adapter = adapter_type(_begin, _end, *sharedFunctor);
+        auto end_adapter = adapter_type(_end, _end, *sharedFunctor);
+
+        auto result = std::make_shared<next_relinx_type>(_self_ptr, begin_adapter, end_adapter);
         result->set_self_ptr(result);
         return result;
     }
@@ -1844,6 +1851,20 @@ public:
     {
         return where([](auto &&v) { return std::holds_alternative<CastType>(v); })
                ->select([](auto &&v) { return std::get<CastType>(v); });
+    }
+    
+    /**
+     * \brief Filters the elements of a sequence based on a specified type.
+     * 
+     * This is a generic implementation that's used when the more specific 
+     * specializations aren't applicable.
+     * 
+     * \return A sequence that contains elements from the input sequence of the specified type.
+     */
+    template<typename CastType>
+    auto of_type() noexcept
+    {
+        return select([](auto &&v) { return static_cast<CastType>(v); });
     }
     
     /**
