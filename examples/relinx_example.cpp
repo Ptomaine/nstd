@@ -181,14 +181,14 @@ TEST_CASE( "any()", "[relinx]" )
     CHECK_FALSE(from(std::vector<std::string>())->any());
 }
 
-TEST_CASE( "avarage(f)", "[relinx]" )
+TEST_CASE( "average(f)", "[relinx]" )
 {
-    CHECK(from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->avarage([](auto &&r){ return r * 1.5; }) == 8.25);
+    CHECK(from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->average([](auto &&r){ return r * 1.5; }) == 8.25);
 }
 
-TEST_CASE( "avarage()", "[relinx]" )
+TEST_CASE( "average()", "[relinx]" )
 {
-    CHECK(from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->avarage() == 5);
+    CHECK(from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->average() == 5);
 }
 
 TEST_CASE( "cast()", "[relinx]" )

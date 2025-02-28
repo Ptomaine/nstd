@@ -1292,14 +1292,16 @@ public:
 
         \param avgFunctor A functor. The single parameter is the current sequence value. The return value of the functor is a transformed value.
 
-        \return A computed avarage value.
+        \return A computed average value.
 
-        Example: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->avarage([](auto &&r){ return r * 1.5; }); \endcode the result is 8.25
+        Example: \code auto result = from({1, 2, 3, 4, 5, 6, 7, 8, 9, 10})->average([](auto &&r){ return r * 1.5; }); \endcode the result is 8.25
     */
     template<typename AvgFunctor>
-    auto avarage(AvgFunctor &&avgFunctor) const noexcept
+    auto average(AvgFunctor &&avgFunctor) const noexcept
     {
-        return (sum(std::forward<AvgFunctor>(avgFunctor)) / std::distance(_begin, _end));
+		if (_begin == _end) throw no_elements("average"s);
+
+        return sum(std::forward<AvgFunctor>(avgFunctor)) / std::distance(_begin, _end);
     }
 
     /**
@@ -1307,12 +1309,12 @@ public:
 
         Computes the average of a sequence.
 
-        \return Returns an avarage value.
+        \return Returns an average value.
 
     */
-    auto avarage() const noexcept
+    auto average() const noexcept
     {
-        return avarage([](auto &&v){ return v; });
+        return average([](auto &&v){ return v; });
     }
 
     /**
