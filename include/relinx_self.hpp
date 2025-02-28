@@ -3033,7 +3033,7 @@ public:
         
         using next_relinx_type = relinx_object_ordered<self_type, typename default_container<value_type>::iterator, SelectFunctor>;
         
-        auto result = std::make_shared<next_relinx_type>(_self_ptr, std::move(sorted), std::forward<SelectFunctor>(selectFunctor));
+        auto result = std::make_shared<next_relinx_type>(_self_ptr, std::move(sorted), SelectFunctor(selectFunctor));
         result->set_self_ptr(result);
         return result;
     }
@@ -3138,14 +3138,16 @@ public:
     template<typename SelectFunctor, typename SortFunctor>
     auto order_by(SelectFunctor &&selectFunctor, SortFunctor &&sortFunctor)
     {
-        std::sort(std::begin(_ordered_values), std::end(_ordered_values), [&selectFunctor, &sortFunctor](auto &&a, auto &&b) { return sortFunctor(selectFunctor(a), selectFunctor(b)); });
+        std::sort(std::begin(_ordered_values), std::end(_ordered_values), [&selectFunctor, &sortFunctor](auto &&a, auto &&b) { 
+            return sortFunctor(selectFunctor(a), selectFunctor(b)); 
+        });
 
         using next_relinx_type = relinx_object_ordered<self_type, Iterator, SelectFunctor>;
 
         auto result = std::make_shared<next_relinx_type>(
-            std::static_pointer_cast<self_type>(this->_self_ptr), 
+            std::static_pointer_cast<self_type>(this->_self_ptr),
             std::move(_ordered_values), 
-            std::forward<SelectFunctor>(selectFunctor));
+            SelectFunctor(selectFunctor));
         
         result->set_self_ptr(result);
         return result;
