@@ -85,7 +85,7 @@ int main()
 	int_prop = 150;
 
 	std::cout << "...temporary disabling value_changing signal..." << std::endl;
-	cons.connections[1].signal().enabled(false);
+	const_cast<ss::signal_base&>(cons.connections[1].signal()).set_enabled(false);
 
 	int_prop = raw_int;
 	int_prop *= 7;
@@ -94,7 +94,7 @@ int main()
 	std::cout << "comparing int_prop == dummy_int_prop (expecting: false): " << std::boolalpha << (int_prop == dummy_int_prop) << std::endl;
 
 	std::cout << "...enabling value_changing signal again..." << std::endl;
-	cons.connections[1].signal().enabled(true);
+	const_cast<ss::signal_base&>(cons.connections[1].signal()).set_enabled(true);
 
 	int_prop = dummy_int_prop;
 

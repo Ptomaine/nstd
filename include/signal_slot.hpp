@@ -1027,7 +1027,7 @@ public:
  * @tparam signal_type The signal type to bridge
  * @tparam Args Types of arguments the signal passes to slots
  */
-template<template <typename...> typename signal_type, typename... Args>
+template<template <typename...> typename signal_type, std::copyable... Args>
 requires std::derived_from<signal_type<Args...>, signal_base>
 class bridged_signal_base : public signal_type<Args...>
 {
@@ -1271,7 +1271,7 @@ template<typename... Args> using bridged_signal_ex = bridged_signal_base<signal_
  * @tparam signal_type The signal type to throttle
  * @tparam Args Types of arguments the signal passes to slots
  */
-template<template <typename...> typename signal_type, typename... Args>
+template<template <typename...> typename signal_type, std::copyable... Args>
 requires std::derived_from<signal_type<Args...>, signal_base>
 class throttled_signal_base : public signal_type<Args...>
 {
@@ -1457,7 +1457,7 @@ struct queued_signal_default_scope {};
  * @tparam signal_type The signal type to queue
  * @tparam Args Types of arguments the signal passes to slots
  */
-template<typename scope, template <typename...> typename signal_type, typename... Args>
+template<typename scope, template <typename...> typename signal_type, std::copyable... Args>
 requires std::derived_from<signal_type<Args...>, signal_base>
 class queued_signal_base : public signal_type<Args...>
 {
@@ -1472,10 +1472,10 @@ public:
     /**
      * @brief Constructor with a name and delay
      * @param name The name of the signal
-     * @param throttle_ms The delay between emissions
+     * @param delay_ms The delay between emissions
      */
     template<typename Duration>
-    queued_signal_base(const std::u8string &name, const Duration &throttle_ms = queued_signal_base::_default_throttle_ms) : base_class{ name } {}
+    queued_signal_base(const std::u8string& name, const Duration& delay_ms = 0ms) : base_class{ name } { _delay_ms = delay_ms; }
     
     /**
      * @brief Constructor with a name
@@ -1535,6 +1535,8 @@ public:
      * @brief Emits the signal with the given arguments
      * 
      * Signal emissions are queued in a shared queue.
+	 * Parameters are copied and passed as a tuple to the queue.
+	 * Since parameters are copied, they should be copiable and should not be const, reference or rvalue.
      * 
      * @param args Arguments to pass to the slots
      */
@@ -1642,7 +1644,11 @@ protected:
 
                 _signal_queue.pop_front();
 
-                if (std::empty(_signal_queue)) break;
+                if (std::empty(_signal_queue))
+                {
+                    _thread_running = false;
+                    break;
+                }
             }
 
             if (_use_delay) std::this_thread::sleep_for(_delay_ms.load());
@@ -1683,7 +1689,7 @@ template<typename scope, typename... Args> using queued_signal_ex_scoped = queue
  * 
  * @tparam Args Types of arguments the signal passes to slots
  */
-template<typename... Args>
+template<std::copyable... Args>
 class timer_signal : public signal<timer_signal<Args...>*, Args...>
 {
 public:
