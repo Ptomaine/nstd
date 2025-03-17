@@ -246,6 +246,13 @@ public:
 
     using request_ptr = std::shared_ptr<request>;
 
+    http_resource_manager() = default;
+
+    ~http_resource_manager()
+    {
+        stop();
+    }
+
     void start(const std::string &host, int port)
     {
         _server.start(host, port, [this](const std::shared_ptr<tcp_client>& client)
@@ -256,9 +263,14 @@ public:
         });
     }
 
+    void stop()
+    {
+        if (_server.is_running()) _server.stop();
+    }
+
     void add_route(http_request_parser::http_method_id method, const std::string &pattern, std::function<void(request_ptr)> callback)
     {
-        std::scoped_lock { _add_route_mutex };
+        std::scoped_lock lock { _add_route_mutex };
 
         _regexes.emplace(pattern, std::regex(pattern, std::regex_constants::ECMAScript | std::regex_constants::icase | std::regex_constants::optimize));
 
@@ -267,7 +279,7 @@ public:
 
     void add_status_handler(typename response::http_status_codes status_code, std::function<void(request_ptr)> callback)
     {
-        std::scoped_lock { _add_route_mutex };
+        std::scoped_lock lock { _add_route_mutex };
 
         _cons = _status_signals[status_code].connect(std::move(callback));
     }
@@ -302,7 +314,7 @@ protected:
             std::string resource { p.get_resource_uri().get_path() };
             int completed { false };
 
-            std::scoped_lock { _add_route_mutex };
+            std::scoped_lock lock { _add_route_mutex };
 
             for (const auto &sig : _signals[p.get_method()])
             {

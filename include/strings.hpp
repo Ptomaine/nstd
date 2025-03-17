@@ -31,6 +31,9 @@ SOFTWARE.
 
 #include "utf8.hpp"
 
+#undef min
+#undef max
+
 namespace nstd::str
 {
 
