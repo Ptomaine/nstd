@@ -265,7 +265,12 @@ public:
 
     void stop()
     {
-        if (_server.is_running()) _server.stop();
+        if (is_server_running()) _server.stop();
+    }
+
+    bool is_server_running() const
+    {
+        return _server.is_running();
     }
 
     void add_route(http_request_parser::http_method_id method, const std::string &pattern, std::function<void(request_ptr)> callback)

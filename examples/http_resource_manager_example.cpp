@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
     http_resource_manager mgr;
 
-    mgr.add_route(M::GET, R"(^\/services\/([^/]+)?\/([^/]+))", [](auto &&req) // /services/v8/user
+    mgr.add_route(M::METHOD_GET, R"(^\/services\/([^/]+)?\/([^/]+))", [](auto &&req) // /services/v8/user
     {
         if (req->completed) return; else req->completed = true;
 
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
         resp.add_content_type_header("html", "utf-8").send_response(req->client);
     });
 
-    mgr.add_route(M::GET, R"(^\/$)", [](auto &&req) // /
+    mgr.add_route(M::METHOD_GET, R"(^\/$)", [](auto &&req) // /
     {
         if (req->completed) return; else req->completed = true;
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    mgr.add_route(M::GET, R"(^\/time$)", [](auto &&req) // /time
+    mgr.add_route(M::METHOD_GET, R"(^\/time$)", [](auto &&req) // /time
     {
         if (req->completed) return; else req->completed = true;
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
         resp.add_content_type_header("html", "utf-8").send_response(req->client);
     });
 
-    mgr.add_route(M::GET, R"(^\/throw$)", [](auto &&req) // /throw
+    mgr.add_route(M::METHOD_GET, R"(^\/throw$)", [](auto &&req) // /throw
     {
         throw std::runtime_error("Test exception");
     });

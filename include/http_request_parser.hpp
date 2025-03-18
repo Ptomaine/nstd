@@ -35,17 +35,17 @@ class http_request_parser
 public:
     enum class http_method_id : uint8_t
     {
-        CONNECT,
-        DELETE,
-        GET,
-        HEAD,
-        OPTIONS,
-        PATCH,
-        POST,
-        PUT,
-        TRACE,
+        METHOD_CONNECT,
+        METHOD_DELETE,
+        METHOD_GET,
+        METHOD_HEAD,
+        METHOD_OPTIONS,
+        METHOD_PATCH,
+        METHOD_POST,
+        METHOD_PUT,
+        METHOD_TRACE,
 
-        UNKNOWN
+        METHOD_UNKNOWN
     };
 
     http_request_parser(const std::vector<uint8_t> &request_data) :
@@ -92,7 +92,7 @@ public:
     {
         return  _request_data &&
                 _request_data_size >= 5 &&
-                _http_method_traits.method != http_method_id::UNKNOWN;
+                _http_method_traits.method != http_method_id::METHOD_UNKNOWN;
     }
 
     operator bool () const
@@ -120,7 +120,7 @@ public:
             }
         }
 
-        if (_http_method_traits.method == http_method_id::POST || _http_method_traits.method == http_method_id::PUT)
+        if (_http_method_traits.method == http_method_id::METHOD_POST || _http_method_traits.method == http_method_id::METHOD_PUT)
         {
             if (auto content_type { _headers.find("Content-Type") };
                 content_type == _headers.end() ||
@@ -163,52 +163,52 @@ public:
 
     bool is_known_method() const
     {
-        return _http_method_traits.method != http_method_id::UNKNOWN;
+        return _http_method_traits.method != http_method_id::METHOD_UNKNOWN;
     }
 
     bool is_connect() const
     {
-        return _http_method_traits.method == http_method_id::CONNECT;
+        return _http_method_traits.method == http_method_id::METHOD_CONNECT;
     }
 
     bool is_delete() const
     {
-        return _http_method_traits.method == http_method_id::DELETE;
+        return _http_method_traits.method == http_method_id::METHOD_DELETE;
     }
 
     bool is_get() const
     {
-        return _http_method_traits.method == http_method_id::GET;
+        return _http_method_traits.method == http_method_id::METHOD_GET;
     }
 
     bool is_head() const
     {
-        return _http_method_traits.method == http_method_id::HEAD;
+        return _http_method_traits.method == http_method_id::METHOD_HEAD;
     }
 
     bool is_options() const
     {
-        return _http_method_traits.method == http_method_id::OPTIONS;
+        return _http_method_traits.method == http_method_id::METHOD_OPTIONS;
     }
 
     bool is_patch() const
     {
-        return _http_method_traits.method == http_method_id::PATCH;
+        return _http_method_traits.method == http_method_id::METHOD_PATCH;
     }
 
     bool is_post() const
     {
-        return _http_method_traits.method == http_method_id::POST;
+        return _http_method_traits.method == http_method_id::METHOD_POST;
     }
 
     bool is_put() const
     {
-        return _http_method_traits.method == http_method_id::PUT;
+        return _http_method_traits.method == http_method_id::METHOD_PUT;
     }
 
     bool is_trace() const
     {
-        return _http_method_traits.method == http_method_id::TRACE;
+        return _http_method_traits.method == http_method_id::METHOD_TRACE;
     }
 
     void clear()
@@ -216,7 +216,7 @@ public:
         _request_data = nullptr;
         _request_data_size = 0;
 
-        _http_method_traits = { http_method_id::UNKNOWN, 0xffffffff };
+        _http_method_traits = { http_method_id::METHOD_UNKNOWN, 0xffffffff };
         _resource = decltype(_resource)();
         _version_part = decltype(_resource)();
         _protocol = decltype(_protocol)();
@@ -310,34 +310,34 @@ protected:
     {
         if (!_request_data || !*_request_data || _request_data_size < 5) return;
 
-        _http_method_traits = { http_method_id::UNKNOWN, 0xffffffff };
+        _http_method_traits = { http_method_id::METHOD_UNKNOWN, 0xffffffff };
 
         switch (*reinterpret_cast<const uint32_t*>(_request_data))
         {
         case http_constants::CONN_method_header_chars:
-            if (*reinterpret_cast<const uint32_t*>(_request_data + sizeof(uint32_t)) == http_constants::ECT_method_header_chars) _http_method_traits = { http_method_id::CONNECT, http_constants::CONNECT_method_skip_size };
+            if (*reinterpret_cast<const uint32_t*>(_request_data + sizeof(uint32_t)) == http_constants::ECT_method_header_chars) _http_method_traits = { http_method_id::METHOD_CONNECT, http_constants::CONNECT_method_skip_size };
             break;
         case http_constants::DELE_method_header_chars:
-            if (*reinterpret_cast<const uint32_t*>(_request_data + sizeof(uint32_t) - 1) == http_constants::ETE_method_header_chars) _http_method_traits = { http_method_id::DELETE, http_constants::DELETE_method_skip_size };
+            if (*reinterpret_cast<const uint32_t*>(_request_data + sizeof(uint32_t) - 1) == http_constants::ETE_method_header_chars) _http_method_traits = { http_method_id::METHOD_DELETE, http_constants::DELETE_method_skip_size };
             break;
-        case http_constants::GET_method_header_chars: _http_method_traits = { http_method_id::GET, http_constants::GET_method_skip_size };
+        case http_constants::GET_method_header_chars: _http_method_traits = { http_method_id::METHOD_GET, http_constants::GET_method_skip_size };
             break;
         case http_constants::HEAD_method_header_chars:
-            if (*(_request_data + http_constants::HEAD_method_skip_size - 1) == ' ') _http_method_traits = { http_method_id::HEAD, http_constants::HEAD_method_skip_size };
+            if (*(_request_data + http_constants::HEAD_method_skip_size - 1) == ' ') _http_method_traits = { http_method_id::METHOD_HEAD, http_constants::HEAD_method_skip_size };
             break;
         case http_constants::OPTI_method_header_chars:
-            if (*reinterpret_cast<const uint32_t*>(_request_data + sizeof(uint32_t)) == http_constants::ONS_method_header_chars) _http_method_traits = { http_method_id::OPTIONS, http_constants::OPTIONS_method_skip_size };
+            if (*reinterpret_cast<const uint32_t*>(_request_data + sizeof(uint32_t)) == http_constants::ONS_method_header_chars) _http_method_traits = { http_method_id::METHOD_OPTIONS, http_constants::OPTIONS_method_skip_size };
             break;
         case http_constants::PATC_method_header_chars:
-            if (*reinterpret_cast<const uint32_t*>(_request_data + 2) == http_constants::TCH_method_header_chars) _http_method_traits = { http_method_id::PATCH, http_constants::PATCH_method_skip_size };
+            if (*reinterpret_cast<const uint32_t*>(_request_data + 2) == http_constants::TCH_method_header_chars) _http_method_traits = { http_method_id::METHOD_PATCH, http_constants::PATCH_method_skip_size };
             break;
         case http_constants::POST_method_header_chars:
-            if (*(_request_data + http_constants::POST_method_skip_size - 1) == ' ') _http_method_traits = { http_method_id::POST, http_constants::POST_method_skip_size };
+            if (*(_request_data + http_constants::POST_method_skip_size - 1) == ' ') _http_method_traits = { http_method_id::METHOD_POST, http_constants::POST_method_skip_size };
             break;
-        case http_constants::PUT_method_header_chars: _http_method_traits = { http_method_id::PUT, http_constants::PUT_method_skip_size };
+        case http_constants::PUT_method_header_chars: _http_method_traits = { http_method_id::METHOD_PUT, http_constants::PUT_method_skip_size };
             break;
         case http_constants::TRAC_method_header_chars:
-            if (*reinterpret_cast<const uint32_t*>(_request_data + 2) == http_constants::ACE_method_header_chars) _http_method_traits = { http_method_id::TRACE, http_constants::TRACE_method_skip_size };
+            if (*reinterpret_cast<const uint32_t*>(_request_data + 2) == http_constants::ACE_method_header_chars) _http_method_traits = { http_method_id::METHOD_TRACE, http_constants::TRACE_method_skip_size };
             break;
         default:
             break;
@@ -345,7 +345,7 @@ protected:
 
         auto request_data_end { _request_data + _request_data_size };
 
-        if (!_request_data || _http_method_traits.method == http_method_id::UNKNOWN) return;
+        if (!_request_data || _http_method_traits.method == http_method_id::METHOD_UNKNOWN) return;
 
         const uint8_t *resource_begin = _request_data + _http_method_traits.method_skip_size;
 
@@ -419,7 +419,7 @@ protected:
 
     const uint8_t *_request_data { nullptr };
     size_t _request_data_size { 0 };
-    http_method_traits _http_method_traits { http_method_id::UNKNOWN, 0xffffffff };
+    http_method_traits _http_method_traits { http_method_id::METHOD_UNKNOWN, 0xffffffff };
     std::string_view _resource {}, _version_part {}, _protocol {}, _version {}, _content {};
     std::unordered_map<std::string_view, std::string_view> _headers;
 };
