@@ -1025,7 +1025,7 @@ namespace img
 
 #define __concat(a, b) a ## b
 #define __concatenate(a, b) __concat(a, b)
-#define __dynamic_var_name(prefix) __concatenate(prefix, __LINE__)
+#define __dynamic_var_name(prefix) __concatenate(prefix, __COUNTER__)
 
 #define __scope_type(type, ...)         const auto __dynamic_var_name(at_scope_exit) = nstd::utilities::at_scope_exit::at_scope_exit_adaptor<type>() << [__VA_ARGS__]()
 #define __at_scope_exit                 __scope_type(nstd::utilities::at_scope_exit::always)
