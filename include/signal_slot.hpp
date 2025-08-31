@@ -713,8 +713,6 @@ public:
 
         if (!std::empty(_slots))
         {
-            auto end = _slots.end();
-
             std::erase_if(_slots, [&args...](auto &callable)
             {
                 if (callable.is_disconnected()) return true;
@@ -1510,10 +1508,10 @@ public:
         {
             std::scoped_lock<std::mutex> lock { _emit_lock };
 
-            auto end { std::end(_signal_queue) };
-
             if (!std::empty(_signal_queue))
             {
+                auto end{ std::end(_signal_queue) };
+
                 _signal_queue.erase(std::remove_if(std::begin(_signal_queue), end, [this](auto &value)
                 {
                     auto &[this_, args] = value;
