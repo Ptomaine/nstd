@@ -183,7 +183,7 @@ public:
     /**
      * @brief Disconnects this paired_ptr from its connected pair
      */
-    void disconnect()
+    void disconnect() noexcept
     {
         if (_connected_paired_ptr)
         {
@@ -196,16 +196,17 @@ public:
      * @brief Gets the connected paired_ptr
      * @return Pointer to the connected paired_ptr
      */
-    const connected_paired_ptr_type * connected_ptr() const
+    const connected_paired_ptr_type * connected_ptr() const noexcept
     {
         return _connected_paired_ptr;
     }
+
 
     /**
      * @brief Boolean conversion operator
      * @return true if connected to another paired_ptr, false otherwise
      */
-    operator bool() const
+    operator bool() const noexcept
     {
         return (_connected_paired_ptr);
     }
@@ -214,7 +215,7 @@ public:
      * @brief Negation operator
      * @return true if not connected to another paired_ptr, false otherwise
      */
-    bool operator!() const
+    bool operator!() const noexcept
     {
         return !(_connected_paired_ptr);
     }
@@ -314,24 +315,24 @@ public:
      * @brief Sets whether the slot is enabled
      * @param is_enabled true to enable the slot, false to disable it
      */
-    void set_enabled(bool is_enabled) { _enabled = is_enabled; }
+    void set_enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
     
     /**
      * @brief Checks if the slot is enabled
      * @return true if the slot is enabled, false otherwise
      */
-    bool is_enabled() const { return _enabled; }
+    bool is_enabled() const noexcept { return _enabled; }
     
     /**
      * @brief Checks if the slot is disconnected
      * @return true if the slot is disconnected, false otherwise
      */
-    bool is_disconnected() const { return !_connection; }
+    bool is_disconnected() const noexcept { return !_connection; }
     
     /**
      * @brief Disconnects the slot from its signal
      */
-    void disconnect() { _connection.disconnect(); }
+    void disconnect() noexcept { _connection.disconnect(); }
 };
 
 /**
@@ -380,21 +381,21 @@ public:
      * @brief Gets the priority of the slot
      * @return The slot's priority
      */
-    int64_t get_priority() const { return _priority; }
+    int64_t get_priority() const noexcept { return _priority; }
     
     /**
      * @brief Sets the priority of the slot
      * @param priority New priority value
      * @return The previous priority value
      */
-    int64_t set_priority(int64_t priority) { std::swap(_priority, priority); return priority; }
+    int64_t set_priority(int64_t priority) noexcept { std::swap(_priority, priority); return priority; }
 
     /**
      * @brief Compares this slot with a paired_ptr
      * @param s The paired_ptr to compare with
      * @return true if this slot is connected to the given paired_ptr
      */
-    bool operator == (const paired_ptr<> &s) const
+    bool operator == (const paired_ptr<> &s) const noexcept
     {
         return &_connection == s.connected_ptr();
     }
@@ -404,7 +405,7 @@ public:
      * @param s The slot to compare with
      * @return true if both slots have the same connection
      */
-    bool operator == (const slot &s) const
+    bool operator == (const slot &s) const noexcept
     {
         return operator ==(s._connection);
     }
@@ -414,7 +415,7 @@ public:
      * @param s The slot to compare with
      * @return true if this slot has lower priority than the given slot
      */
-    bool operator < (const slot& s) const
+    bool operator < (const slot& s) const noexcept
     {
         return _priority < s._priority;
     }
@@ -424,7 +425,7 @@ public:
      * @param s The slot to compare with
      * @return true if this slot has higher priority than the given slot
      */
-    bool operator > (const slot& s) const
+    bool operator > (const slot& s) const noexcept
     {
         return _priority > s._priority;
     }
@@ -447,7 +448,7 @@ public:
      * @brief Gets the name of the signal
      * @return The signal's name
      */
-    virtual std::u8string_view name() const = 0;
+    [[nodiscard]] virtual std::u8string_view name() const = 0;
     
     /**
      * @brief Sets whether the signal is enabled
@@ -465,13 +466,13 @@ public:
      * @brief Gets the number of slots connected to the signal
      * @return Number of connected slots
      */
-    virtual size_t size() const = 0;
+    [[nodiscard]] virtual size_t size() const = 0;
     
     /**
      * @brief Gets the signal's payload
      * @return Reference to the signal's payload
      */
-    virtual std::any &payload() = 0;
+    [[nodiscard]] virtual std::any &payload() = 0;
     
     /**
      * @brief Enables or disables a slot
@@ -576,7 +577,7 @@ public:
     /**
      * @brief Disconnects the signal from the slot
      */
-    void disconnect()
+    void disconnect() noexcept
     {
         if (_connection) _connection.disconnect();
 
@@ -587,13 +588,13 @@ public:
      * @brief Checks if the connection is disconnected
      * @return true if the connection is disconnected, false otherwise
      */
-    bool is_disconnected() const { return !_connection; }
+    [[nodiscard]] bool is_disconnected() const noexcept { return !_connection; }
 
     /**
      * @brief Gets the signal this connection is connected to
      * @return Reference to the connected signal
      */
-    const signal_base &signal() const
+    [[nodiscard]] const signal_base &signal() const noexcept
     {
         return *_signal;
     }
@@ -611,7 +612,7 @@ public:
      * @brief Checks if this connection is enabled
      * @return true if the connection is enabled, false otherwise
      */
-    bool is_enabled() const
+    [[nodiscard]] bool is_enabled() const
     {
         return _signal->is_slot_enabled(_connection);
     }
@@ -620,7 +621,7 @@ public:
      * @brief Gets the priority of this connection
      * @return The connection's priority
      */
-    int64_t get_connection_priority() const
+    [[nodiscard]] int64_t get_connection_priority() const
     {
         return _signal->get_connection_priority(_connection);
     }
@@ -696,12 +697,12 @@ public:
     {
         if (!_enabled) return;
 
-        std::scoped_lock<std::mutex> lock_emit { _emit_lock };
+        std::scoped_lock lock_emit(_emit_lock);
 
         if (!_enabled) return;
 
         {
-            std::scoped_lock<std::mutex> lock_con { _connect_lock };
+            std::scoped_lock lock_con(_connect_lock);
 
             if (!std::empty(_pending_connections))
             {
@@ -740,9 +741,9 @@ public:
      * @param priority Priority of the connection
      * @return A connection object that manages the connection's lifetime
      */
-    virtual connection connect(std::function<void(Args...)> &&callable, int64_t priority = 0)
+    [[nodiscard]] virtual connection connect(std::function<void(Args...)> &&callable, int64_t priority = 0)
     {
-        std::scoped_lock<std::mutex> lock { _connect_lock };
+        std::scoped_lock lock(_connect_lock);
         auto end { std::end(_pending_connections) };
 
         _pending_connections.erase(std::remove_if(std::begin(_pending_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
@@ -756,7 +757,7 @@ public:
      * @param callable Function to connect
      * @return A connection object that manages the connection's lifetime
      */
-    virtual connection operator += (std::function<void(Args...)> &&callable)
+    [[nodiscard]] virtual connection operator += (std::function<void(Args...)> &&callable)
     {
         return connect(std::forward<std::function<void(Args...)>>(callable));
     }
@@ -770,7 +771,7 @@ public:
      * @return A connection object that manages the connection's lifetime
      */
     template<typename T>
-    connection connect(T *instance, void (T::*member_function)(Args...), int64_t priority = 0)
+    [[nodiscard]] connection connect(T *instance, void (T::*member_function)(Args...), int64_t priority = 0)
     {
         return connect([instance, member_function](Args... args) { (instance->*member_function)(args...); }, priority);
     }
@@ -780,7 +781,7 @@ public:
      */
     virtual void clear()
     {
-        std::scoped_lock<std::mutex, std::mutex> lock { _connect_lock, _emit_lock };
+        std::scoped_lock lock(_connect_lock, _emit_lock);
 
         _pending_connections.clear();
         _slots.clear();
@@ -792,7 +793,7 @@ public:
      */
     virtual size_t size() const override
     {
-        std::scoped_lock<std::mutex> lock { _emit_lock };
+        std::scoped_lock lock(_emit_lock);
 
         return std::size(_slots);
     }
@@ -865,9 +866,8 @@ public:
     {
         auto send { std::end(_slots) };
         auto sit { std::find(std::begin(_slots), send, s) };
-        auto& slt{ const_cast<slot<Args...>&>(*sit)};
 
-        if (sit != send) slt.set_enabled(enabled);
+        if (sit != send) const_cast<slot<Args...>&>(*sit).set_enabled(enabled);
     }
 
     /**
@@ -1102,7 +1102,7 @@ public:
         if (_bridge_enabled)
         {
             {
-                std::scoped_lock<std::mutex> lock { _queue_lock };
+                std::scoped_lock lock(_queue_lock);
 
                 _signal_queue.push_back(std::make_tuple(args...));
             }
@@ -1138,7 +1138,7 @@ public:
     {
         if (std::empty(_signal_queue)) return false;
 
-        std::scoped_lock<std::mutex> lock { _queue_lock };
+        std::scoped_lock lock(_queue_lock);
 
         if (std::empty(_signal_queue)) return false;
 
@@ -1156,7 +1156,7 @@ public:
     {
         if (std::empty(_signal_queue)) return;
 
-        std::scoped_lock<std::mutex> lock { _queue_lock };
+        std::scoped_lock lock(_queue_lock);
 
         if (std::empty(_signal_queue)) return;
 
@@ -1172,7 +1172,7 @@ public:
     {
         if (std::empty(_signal_queue)) return;
 
-        std::scoped_lock<std::mutex> lock { _queue_lock };
+        std::scoped_lock lock(_queue_lock);
 
         if (std::empty(_signal_queue)) return;
 
@@ -1194,7 +1194,7 @@ public:
      * @brief Gets the emit functor
      * @return The emit functor
      */
-    const std::function<bool(bridged_signal_base*)> &get_emit_functor() const
+    const std::function<bool(bridged_signal_base*)> &get_emit_functor() const noexcept
     {
         return _emit_functor;
     }
@@ -1205,7 +1205,7 @@ public:
      */
     uint64_t get_queue_size() const
     {
-        std::scoped_lock<std::mutex> lock { _queue_lock };
+        std::scoped_lock lock(_queue_lock);
 
         return std::size(_signal_queue);
     }
@@ -1214,16 +1214,16 @@ public:
      * @brief Sets whether bridging is enabled
      * @param enabled true to enable bridging, false to disable it
      */
-    void set_bridge_enabled(bool enabled)
+    void set_bridge_enabled(bool enabled) noexcept
     {
-        _bridge_enabled = enabled;
+        _bridge_enabled.store(enabled);
     }
 
     /**
      * @brief Checks if bridging is enabled
      * @return true if bridging is enabled, false otherwise
      */
-    bool get_bridge_enabled() const
+    bool get_bridge_enabled() const noexcept
     {
         return _bridge_enabled;
     }
@@ -1235,7 +1235,7 @@ public:
     {
         if (std::empty(_signal_queue)) return;
 
-        std::scoped_lock<std::mutex> lock { _queue_lock };
+        std::scoped_lock lock(_queue_lock);
 
         if (std::empty(_signal_queue)) return;
 
@@ -1315,7 +1315,7 @@ public:
     {
         if (_dispatch_all_on_destroy)
         {
-            std::scoped_lock<std::mutex> lock { _emit_lock };
+            std::scoped_lock lock(_emit_lock);
 
             while (!std::empty(_signal_queue))
             {
@@ -1335,7 +1335,7 @@ public:
      */
     void emit(const Args &... args)
     {
-        std::scoped_lock<std::mutex> lock { _emit_lock };
+        std::scoped_lock lock(_emit_lock);
 
         _signal_queue.push_back(std::make_tuple(args...));
 
@@ -1361,7 +1361,7 @@ public:
      * @param duration The new throttling duration
      */
     template<typename Duration>
-    void throttle_ms(const Duration &duration)
+    void throttle_ms(const Duration &duration) noexcept
     {
         _throttle_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
@@ -1370,7 +1370,7 @@ public:
      * @brief Gets the throttling duration
      * @return The throttling duration in milliseconds
      */
-    std::chrono::milliseconds throttle_ms() const
+    std::chrono::milliseconds throttle_ms() const noexcept
     {
         return _throttle_ms.load();
     }
@@ -1379,7 +1379,7 @@ public:
      * @brief Sets whether all pending signals should be dispatched on destroy
      * @param do_dispatch true to dispatch all pending signals, false otherwise
      */
-    void set_dispatch_all_on_destroy(bool do_dispatch)
+    void set_dispatch_all_on_destroy(bool do_dispatch) noexcept
     {
         _dispatch_all_on_destroy = do_dispatch;
     }
@@ -1388,7 +1388,7 @@ public:
      * @brief Checks if all pending signals will be dispatched on destroy
      * @return true if all pending signals will be dispatched, false otherwise
      */
-    bool get_dispatch_all_on_destroy() const
+    bool get_dispatch_all_on_destroy() const noexcept
     {
         return _dispatch_all_on_destroy;
     }
@@ -1410,7 +1410,7 @@ protected:
         while (!cancelled.stop_requested())
         {
             {
-                std::scoped_lock<std::mutex> lock { _emit_lock };
+                std::scoped_lock lock(_emit_lock);
 
                 if (cancelled.stop_requested() || std::empty(_signal_queue)) break;
 
@@ -1502,11 +1502,11 @@ public:
      */
     virtual ~queued_signal_base() override
     {
-        std::scoped_lock<std::mutex> lock_ { _destruct_lock };
+        std::scoped_lock lock_(_destruct_lock);
 
         if (_dispatch_all_on_destroy)
         {
-            std::scoped_lock<std::mutex> lock { _emit_lock };
+            std::scoped_lock lock(_emit_lock);
 
             if (!std::empty(_signal_queue))
             {
@@ -1540,7 +1540,7 @@ public:
      */
     void emit(const Args &... args)
     {
-        std::scoped_lock<std::mutex> lock { _emit_lock };
+        std::scoped_lock lock(_emit_lock);
 
         _signal_queue.push_back({ this, std::make_tuple(args...) });
 
@@ -1566,7 +1566,7 @@ public:
      * @param duration The new delay
      */
     template<typename Duration>
-    static void delay_ms(const Duration &duration)
+    static void delay_ms(const Duration &duration) noexcept
     {
         _delay_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
@@ -1575,7 +1575,7 @@ public:
      * @brief Gets the delay between emissions
      * @return The delay in milliseconds
      */
-    static std::chrono::milliseconds delay_ms()
+    static std::chrono::milliseconds delay_ms() noexcept
     {
         return _delay_ms.load();
     }
@@ -1584,7 +1584,7 @@ public:
      * @brief Sets whether to use delay between emissions
      * @param use true to use delay, false otherwise
      */
-    static void use_delay(bool use)
+    static void use_delay(bool use) noexcept
     {
         _use_delay = use;
     }
@@ -1593,7 +1593,7 @@ public:
      * @brief Checks if delay is used between emissions
      * @return true if delay is used, false otherwise
      */
-    static bool use_delay()
+    static bool use_delay() noexcept
     {
         return _use_delay;
     }
@@ -1602,7 +1602,7 @@ public:
      * @brief Sets whether all pending signals should be dispatched on destroy
      * @param do_dispatch true to dispatch all pending signals, false otherwise
      */
-    void set_dispatch_all_on_destroy(bool do_dispatch)
+    void set_dispatch_all_on_destroy(bool do_dispatch) noexcept
     {
         _dispatch_all_on_destroy = do_dispatch;
     }
@@ -1611,7 +1611,7 @@ public:
      * @brief Checks if all pending signals will be dispatched on destroy
      * @return true if all pending signals will be dispatched, false otherwise
      */
-    bool get_dispatch_all_on_destroy()
+    bool get_dispatch_all_on_destroy() const noexcept
     {
         return _dispatch_all_on_destroy;
     }
@@ -1632,7 +1632,7 @@ protected:
         while (cancelled.stop_requested() == false)
         {
             {
-                std::scoped_lock<std::mutex> lock { _emit_lock };
+                std::scoped_lock lock(_emit_lock);
 
                 if (cancelled.stop_requested() || std::empty(_signal_queue)) break;
 
@@ -1758,7 +1758,7 @@ public:
     /**
      * @brief Disables the timer from a slot
      */
-    void disable_timer_from_slot()
+    void disable_timer_from_slot() noexcept
     {
         _sleep.cancel_wait();
     }
@@ -1768,7 +1768,7 @@ public:
      * @param duration The new timer interval
      */
     template<typename Duration>
-    void timer_ms(const Duration &duration)
+    void timer_ms(const Duration &duration) noexcept
     {
         _timer_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
@@ -1777,7 +1777,7 @@ public:
      * @brief Gets the timer interval
      * @return The timer interval in microseconds
      */
-    std::chrono::microseconds timer_ms() const
+    std::chrono::microseconds timer_ms() const noexcept
     {
         return _timer_ms.load();
     }
@@ -1842,7 +1842,7 @@ private:
         while (_sleep.wait_for(_timer_ms.load()))
         {
             {
-                std::scoped_lock<std::mutex> lock { _emit_lock };
+                std::scoped_lock lock(_emit_lock);
 
                 std::apply([this](timer_signal *s, const Args&... a){ base_class::emit(s, a...); }, _args);
             }
@@ -1900,7 +1900,7 @@ public:
      * @param key The key to look up
      * @return Reference to the signal
      */
-    virtual signal_type &get_signal(const key_type &key)
+    [[nodiscard]] virtual signal_type &get_signal(const key_type &key)
     {
         auto signal { _signals.find(key) };
 
@@ -1925,7 +1925,7 @@ public:
      * @brief Gets all signal keys
      * @return Set of all signal keys
      */
-    std::unordered_set<key_type> get_signal_keys() const
+    [[nodiscard]] std::unordered_set<key_type> get_signal_keys() const
     {
         std::unordered_set<key_type> signal_keys;
 
@@ -1938,7 +1938,7 @@ public:
      * @brief Gets the number of signals
      * @return The number of signals
      */
-    auto get_signal_count() const
+    [[nodiscard]] auto get_signal_count() const
     {
         return std::size(_signals);
     }
@@ -1948,7 +1948,7 @@ public:
      * @param key The key to look up
      * @return Reference to the signal
      */
-    signal_type &operator[](const key_type &key)
+    [[nodiscard]] signal_type &operator[](const key_type &key)
     {
         return get_signal(key);
     }
@@ -2001,7 +2001,7 @@ public:
      * @param key The key to look up
      * @return Reference to the signal
      */
-    virtual typename base_class::signal_type &get_signal(const key_type &key) override
+    [[nodiscard]] virtual typename base_class::signal_type &get_signal(const key_type &key) override
     {
         auto &signal { base_class::get_signal(key) };
 
@@ -2023,7 +2023,7 @@ public:
      * @brief Gets the emit functor
      * @return The emit functor
      */
-    const std::function<bool(typename base_class::signal_type::bridged_signal_type*)> &get_emit_functor() const
+    const std::function<bool(typename base_class::signal_type::bridged_signal_type*)> &get_emit_functor() const noexcept
     {
         return _emit_functor;
     }
