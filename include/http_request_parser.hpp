@@ -158,7 +158,7 @@ public:
 
     auto get_method_name() const
     {
-        return _method_mames[static_cast<uint32_t>(_http_method_traits.method)];
+        return _method_names[static_cast<uint32_t>(_http_method_traits.method)];
     }
 
     bool is_known_method() const
@@ -292,13 +292,13 @@ public:
         static constexpr const uint32_t POST_method_skip_size    { 5 };
         static constexpr const uint32_t PUT_method_skip_size     { 4 };
         static constexpr const uint32_t TRACE_method_skip_size   { 6 };
-        static constexpr const uint8_t CR                        { 0x0a };
-        static constexpr const uint8_t LF                        { 0x0d };
+        static constexpr const uint8_t CR                        { 0x0d };
+        static constexpr const uint8_t LF                        { 0x0a };
         static constexpr const uint16_t DDASH                    { 0x2d2d };
     };
 
 protected:
-    static constexpr const char *const _method_mames[] { "CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "TRACE", "UNKNOWN" };
+    static constexpr const char *const _method_names[] { "CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "TRACE", "UNKNOWN" };
 
     struct http_method_traits
     {
@@ -343,9 +343,9 @@ protected:
             break;
         }
 
-        auto request_data_end { _request_data + _request_data_size };
+        if (_http_method_traits.method == http_method_id::METHOD_UNKNOWN) return;
 
-        if (!_request_data || _http_method_traits.method == http_method_id::METHOD_UNKNOWN) return;
+        auto request_data_end { _request_data + _request_data_size };
 
         const uint8_t *resource_begin = _request_data + _http_method_traits.method_skip_size;
 
