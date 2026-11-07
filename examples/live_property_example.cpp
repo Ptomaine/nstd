@@ -32,10 +32,13 @@ int main()
     using namespace std::literals;
     namespace ss = nstd::signal_slot;
 
-    auto to_char = [](auto &&u8str) { return reinterpret_cast<const char*>(std::u8string(u8str).c_str()); };
+    auto to_char = [](auto &&u8str) { return std::string { std::begin(u8str), std::end(u8str) }; };
 
     ss::connection_bag cons;
-    ss::bridged_signal_set<std::u8string, std::string> two_step_signal_set([&to_char](auto&& s) { std::cout << "signal: '" << to_char(s->name()) << "' pushed..." << std::endl; return true; });
+    auto worker { std::make_shared<ss::worker_thread>() };        // runs queued slot calls in the background
+    auto two_step { std::make_shared<ss::manual_executor>() };    // holds slot calls until run_all()
+    two_step->set_notifier([] { std::cout << "a slot call was pushed..." << std::endl; });
+    ss::signal_set<std::u8string, std::string> two_step_signal_set;
 
     using live_int = nstd::live_property<int>;
     using live_string = nstd::live_property<std::string>;
@@ -45,7 +48,7 @@ int main()
     cons = two_step_signal_set[u8"tss"].connect([](auto &&data)
     {
         std::cout << "TSS: '" << data << "'" << std::endl;
-    });
+    }, two_step);
     two_step_signal_set[u8"tss"].emit("this is two step signal");
 
     auto changing_callback = [&to_char](auto &&ctx)
@@ -77,7 +80,7 @@ int main()
 	cons = int_prop.signal_value_changing.connect(changing_callback);
 	cons = int_prop.signal_value_changed.connect(changed_callback);
 
-	for (auto &&c : cons.connections) std::cout << "connection name: '" << to_char(c.signal().name()) << "'" << std::endl;
+	for (auto &&c : cons) if (auto s { c.signal() }) std::cout << "connection name: '" << to_char(s->name()) << "'" << std::endl;
 
 	int raw_int = 50;
 	dummy_int_prop = 222;
@@ -85,7 +88,7 @@ int main()
 	int_prop = 150;
 
 	std::cout << "...temporary disabling value_changing signal..." << std::endl;
-	const_cast<ss::signal_base&>(cons.connections[1].signal()).set_enabled(false);
+	int_prop.signal_value_changing.set_enabled(false);
 
 	int_prop = raw_int;
 	int_prop *= 7;
@@ -94,7 +97,7 @@ int main()
 	std::cout << "comparing int_prop == dummy_int_prop (expecting: false): " << std::boolalpha << (int_prop == dummy_int_prop) << std::endl;
 
 	std::cout << "...enabling value_changing signal again..." << std::endl;
-	const_cast<ss::signal_base&>(cons.connections[1].signal()).set_enabled(true);
+	int_prop.signal_value_changing.set_enabled(true);
 
 	int_prop = dummy_int_prop;
 
@@ -109,9 +112,9 @@ int main()
     --int_prop;
     int_prop--;
 
-    two_step_signal_set[u8"tss"].invoke_all();
+    two_step->run_all();
 
-	cons.connections.clear(); //auto-disconnect from all slots
+	cons.clear(); //auto-disconnect from all slots
     std::cout << "no slots are called from now on since we destroied all connections..." << std::endl << "...setting int_prop to -1 should not be restricted now..." << std::endl;
 
     int_prop = -1;
@@ -130,27 +133,25 @@ int main()
 
     {
         {
-            ss::throttled_signal<std::string> sg(u8"THROTTLED"s, 50ms);
-            cons = sg.connect([&sg, &to_char](auto &&str){ std::cout << "throttle: " << str << "; " << to_char(sg.name()) << std::endl; });
-
-            //sg.set_dispatch_all_on_destroy(false);
+            ss::signal<std::string> sg(u8"THROTTLED"s);
+            cons = sg.connect(ss::throttle(50ms, [&sg, &to_char](auto &&str){ std::cout << "throttle: " << str << "; " << to_char(sg.name()) << std::endl; }), worker);
 
             constexpr int sg_count {10};
             for (auto idx{0}; idx < sg_count; ++idx)
-                sg.emit("throttled signal emitted..."s);
+                sg.emit("throttled signal emitted... #"s + std::to_string(idx));
 
             std::this_thread::sleep_for(300ms);
 
             for (auto idx{0}; idx < sg_count; ++idx)
-                sg.emit("throttled signal emitted..."s);
+                sg.emit("throttled signal emitted... #"s + std::to_string(sg_count + idx));
 
-            std::cout << "done..." << std::endl;
-            if (sg.get_dispatch_all_on_destroy()) std::cout << "emitting the rest of queued signals..." << std::endl;
+            std::this_thread::sleep_for(100ms);
+            std::cout << "done: each burst arrived as one call carrying its latest value..." << std::endl;
         }
 
-        ss::queued_signal<std::string> sg1(u8"THREADED 1"s), sg2(u8"THREADED 2"s);
-        cons = sg1.connect([](auto &&s) { std::cout << "threaded 1: " << s << std::endl; });
-        cons = sg2.connect([](auto &&s) { std::cout << "threaded 2: " << s << std::endl; });
+        ss::signal<std::string> sg1(u8"THREADED 1"s), sg2(u8"THREADED 2"s);
+        cons = sg1.connect([](auto &&s) { std::cout << "threaded 1: " << s << std::endl; }, worker);
+        cons = sg2.connect([](auto &&s) { std::cout << "threaded 2: " << s << std::endl; }, worker);
 
         sg1.emit("1"s); sg2.emit("2"s);
         sg1.emit("1"s); sg2.emit("2"s);
@@ -161,41 +162,32 @@ int main()
         sg1.emit("1"s); sg2.emit("2"s);
         sg1.emit("1"s); sg2.emit("2"s);
         sg1.emit("1"s); sg2.emit("2"s);
+
+        std::this_thread::sleep_for(0.2s);    // queued calls of a destroyed signal are skipped, so let them run first
     }
 
 	std::this_thread::sleep_for(1s);
 
-	ss::timer_signal<live_string*> timer(u8"My timer"s, 500ms);
-	using payload_t = std::function<void(const int&)>;
-	timer.payload() = payload_t { [](auto &&data){ std::cout << "payload...: " << data << std::endl; } };
+	ss::timer timer { 500ms };
 	int idx { 0 };
-	cons = timer.connect([&idx, &to_char](auto &&s, auto &&p)
+	cons = timer.tick().connect([&idx, &timer, &str_prop]
     {
-        std::cout << "timer: "s << to_char(s->name()) << std::endl;
-        *p = std::to_string(++idx) + " tick..."s;
+        std::cout << "timer tick" << std::endl;
+        str_prop = std::to_string(++idx) + " tick..."s;
 
         if (idx == 2)
         {
-            s->timer_ms(200ms);
-            *p = "...timer duration changed to 200ms"s;
+            timer.interval(200ms);
+            str_prop = "...timer interval changed to 200ms"s;
         }
 
         if (idx >= 5)
         {
-            s->disable_timer_from_slot();
-            *p = "...timer stoped... sleeping for some time..."s;
-        }
-
-        auto &payload { s->payload() };
-
-        if (payload.has_value() && payload.type() == typeid(payload_t))
-        {
-            auto f { std::any_cast<payload_t&>(payload) };
-
-            f(idx);
+            timer.stop();
+            str_prop = "...timer stopped... sleeping for some time..."s;
         }
     });
-	timer.start_timer(&str_prop);
+	timer.start();
 
 	std::this_thread::sleep_for(2s);
 
@@ -243,11 +235,11 @@ int main()
     cons = sssx[u8"key_up"s].connect([&to_char](auto &&s, auto &&v){ std::cout << "signal name: " << to_char(s->name()) << "; value: " << v << std::endl; });
     sssx.emit("smart signal..."s);
 
-    ss::queued_signal_ex_set<std::u8string, std::string> super_signal_set;
-    auto executor { [&to_char](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << to_char(s->name()) << "; value: " << v << std::endl; } };
-    cons = super_signal_set[u8"super signal 1"s].connect(executor);
-    cons = super_signal_set[u8"super signal 2"s].connect(executor);
-    cons = super_signal_set[u8"super signal 3"s].connect(executor);
+    ss::signal_ex_set<std::u8string, std::string> super_signal_set;
+    auto print_super { [&to_char](auto &&s, auto &&v){ std::cout << "SUPER SIGNAL NAME: " << to_char(s->name()) << "; value: " << v << std::endl; } };
+    cons = super_signal_set[u8"super signal 1"s].connect(print_super, worker);
+    cons = super_signal_set[u8"super signal 2"s].connect(print_super, worker);
+    cons = super_signal_set[u8"super signal 3"s].connect(print_super, worker);
 
     std::cout << "broadcasting event to all signals in the set..." << std::endl;
 
@@ -260,7 +252,7 @@ int main()
         struct keyboard_event { int key_code; std::string modifiers; };
         struct event_data { std::type_index event_data_type_index; std::any event_data; };
 
-        ss::queued_signal_ex_set<std::u8string, event_data> ss2;
+        ss::signal_ex_set<std::u8string, event_data> ss2;
 
         cons = ss2[u8"mouse_move"].connect([&to_char](auto &&s, auto &&ev)
         {
@@ -274,7 +266,7 @@ int main()
             {
                 std::cout << "unsupported event type. expected 'mouse_event [" << std::type_index(typeid(mouse_event)).hash_code() << "]' but got " << ev.event_data_type_index.hash_code() << std::endl;
             }
-        });
+        }, worker);
         cons = ss2[u8"key_down"].connect([&to_char](auto &&s, auto &&ev)
         {
             if (ev.event_data.type() == typeid(keyboard_event))
@@ -287,7 +279,7 @@ int main()
             {
                 std::cout << "unsupported event type. expected 'keyboard_event ['" << std::type_index(typeid(keyboard_event)).hash_code() << "]' but got " << ev.event_data_type_index.hash_code() << std::endl;
             }
-        });
+        }, worker);
 
         auto make_event = [](auto &&ed) { return event_data { typeid(ed), std::forward<decltype(ed)>(ed) }; };
 
@@ -298,12 +290,15 @@ int main()
         std::this_thread::sleep_for(0.1s);
     }
 
-    struct my_scope {};
-    ss::queued_signal_scoped_set<std::u8string, my_scope, std::string> qsss;
+    auto own_queue { std::make_shared<ss::worker_thread>() };    // a separate queue and thread
+    ss::signal_set<std::u8string, std::string> qsss;
 
-    cons = qsss[u8"test"].connect([](auto &&s) { std::cout << s << std::endl; });
+    cons = qsss[u8"test"].connect([](auto &&s) { std::cout << s << std::endl; }, own_queue);
 
-    qsss[u8"test"].emit("Hello Queued Scoped Signal Set!");
+    qsss[u8"test"].emit("Hello Queued Signal Set on its own worker thread!");
+
+    own_queue.reset();    // destroying a worker runs its pending calls first
+    worker.reset();
 
     std::cout << "exitting..." << std::endl;
 

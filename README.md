@@ -2,7 +2,7 @@
 
 This is a C++20 utility library. nstd stands for non-standard.
 The library currently contains the following features:
-   * signal_slot    - a signal/slot implementation that is thread safe and supports auto-disconnection from slots.
+   * signal_slot    - a thread-safe signal/slot implementation with auto-disconnection; each connection chooses where its slot runs: inline, on a worker thread, in a manual queue or any custom executor (e.g. a UI thread), optionally throttled; includes a timer.
    * relinx - LINQ-like data transformations
    * live_property - a templated wrapper class that emits signals when a value is changing/changed.
    * expiry_cache  - a container where a data can expire.

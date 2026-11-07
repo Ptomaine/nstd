@@ -35,7 +35,7 @@ int main()
 {
     using namespace std::literals;
 
-    auto to_char = [](auto &&u8str) { return reinterpret_cast<const char*>(std::u8string(u8str).c_str()); };
+    auto to_char = [](auto &&u8str) { return std::string { std::begin(u8str), std::end(u8str) }; };
 
     std::cout << "Press Ctrl+C to exit..." << std::endl << std::endl;
 
@@ -52,7 +52,7 @@ int main()
     nstd::remote::remote_slot_hub local_slots {}; // remote signal subscriber/client
     local_slots.connect_to_remote_signal_hub(host, port);
 
-    cons = local_slots.get_remote_signal(signal_name).connect([&to_char](auto s, auto &&data) // defining signal processor on client side
+    cons = local_slots.connect(signal_name, [&to_char](auto s, auto &&data) // defining signal processor on client side; runs on the hub's worker thread
     {
         if (data)
         {
@@ -68,9 +68,9 @@ int main()
 
     nstd::uuid::uuid::init_random();
 
-    nstd::signal_slot::timer_signal timer { u8"emitter"s, 2s };
+    nstd::signal_slot::timer timer { 2s };
 
-    cons = timer.connect([&remote_signals, &random_base64, &signal_name](auto)
+    cons = timer.tick().connect([&remote_signals, &random_base64, &signal_name]()
     {
         nstd::json::json json_obj
         {
@@ -87,7 +87,7 @@ int main()
         remote_signals.emit_remote_signal(signal_name, msg); // emitting remote signal
     });
 
-    timer.start_timer();
+    timer.start();
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);

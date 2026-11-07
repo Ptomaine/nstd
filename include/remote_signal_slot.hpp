@@ -57,19 +57,49 @@ private:
     nstd::net::tcp_server<pool_size> _server {};
 };
 
-template<typename scope = nstd::signal_slot::queued_signal_default_scope>
+/**
+ * @brief Receives remote signals and delivers them to local slots
+ *
+ * Signals are emitted on the network thread. Slots connected through connect()
+ * run on the hub's executor: by default a worker thread owned by the hub.
+ */
 class remote_slot_hub
 {
 public:
+    using remote_signal_type = nstd::signal_slot::signal_ex<std::shared_ptr<std::vector<uint8_t>>>;
+
+    remote_slot_hub() = default;
+
+    /**
+     * @brief Constructor with the executor that runs slots connected through connect()
+     */
+    explicit remote_slot_hub(std::shared_ptr<nstd::signal_slot::executor> delivery) : _delivery { std::move(delivery) } {}
+
     void connect_to_remote_signal_hub(const std::string &remote_host = "127.0.0.1"s, std::uint32_t remote_port = 8)
     {
         _client.connect(remote_host, remote_port);
         _client.async_read({pool_size, [this](auto &&result) { on_remote_signal(result); } });
     }
 
-    auto &get_remote_signal(const std::u8string &signal_name)
+    /**
+     * @brief Connects a slot that runs on the hub's executor
+     * @param signal_name The remote signal
+     * @param function Called with the signal and the received data
+     */
+    template<typename F>
+    [[nodiscard]] nstd::signal_slot::connection connect(const std::u8string &signal_name, F &&function)
     {
-        return _signal_queue[signal_name];
+        return get_remote_signal(signal_name).connect(std::forward<F>(function), _delivery);
+    }
+
+    /**
+     * @brief Gets the signal for a name; slots connected to it directly run on the network thread
+     */
+    remote_signal_type &get_remote_signal(const std::u8string &signal_name)
+    {
+        std::scoped_lock lock { _signals_lock };
+
+        return _signals[signal_name];
     }
 
 private:
@@ -82,13 +112,15 @@ private:
             if (divider_pos != end)
             {
                 std::u8string signal_name { begin, divider_pos };
+                remote_signal_type *signal { nullptr };
 
-                if (_signal_queue.exists(signal_name))
                 {
-                    auto data { std::make_shared<std::vector<uint8_t>>(++divider_pos, end) };
+                    std::scoped_lock lock { _signals_lock };
 
-                     _signal_queue[signal_name].emit(data);
+                    if (_signals.exists(signal_name)) signal = &_signals[signal_name];
                 }
+
+                if (signal) signal->emit(std::make_shared<std::vector<uint8_t>>(++divider_pos, end));
             }
 
             _client.async_read({pool_size, [this](auto &&res) { on_remote_signal(res); } });
@@ -99,8 +131,10 @@ private:
         }
     }
 
-    nstd::net::tcp_client _client {};
-    nstd::signal_slot::queued_signal_ex_scoped_set<std::u8string, scope, std::shared_ptr<std::vector<uint8_t>>> _signal_queue {};
+    std::mutex _signals_lock {};
+    nstd::signal_slot::signal_ex_set<std::u8string, std::shared_ptr<std::vector<uint8_t>>> _signals {};
+    std::shared_ptr<nstd::signal_slot::executor> _delivery { std::make_shared<nstd::signal_slot::worker_thread>() };    // after _signals: drained before they go
+    nstd::net::tcp_client _client {};    // last: stopped first
 };
 
 }
