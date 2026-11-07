@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <algorithm>
 #include <any>
 #include <atomic>
 #include <chrono>
@@ -28,9 +29,13 @@ SOFTWARE.
 #include <deque>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <shared_mutex>
+#include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -38,6 +43,7 @@ SOFTWARE.
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 /**
@@ -296,144 +302,176 @@ bool operator!=(std::nullptr_t, const paired_ptr<T1, T2> & rhs)
     return !(nullptr == rhs);
 }
 
+class signal_base;
+class connection;
+
+namespace detail
+{
+
+/**
+ * @brief State a signal shares with its slots
+ *
+ * The signal owns it and slots keep only a weak reference to it, so a connection
+ * can safely outlive its signal, and a signal can be destroyed from inside one of
+ * its own slots.
+ */
+struct signal_core_base
+{
+    virtual ~signal_core_base() = default;
+
+    /**
+     * @brief Re-sorts the slots after a priority change; called with @ref lock held
+     */
+    virtual void resort_locked() = 0;
+
+    std::mutex lock {};                ///< Guards everything in the core
+    signal_base *owner { nullptr };    ///< The signal, or nullptr once it is gone
+};
+
+}
+
 /**
  * @brief Base class for slots
- * 
- * Slot base provides common functionality for all slot types,
- * including connection management and enabling/disabling.
+ *
+ * A slot is shared by its signal and its connection. Its state is atomic, so it
+ * can be enabled, disabled or disconnected from any thread.
  */
 class slot_base
 {
-protected:
-    template<typename... Args> friend class signal;
-
-    paired_ptr<> _connection {};
-    bool _enabled { true };
-
 public:
+    virtual ~slot_base() = default;
+
     /**
      * @brief Sets whether the slot is enabled
      * @param is_enabled true to enable the slot, false to disable it
      */
     void set_enabled(bool is_enabled) noexcept { _enabled = is_enabled; }
-    
+
     /**
      * @brief Checks if the slot is enabled
      * @return true if the slot is enabled, false otherwise
      */
     bool is_enabled() const noexcept { return _enabled; }
-    
+
     /**
      * @brief Checks if the slot is disconnected
      * @return true if the slot is disconnected, false otherwise
      */
-    bool is_disconnected() const noexcept { return !_connection; }
-    
+    bool is_disconnected() const noexcept { return !_connected; }
+
     /**
      * @brief Disconnects the slot from its signal
+     *
+     * The slot is never invoked by an emission that starts after this call. An
+     * invocation already running on another thread is not waited for.
      */
-    void disconnect() noexcept { _connection.disconnect(); }
+    void disconnect() noexcept { _connected = false; }
+
+    /**
+     * @brief Gets the priority of the slot
+     * @return The slot's priority (lower values are called first)
+     */
+    int64_t get_priority() const noexcept { return _priority; }
+
+    /**
+     * @brief Sets the priority of the slot and re-sorts its signal
+     * @param priority New priority value
+     * @return The previous priority value
+     */
+    int64_t set_priority(int64_t priority)
+    {
+        if (auto core { _core.lock() })
+        {
+            std::scoped_lock lock { core->lock };
+
+            const auto previous { _priority.exchange(priority) };
+
+            core->resort_locked();
+
+            return previous;
+        }
+
+        return _priority.exchange(priority);
+    }
+
+protected:
+    template<typename... Args> friend class signal;
+    friend class connection;
+
+    std::atomic_bool _connected { true };
+    std::atomic_bool _enabled { true };
+    std::atomic<int64_t> _priority { 0 };
+    uint64_t _order { 0 };                              ///< Connection sequence number; keeps equal priorities in connection order
+    std::weak_ptr<detail::signal_core_base> _core {};
 };
 
 /**
  * @brief A slot that can be connected to a signal
- * 
+ *
  * A slot is essentially a wrapper around a function or method that can be
- * invoked when a signal is emitted.
- * 
+ * invoked when a signal is emitted. Arguments are passed by const reference, so
+ * no copies are made per slot and move-only argument types are supported.
+ *
  * @tparam Args Types of arguments the slot accepts
  */
 template<typename... Args>
 class slot : public slot_base
 {
-protected:
-    std::function<void (Args...)> _functor {};
-    int64_t _priority{ 0 };
-
-    friend class connection;
-
 public:
+    using functor_type = std::function<void(const Args &...)>;
+
     /**
      * @brief Default constructor
      */
     slot() = default;
-    
+
     /**
      * @brief Constructor with a function and priority
      * @param f Function to be called when the slot is invoked
      * @param priority Priority of the slot (lower value means higher priority; slots with lower priority values are called first)
      */
-    slot(std::function<void(Args...)>&& f, int64_t priority = 0) : _functor{ std::forward<std::function<void(Args...)>>(f) }, _priority{ priority } {}
-    
+    slot(functor_type &&f, int64_t priority = 0) : _functor { std::move(f) } { _priority = priority; }
+
     /**
      * @brief Invokes the slot with the given arguments
      * @param args Arguments to pass to the slot function
      */
     void invoke(const Args &... args) const { _functor(args...); }
-    
+
     /**
      * @brief Function call operator to invoke the slot
      * @param args Arguments to pass to the slot function
      */
     void operator()(const Args &... args) const { invoke(args...); }
-    
-    /**
-     * @brief Gets the priority of the slot
-     * @return The slot's priority
-     */
-    int64_t get_priority() const noexcept { return _priority; }
-    
-    /**
-     * @brief Sets the priority of the slot
-     * @param priority New priority value
-     * @return The previous priority value
-     */
-    int64_t set_priority(int64_t priority) noexcept { std::swap(_priority, priority); return priority; }
 
     /**
-     * @brief Compares this slot with a paired_ptr
-     * @param s The paired_ptr to compare with
-     * @return true if this slot is connected to the given paired_ptr
-     */
-    bool operator == (const paired_ptr<> &s) const noexcept
-    {
-        return &_connection == s.connected_ptr();
-    }
-
-    /**
-     * @brief Compares this slot with another slot
+     * @brief Compares slot identity
      * @param s The slot to compare with
-     * @return true if both slots have the same connection
+     * @return true if both are the same slot
      */
-    bool operator == (const slot &s) const noexcept
-    {
-        return operator ==(s._connection);
-    }
+    bool operator == (const slot &s) const noexcept { return this == &s; }
 
     /**
      * @brief Less-than comparison based on priority
      * @param s The slot to compare with
-     * @return true if this slot has lower priority than the given slot
+     * @return true if this slot is called before the given slot
      */
-    bool operator < (const slot& s) const noexcept
-    {
-        return _priority < s._priority;
-    }
+    bool operator < (const slot &s) const noexcept { return get_priority() < s.get_priority(); }
 
     /**
      * @brief Greater-than comparison based on priority
      * @param s The slot to compare with
-     * @return true if this slot has higher priority than the given slot
+     * @return true if this slot is called after the given slot
      */
-    bool operator > (const slot& s) const noexcept
-    {
-        return _priority > s._priority;
-    }
+    bool operator > (const slot &s) const noexcept { return get_priority() > s.get_priority(); }
+
+protected:
+    functor_type _functor {};
 };
 
 /**
  * @brief Base interface class for all signals
- * 
+ *
  * Provides a common interface for all signal types.
  */
 class signal_base
@@ -443,86 +481,87 @@ public:
      * @brief Virtual destructor for proper inheritance
      */
     virtual ~signal_base() = default;
-    
+
     /**
      * @brief Gets the name of the signal
-     * @return The signal's name
+     * @return A copy of the signal's name (a copy, so a concurrent rename cannot invalidate it)
      */
-    [[nodiscard]] virtual std::u8string_view name() const = 0;
-    
+    [[nodiscard]] virtual std::u8string name() const = 0;
+
     /**
      * @brief Sets whether the signal is enabled
      * @param enabled true to enable the signal, false to disable it
      */
     virtual void set_enabled(bool enabled) = 0;
-    
+
     /**
      * @brief Checks if the signal is enabled
      * @return true if the signal is enabled, false otherwise
      */
     virtual bool is_enabled() const = 0;
-    
+
     /**
      * @brief Gets the number of slots connected to the signal
      * @return Number of connected slots
      */
     [[nodiscard]] virtual size_t size() const = 0;
-    
+
     /**
-     * @brief Gets the signal's payload
+     * @brief Gets the signal's payload (not synchronized)
      * @return Reference to the signal's payload
      */
     [[nodiscard]] virtual std::any &payload() = 0;
-    
+
     /**
-     * @brief Enables or disables a slot
+     * @brief Enables or disables a slot of this signal
      * @param slot The slot to enable/disable
      * @param enabled true to enable the slot, false to disable it
      */
-    virtual void enable_slot(const slot_base& slot, bool enabled) = 0;
-    
+    virtual void enable_slot(const slot_base &slot, bool enabled) = 0;
+
     /**
-     * @brief Enables or disables a slot by its connection
-     * @param connection The connection to the slot
+     * @brief Enables or disables a slot of this signal by its connection
+     * @param con The connection to the slot
      * @param enabled true to enable the slot, false to disable it
      */
-    virtual void enable_slot(const paired_ptr<>& connection, bool enabled) = 0;
-    
+    virtual void enable_slot(const connection &con, bool enabled) = 0;
+
     /**
-     * @brief Checks if a slot is enabled
+     * @brief Checks if a slot of this signal is enabled
      * @param slot The slot to check
-     * @return true if the slot is enabled, false otherwise
+     * @return true if the slot belongs to this signal and is enabled
      */
-    virtual bool is_slot_enabled(const slot_base& slot) const = 0;
-    
+    virtual bool is_slot_enabled(const slot_base &slot) const = 0;
+
     /**
-     * @brief Checks if a slot is enabled by its connection
-     * @param connection The connection to the slot
-     * @return true if the slot is enabled, false otherwise
+     * @brief Checks if a slot of this signal is enabled by its connection
+     * @param con The connection to the slot
+     * @return true if the slot belongs to this signal and is enabled
      */
-    virtual bool is_slot_enabled(const paired_ptr<>& connection) const = 0;
-    
+    virtual bool is_slot_enabled(const connection &con) const = 0;
+
     /**
      * @brief Gets the priority of a connection
-     * @param connection The connection to check
-     * @return The priority of the connection
+     * @param con The connection to check
+     * @return The priority of the connection, or 0 if it does not belong to this signal
      */
-    virtual int64_t get_connection_priority(const paired_ptr<>& connection) const = 0;
-    
+    virtual int64_t get_connection_priority(const connection &con) const = 0;
+
     /**
      * @brief Sets the priority of a connection
-     * @param connection The connection to modify
+     * @param con The connection to modify
      * @param priority The new priority
      * @return true if the priority was set successfully, false otherwise
      */
-    virtual bool set_connection_priority(const paired_ptr<>& connection, int64_t priority) = 0;
+    virtual bool set_connection_priority(const connection &con, int64_t priority) = 0;
 };
 
 /**
  * @brief Class representing a connection between a signal and a slot
- * 
+ *
  * This class manages the lifetime of a connection between a signal and a slot.
  * When a connection object is destroyed, the connection is automatically broken.
+ * Either side may be destroyed first, on any thread.
  */
 class connection
 {
@@ -533,35 +572,27 @@ public:
     connection() = default;
 
     /**
-     * @brief Constructor that connects a signal and a slot
-     * @param signal The signal to connect to
-     * @param s The slot to connect
-     */
-    template<typename... Args>
-    connection(const signal_base *signal, slot<Args...> &s) : _connection{ &s._connection }, _signal { signal }
-    {
-    }
-
-    /**
      * @brief Move constructor
      * @param other The connection to move from
      */
     connection(connection &&other) noexcept = default;
-    
+
     connection(const connection &other) = delete;
     connection &operator=(const connection &other) = delete;
-    
+
     /**
-     * @brief Move assignment operator
+     * @brief Move assignment operator; disconnects the current connection first
      * @param other The connection to move from
      * @return Reference to this connection
      */
     connection &operator=(connection &&other) noexcept
     {
-        disconnect();
+        if (this != &other)
+        {
+            disconnect();
 
-        _connection = std::move(other._connection);
-        _signal = std::move(other._signal);
+            _slot = std::move(other._slot);
+        }
 
         return *this;
     }
@@ -576,77 +607,107 @@ public:
 
     /**
      * @brief Disconnects the signal from the slot
+     *
+     * Emissions that start after this call never invoke the slot. An invocation
+     * already running on another thread is not waited for.
      */
     void disconnect() noexcept
     {
-        if (_connection) _connection.disconnect();
-
-        _signal = nullptr;
+        if (_slot)
+        {
+            _slot->disconnect();
+            _slot.reset();
+        }
     }
 
     /**
      * @brief Checks if the connection is disconnected
-     * @return true if the connection is disconnected, false otherwise
+     * @return true if disconnected, cleared, or the signal is gone
      */
-    [[nodiscard]] bool is_disconnected() const noexcept { return !_connection; }
+    [[nodiscard]] bool is_disconnected() const noexcept { return !_slot || _slot->is_disconnected(); }
 
     /**
-     * @brief Gets the signal this connection is connected to
+     * @brief Gets the signal this connection was made to
      * @return Reference to the connected signal
+     * @throws std::logic_error if the connection is empty or the signal no longer exists
      */
-    [[nodiscard]] const signal_base &signal() const noexcept
+    [[nodiscard]] const signal_base &signal() const
     {
-        return *_signal;
+        if (_slot)
+        {
+            if (auto core { _slot->_core.lock() })
+            {
+                std::scoped_lock lock { core->lock };
+
+                if (core->owner) return *core->owner;
+            }
+        }
+
+        throw std::logic_error { "nstd::signal_slot::connection::signal(): the connection has no signal" };
     }
 
     /**
-     * @brief Enables or disables this connection
+     * @brief Enables or disables this connection; works before the first emission too
      * @param enabled true to enable the connection, false to disable it
      */
-    void set_enabled(bool enabled)
+    void set_enabled(bool enabled) noexcept
     {
-        const_cast<signal_base*>(_signal)->enable_slot(_connection, enabled);
+        if (!is_disconnected()) _slot->set_enabled(enabled);
     }
 
     /**
      * @brief Checks if this connection is enabled
-     * @return true if the connection is enabled, false otherwise
+     * @return true if the connection is connected and enabled, false otherwise
      */
-    [[nodiscard]] bool is_enabled() const
+    [[nodiscard]] bool is_enabled() const noexcept
     {
-        return _signal->is_slot_enabled(_connection);
+        return !is_disconnected() && _slot->is_enabled();
     }
 
     /**
      * @brief Gets the priority of this connection
-     * @return The connection's priority
+     * @return The connection's priority, or 0 if disconnected
      */
-    [[nodiscard]] int64_t get_connection_priority() const
+    [[nodiscard]] int64_t get_connection_priority() const noexcept
     {
-        return _signal->get_connection_priority(_connection);
+        return is_disconnected() ? 0 : _slot->get_priority();
     }
 
     /**
-     * @brief Sets the priority of this connection
+     * @brief Sets the priority of this connection; the signal re-sorts its slots
      * @param priority The new priority
-     * @return true if the priority was set successfully, false otherwise
+     * @return true if the priority was set successfully, false if disconnected
      */
     bool set_connection_priority(int64_t priority)
     {
-        return const_cast<signal_base*>(_signal)->set_connection_priority(_connection, priority);
+        if (is_disconnected()) return false;
+
+        _slot->set_priority(priority);
+
+        return true;
     }
 
 protected:
-    paired_ptr<> _connection {};
-    const signal_base *_signal { nullptr };
+    template<typename... Args> friend class signal;
+
+    explicit connection(std::shared_ptr<slot_base> s) noexcept : _slot { std::move(s) } {}
+
+    std::shared_ptr<slot_base> _slot {};
 };
 
 /**
  * @brief The core signal class that can be connected to slots
- * 
+ *
  * A signal can have multiple slots connected to it. When the signal is emitted,
- * all connected slots are invoked in order of their priority.
- * 
+ * all connected slots are invoked in order of their priority; slots with equal
+ * priority are invoked in connection order.
+ *
+ * Thread safety: every member may be called from any thread. No internal lock is
+ * held while slots run, so a slot may emit this signal again, connect, disconnect,
+ * clear, query the signal or even destroy it. Each emission works on a snapshot of
+ * the slots taken when it starts. If the signal is emitted from several threads at
+ * once, its slots can run concurrently.
+ *
  * @tparam Args Types of arguments the signal passes to slots when emitted
  */
 template<typename... Args>
@@ -654,74 +715,111 @@ class signal : public signal_base
 {
 public:
     using slot_type = slot<Args...>;
-    using slot_container = std::multiset<slot_type, std::less<slot<Args...>>, std::allocator<slot<Args...>>>;
+    using functor_type = typename slot_type::functor_type;
 
+protected:
+    using slot_ptr = std::shared_ptr<slot_type>;
+    using slot_list = std::vector<slot_ptr>;
+
+    struct core_type final : detail::signal_core_base
+    {
+        std::shared_ptr<const slot_list> slots {};    ///< Current snapshot, sorted by priority, then connection order
+        uint64_t next_order { 0 };
+
+        void resort_locked() override { signal::rebuild_locked(*this, nullptr); }
+    };
+
+public:
     /**
      * @brief Default constructor
      */
     signal() = default;
-    
+
     /**
      * @brief Constructor with a name
      * @param name The name of the signal
      */
     signal(const std::u8string &name) : _name{ name } {}
-    
+
     /**
-     * @brief Move constructor
-     * @param other The signal to move from
+     * @brief Move constructor; connections follow the signal to its new place
+     * @param other The signal to move from (left without slots)
      */
-    signal(signal &&other) noexcept = default;
-    
+    signal(signal &&other) noexcept : _core { std::move(other._core) }
+    {
+        take_fields(other);
+    }
+
     /**
-     * @brief Move assignment operator
-     * @param other The signal to move from
+     * @brief Move assignment operator; this signal's own connections are disconnected first
+     * @param other The signal to move from (left without slots)
      * @return Reference to this signal
      */
-    signal &operator=(signal &&other) noexcept = default;
-    
+    signal &operator=(signal &&other) noexcept
+    {
+        if (this != &other)
+        {
+            detach_core();
+
+            _core = std::move(other._core);
+
+            take_fields(other);
+        }
+
+        return *this;
+    }
+
+    signal(const signal &) = delete;
+    signal &operator=(const signal &) = delete;
+
     /**
-     * @brief Virtual destructor
+     * @brief Virtual destructor; disconnects all slots
      */
-    virtual ~signal() override = default;
+    virtual ~signal() override
+    {
+        detach_core();
+    }
 
     /**
      * @brief Emits the signal with the given arguments
-     * 
+     *
      * When a signal is emitted, all connected slots are invoked with the
      * provided arguments. Slots are invoked in order of their priority.
-     * 
+     *
      * @param args Arguments to pass to the slots
      */
     void emit(const Args &... args)
     {
         if (!_enabled) return;
 
-        std::scoped_lock lock_emit(_emit_lock);
+        const auto core { _core };    // keeps the slots alive even if a slot destroys this signal
 
-        if (!_enabled) return;
+        if (!core) return;
+
+        std::shared_ptr<const slot_list> snapshot;
 
         {
-            std::scoped_lock lock_con(_connect_lock);
+            std::scoped_lock lock { core->lock };
 
-            if (!std::empty(_pending_connections))
-            {
-                std::move(std::begin(_pending_connections), std::end(_pending_connections), std::inserter(_slots, std::end(_slots)));
-
-                _pending_connections.clear();
-            }
+            snapshot = core->slots;
         }
 
-        if (!std::empty(_slots))
+        if (!snapshot) return;
+
+        bool purge { false };
+
+        for (const auto &s : *snapshot)
         {
-            std::erase_if(_slots, [&args...](auto &callable)
-            {
-                if (callable.is_disconnected()) return true;
+            if (s->is_disconnected()) { purge = true; continue; }
 
-                if (callable.is_enabled()) callable.invoke(args...);
+            if (s->is_enabled()) s->invoke(args...);
+        }
 
-                return callable.is_disconnected();
-            });
+        if (purge)
+        {
+            std::scoped_lock lock { core->lock };
+
+            if (core->slots) rebuild_locked(*core, nullptr);
         }
     }
 
@@ -736,20 +834,27 @@ public:
 
     /**
      * @brief Connects a function to this signal
-     * 
+     *
+     * A slot connected while the signal is being emitted is first called by the next emission.
+     *
      * @param callable Function to connect
      * @param priority Priority of the connection
      * @return A connection object that manages the connection's lifetime
      */
-    [[nodiscard]] virtual connection connect(std::function<void(Args...)> &&callable, int64_t priority = 0)
+    [[nodiscard]] virtual connection connect(functor_type &&callable, int64_t priority = 0)
     {
-        std::scoped_lock lock(_connect_lock);
-        auto end { std::end(_pending_connections) };
+        auto s { std::make_shared<slot_type>(std::move(callable), priority) };
 
-        _pending_connections.erase(std::remove_if(std::begin(_pending_connections), end, std::mem_fn(&slot<Args...>::is_disconnected)), end);
-        _pending_connections.emplace_back(std::forward<std::function<void(Args...)>>(callable), priority);
+        if (!_core) _core = make_core(this);    // only after this signal was moved from
 
-        return { this, _pending_connections.back() };
+        std::scoped_lock lock { _core->lock };
+
+        s->_core = _core;
+        s->_order = _core->next_order++;
+
+        rebuild_locked(*_core, s);
+
+        return connection { std::move(s) };
     }
 
     /**
@@ -757,14 +862,14 @@ public:
      * @param callable Function to connect
      * @return A connection object that manages the connection's lifetime
      */
-    [[nodiscard]] virtual connection operator += (std::function<void(Args...)> &&callable)
+    [[nodiscard]] virtual connection operator += (functor_type &&callable)
     {
-        return connect(std::forward<std::function<void(Args...)>>(callable));
+        return connect(std::move(callable));
     }
 
     /**
      * @brief Connects a member function to this signal
-     * 
+     *
      * @param instance The object instance
      * @param member_function Member function to connect
      * @param priority Priority of the connection (lower value means higher priority)
@@ -773,7 +878,7 @@ public:
     template<typename T>
     [[nodiscard]] connection connect(T *instance, void (T::*member_function)(Args...), int64_t priority = 0)
     {
-        return connect([instance, member_function](Args... args) { (instance->*member_function)(args...); }, priority);
+        return connect([instance, member_function](const Args &... args) { (instance->*member_function)(args...); }, priority);
     }
 
     /**
@@ -781,21 +886,28 @@ public:
      */
     virtual void clear()
     {
-        std::scoped_lock lock(_connect_lock, _emit_lock);
+        if (!_core) return;
 
-        _pending_connections.clear();
-        _slots.clear();
+        std::scoped_lock lock { _core->lock };
+
+        if (_core->slots) for (const auto &s : *_core->slots) s->disconnect();
+
+        _core->slots.reset();
     }
 
     /**
      * @brief Gets the number of slots connected to this signal
-     * @return Number of connected slots
+     * @return Number of connected slots, including ones connected since the last emission
      */
     virtual size_t size() const override
     {
-        std::scoped_lock lock(_emit_lock);
+        if (!_core) return 0;
 
-        return std::size(_slots);
+        std::scoped_lock lock { _core->lock };
+
+        if (!_core->slots) return 0;
+
+        return static_cast<size_t>(std::count_if(std::begin(*_core->slots), std::end(*_core->slots), [](const auto &s) { return !s->is_disconnected(); }));
     }
 
     /**
@@ -811,9 +923,9 @@ public:
 
     /**
      * @brief Gets the name of this signal
-     * @return The signal's name
+     * @return A copy of the signal's name
      */
-    virtual std::u8string_view name() const override
+    virtual std::u8string name() const override
     {
         std::shared_lock<std::shared_mutex> lock { _name_lock };
 
@@ -839,7 +951,7 @@ public:
     }
 
     /**
-     * @brief Gets this signal's payload
+     * @brief Gets this signal's payload (not synchronized)
      * @return Reference to the signal's payload
      */
     virtual std::any &payload() override
@@ -848,115 +960,164 @@ public:
     }
 
     /**
-     * @brief Enables or disables a slot
-     * @param slot The slot to enable/disable
+     * @brief Enables or disables a slot of this signal
+     * @param s The slot to enable/disable
      * @param enabled true to enable the slot, false to disable it
      */
-    virtual void enable_slot(const slot_base &slot, bool enabled) override
+    virtual void enable_slot(const slot_base &s, bool enabled) override
     {
-        enable_slot(slot._connection, enabled);
+        if (owns(s)) const_cast<slot_base &>(s).set_enabled(enabled);
     }
 
     /**
-     * @brief Enables or disables a slot by its connection
-     * @param s The connection to the slot
+     * @brief Enables or disables a slot of this signal by its connection
+     * @param con The connection to the slot
      * @param enabled true to enable the slot, false to disable it
      */
-    virtual void enable_slot(const paired_ptr<> &s, bool enabled) override
+    virtual void enable_slot(const connection &con, bool enabled) override
     {
-        auto send { std::end(_slots) };
-        auto sit { std::find(std::begin(_slots), send, s) };
-
-        if (sit != send) const_cast<slot<Args...>&>(*sit).set_enabled(enabled);
+        if (con._slot && owns(*con._slot)) con._slot->set_enabled(enabled);
     }
 
     /**
-     * @brief Checks if a slot is enabled
-     * @param slot The slot to check
-     * @return true if the slot is enabled, false otherwise
+     * @brief Checks if a slot of this signal is enabled
+     * @param s The slot to check
+     * @return true if the slot belongs to this signal and is enabled
      */
-    virtual bool is_slot_enabled(const slot_base &slot) const override
+    virtual bool is_slot_enabled(const slot_base &s) const override
     {
-        return is_slot_enabled(slot._connection);
+        return owns(s) && s.is_enabled();
     }
 
     /**
-     * @brief Checks if a slot is enabled by its connection
-     * @param slot The connection to the slot
-     * @return true if the slot is enabled, false otherwise
+     * @brief Checks if a slot of this signal is enabled by its connection
+     * @param con The connection to the slot
+     * @return true if the slot belongs to this signal and is enabled
      */
-    virtual bool is_slot_enabled(const paired_ptr<> &slot) const override
+    virtual bool is_slot_enabled(const connection &con) const override
     {
-        if (auto s_ptr = find_slot(slot); s_ptr != nullptr) return s_ptr->is_enabled();
-
-        return false;
+        return con._slot && is_slot_enabled(*con._slot);
     }
 
     /**
      * @brief Gets the priority of a connection
      * @param con The connection to check
-     * @return The priority of the connection
+     * @return The priority of the connection, or 0 if it does not belong to this signal
      */
-    virtual int64_t get_connection_priority(const paired_ptr<>& con) const override
+    virtual int64_t get_connection_priority(const connection &con) const override
     {
-        if (auto s_ptr = find_slot(con); s_ptr != nullptr) return s_ptr->get_priority();
-
-        return {};
+        return con._slot && owns(*con._slot) ? con._slot->get_priority() : 0;
     }
 
     /**
-     * @brief Sets the priority of a connection
+     * @brief Sets the priority of a connection; the slots are re-sorted
      * @param con The connection to modify
      * @param priority The new priority
      * @return true if the priority was set successfully, false otherwise
      */
-    virtual bool set_connection_priority(const paired_ptr<>& con, int64_t priority) override
+    virtual bool set_connection_priority(const connection &con, int64_t priority) override
     {
-        if (auto s_ptr = find_slot(con); s_ptr != nullptr)
-        {
-            const_cast<slot_type*>(s_ptr)->set_priority(priority);
+        if (!con._slot || !owns(*con._slot)) return false;
 
-            return true;
-        }
+        con._slot->set_priority(priority);
 
-        return false;
+        return true;
     }
 
 protected:
     std::u8string _name {};
-    std::vector<slot<Args...>> _pending_connections {};
-    slot_container _slots {};
-    mutable std::mutex _connect_lock {}, _emit_lock {};
     mutable std::shared_mutex _name_lock {};
-    mutable std::atomic_bool _enabled { true };
-    std::any _payload;
+    std::atomic_bool _enabled { true };
+    std::any _payload {};
+    std::shared_ptr<core_type> _core { make_core(this) };
+
+    static std::shared_ptr<core_type> make_core(signal *owner)
+    {
+        auto core { std::make_shared<core_type>() };
+
+        core->owner = owner;
+
+        return core;
+    }
 
     /**
-     * @brief Finds a slot by its connection
-     * @param con The connection to find
-     * @return Pointer to the slot if found, nullptr otherwise
+     * @brief Publishes a new snapshot without disconnected slots, plus an optional new one, sorted; core lock held
      */
-    const slot_type* find_slot(const paired_ptr<>& con) const
+    static void rebuild_locked(core_type &core, slot_ptr added)
     {
-        auto send{ std::cend(_slots) };
-        auto sit{ std::find(std::cbegin(_slots), send, con) };
+        auto list { std::make_shared<slot_list>() };
 
-        if (sit != send) return &(*sit);
+        if (core.slots)
+        {
+            list->reserve(std::size(*core.slots) + (added ? 1 : 0));
 
-        auto psend{ std::cend(_pending_connections) };
-        auto psit{ std::find(std::cbegin(_pending_connections), psend, con) };
+            for (const auto &s : *core.slots) if (!s->is_disconnected()) list->push_back(s);
+        }
 
-        if (psit != psend) return &(*psit);
+        if (added) list->push_back(std::move(added));
 
-        return nullptr;
+        std::sort(std::begin(*list), std::end(*list), [](const slot_ptr &a, const slot_ptr &b)
+        {
+            const auto pa { a->_priority.load() }, pb { b->_priority.load() };
+
+            return pa != pb ? pa < pb : a->_order < b->_order;
+        });
+
+        core.slots = std::move(list);
+    }
+
+    /**
+     * @brief Checks whether a slot is connected to this signal
+     */
+    bool owns(const slot_base &s) const noexcept
+    {
+        return _core && !s.is_disconnected() && !s._core.owner_before(_core) && !_core.owner_before(s._core);
+    }
+
+    /**
+     * @brief Disconnects all slots and detaches the shared state from this signal
+     */
+    void detach_core() noexcept
+    {
+        if (!_core) return;
+
+        std::scoped_lock lock { _core->lock };
+
+        _core->owner = nullptr;
+
+        if (_core->slots) for (const auto &s : *_core->slots) s->disconnect();
+
+        _core->slots.reset();
+    }
+
+    /**
+     * @brief Moves everything but the core from another signal and re-points the core at this one
+     */
+    void take_fields(signal &other) noexcept
+    {
+        {
+            std::scoped_lock lock { _name_lock, other._name_lock };
+
+            _name = std::move(other._name);
+        }
+
+        _payload = std::move(other._payload);
+        _enabled = other._enabled.load();
+
+        if (_core)
+        {
+            std::scoped_lock lock { _core->lock };
+
+            _core->owner = this;
+        }
     }
 };
 
 /**
  * @brief Extended signal class that passes itself as the first argument to slots
- * 
+ *
  * This is useful when slots need to know which signal triggered them.
- * 
+ *
  * @tparam Args Types of additional arguments the signal passes to slots
  */
 template<typename... Args>
@@ -969,26 +1130,26 @@ public:
      * @brief Default constructor
      */
     signal_ex() = default;
-    
+
     /**
      * @brief Constructor with a name
      * @param name The name of the signal
      */
     signal_ex(const std::u8string &name) : base_class(name) {}
-    
+
     /**
      * @brief Move constructor
      * @param other The signal to move from
      */
     signal_ex(signal_ex &&other) noexcept = default;
-    
+
     /**
      * @brief Move assignment operator
      * @param other The signal to move from
      * @return Reference to this signal
      */
     signal_ex &operator=(signal_ex &&other) noexcept = default;
-    
+
     /**
      * @brief Virtual destructor
      */
@@ -996,9 +1157,9 @@ public:
 
     /**
      * @brief Emits the signal with the given arguments
-     * 
+     *
      * Unlike the base signal class, this automatically passes itself as the first argument.
-     * 
+     *
      * @param args Arguments to pass to the slots
      */
     void emit(const Args&... args)
@@ -1018,10 +1179,13 @@ public:
 
 /**
  * @brief Base class for bridged signals
- * 
+ *
  * A bridged signal queues emitted signals and allows controlling when they are
- * actually delivered to the slots.
- * 
+ * actually delivered to the slots. Slots run without the queue lock held, so the
+ * emitting thread never waits for the consumer's slots, and slots may emit the
+ * signal again or query the queue. Call the invoke_* functions from one consumer
+ * thread to keep deliveries in order. Not movable: the emit functor receives `this`.
+ *
  * @tparam signal_type The signal type to bridge
  * @tparam Args Types of arguments the signal passes to slots
  */
@@ -1032,57 +1196,48 @@ class bridged_signal_base : public signal_type<Args...>
 public:
     using base_class = signal_type<Args...>;
     using bridged_signal_type = bridged_signal_base;
+    using emit_functor_type = std::function<bool(bridged_signal_base*)>;
 
     /**
      * @brief Default constructor
      */
     bridged_signal_base() = default;
-    
+
     /**
      * @brief Constructor with a name
      * @param name The name of the signal
      */
     bridged_signal_base(const std::u8string &name) : base_class { name } {}
-    
+
     /**
      * @brief Constructor with a name and emit functor
      * @param name The name of the signal
-     * @param emit_functor Function to call when signal is emitted
+     * @param emit_functor Called after each queued emission; return true if it arranges delivery itself
      */
-    bridged_signal_base(const std::u8string &name, const std::function<bool(bridged_signal_base*)>& emit_functor) : base_class { name }, _emit_functor { emit_functor } {}
-    
+    bridged_signal_base(const std::u8string &name, const emit_functor_type &emit_functor) : base_class { name }, _emit_functor { wrap(emit_functor) } {}
+
     /**
      * @brief Constructor with emit functor
-     * @param emit_functor Function to call when signal is emitted
+     * @param emit_functor Called after each queued emission; return true if it arranges delivery itself
      */
-    bridged_signal_base(const std::function<bool(bridged_signal_base*)>& emit_functor) : bridged_signal_base { std::u8string {}, emit_functor } {}
-    
+    bridged_signal_base(const emit_functor_type &emit_functor) : bridged_signal_base { std::u8string {}, emit_functor } {}
+
     /**
      * @brief Constructor with a name and bridge enabled flag
      * @param name The name of the signal
      * @param bridge_enabled Whether the bridge is enabled
      */
     bridged_signal_base(const std::u8string &name, bool bridge_enabled) : base_class { name }, _bridge_enabled { bridge_enabled } {}
-    
+
     /**
      * @brief Constructor with bridge enabled flag
      * @param bridge_enabled Whether the bridge is enabled
      */
     bridged_signal_base(bool bridge_enabled) : bridged_signal_base { std::u8string {}, bridge_enabled } {}
-    
-    /**
-     * @brief Move constructor
-     * @param other The signal to move from
-     */
-    bridged_signal_base(bridged_signal_base &&other) noexcept = default;
-    
-    /**
-     * @brief Move assignment operator
-     * @param other The signal to move from
-     * @return Reference to this signal
-     */
-    bridged_signal_base &operator=(bridged_signal_base &&other) noexcept = default;
-    
+
+    bridged_signal_base(bridged_signal_base &&other) = delete;
+    bridged_signal_base &operator=(bridged_signal_base &&other) = delete;
+
     /**
      * @brief Virtual destructor
      */
@@ -1090,26 +1245,32 @@ public:
 
     /**
      * @brief Emits the signal with the given arguments
-     * 
+     *
      * If bridging is enabled, the signal is queued instead of immediately delivered.
-     * 
+     *
      * @param args Arguments to pass to the slots
      */
     void emit(const Args&... args)
     {
-        if (!base_class::_enabled) return;
+        if (!base_class::is_enabled()) return;
 
-        if (_bridge_enabled)
+        if (!_bridge_enabled)
         {
-            {
-                std::scoped_lock lock(_queue_lock);
+            base_class::emit(args...);
 
-                _signal_queue.push_back(std::make_tuple(args...));
-            }
-
-            if (!_emit_functor || !_emit_functor(this)) invoke_next();
+            return;
         }
-        else base_class::emit(args...);
+
+        std::shared_ptr<const emit_functor_type> functor;
+
+        {
+            std::scoped_lock lock { _queue_lock };
+
+            _signal_queue.emplace_back(args...);
+            functor = _emit_functor;
+        }
+
+        if (!functor || !(*functor)(this)) invoke_next();
     }
 
     /**
@@ -1136,33 +1297,38 @@ public:
      */
     virtual bool invoke_next()
     {
-        if (std::empty(_signal_queue)) return false;
+        std::optional<std::tuple<Args...>> next;
 
-        std::scoped_lock lock(_queue_lock);
+        {
+            std::scoped_lock lock { _queue_lock };
 
-        if (std::empty(_signal_queue)) return false;
+            if (std::empty(_signal_queue)) return false;
 
-        std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
+            next.emplace(std::move(_signal_queue.front()));
+            _signal_queue.pop_front();
+        }
 
-        _signal_queue.pop_front();
+        emit_tuple(*next);
+
+        std::scoped_lock lock { _queue_lock };
 
         return !std::empty(_signal_queue);
     }
 
     /**
-     * @brief Invokes all queued signal emissions
+     * @brief Invokes all emissions queued at the time of the call
      */
     virtual void invoke_all()
     {
-        if (std::empty(_signal_queue)) return;
+        std::deque<std::tuple<Args...>> batch;
 
-        std::scoped_lock lock(_queue_lock);
+        {
+            std::scoped_lock lock { _queue_lock };
 
-        if (std::empty(_signal_queue)) return;
+            batch.swap(_signal_queue);
+        }
 
-        for (auto &&args : _signal_queue) std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
-
-        _signal_queue.clear();
+        for (const auto &values : batch) emit_tuple(values);
     }
 
     /**
@@ -1170,33 +1336,42 @@ public:
      */
     virtual void invoke_last_and_clear()
     {
-        if (std::empty(_signal_queue)) return;
+        std::optional<std::tuple<Args...>> last;
 
-        std::scoped_lock lock(_queue_lock);
+        {
+            std::scoped_lock lock { _queue_lock };
 
-        if (std::empty(_signal_queue)) return;
+            if (std::empty(_signal_queue)) return;
 
-        std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.back());
+            last.emplace(std::move(_signal_queue.back()));
+            _signal_queue.clear();
+        }
 
-        _signal_queue.clear();
+        emit_tuple(*last);
     }
 
     /**
      * @brief Sets the emit functor
-     * @param emit_functor Function to call when signal is emitted
+     * @param emit_functor Called after each queued emission; return true if it arranges delivery itself
      */
-    void set_emit_functor(const std::function<bool(bridged_signal_base*)>& emit_functor)
+    void set_emit_functor(const emit_functor_type &emit_functor)
     {
-        _emit_functor = emit_functor;
+        auto functor { wrap(emit_functor) };
+
+        std::scoped_lock lock { _queue_lock };
+
+        _emit_functor = std::move(functor);
     }
 
     /**
      * @brief Gets the emit functor
-     * @return The emit functor
+     * @return A copy of the emit functor (empty if none is set)
      */
-    const std::function<bool(bridged_signal_base*)> &get_emit_functor() const noexcept
+    emit_functor_type get_emit_functor() const
     {
-        return _emit_functor;
+        std::scoped_lock lock { _queue_lock };
+
+        return _emit_functor ? *_emit_functor : emit_functor_type {};
     }
 
     /**
@@ -1205,7 +1380,7 @@ public:
      */
     uint64_t get_queue_size() const
     {
-        std::scoped_lock lock(_queue_lock);
+        std::scoped_lock lock { _queue_lock };
 
         return std::size(_signal_queue);
     }
@@ -1233,20 +1408,26 @@ public:
      */
     void clear_queue()
     {
-        if (std::empty(_signal_queue)) return;
-
-        std::scoped_lock lock(_queue_lock);
-
-        if (std::empty(_signal_queue)) return;
+        std::scoped_lock lock { _queue_lock };
 
         _signal_queue.clear();
     }
 
 protected:
     std::atomic_bool _bridge_enabled { true };
-    std::mutex _queue_lock {};
+    mutable std::mutex _queue_lock {};
     std::deque<std::tuple<Args...>> _signal_queue {};
-    std::function<bool(bridged_signal_base*)> _emit_functor { nullptr };
+    std::shared_ptr<const emit_functor_type> _emit_functor {};
+
+    static std::shared_ptr<const emit_functor_type> wrap(const emit_functor_type &f)
+    {
+        return f ? std::make_shared<const emit_functor_type>(f) : nullptr;
+    }
+
+    void emit_tuple(const std::tuple<Args...> &values)
+    {
+        std::apply([this](const Args&... a){ base_class::emit(a...); }, values);
+    }
 };
 
 /**
@@ -1263,9 +1444,12 @@ template<typename... Args> using bridged_signal_ex = bridged_signal_base<signal_
 
 /**
  * @brief Base class for throttled signals
- * 
- * A throttled signal limits the rate at which signal emissions are delivered to slots.
- * 
+ *
+ * A throttled signal delivers emissions on a background thread, at most one per
+ * throttle interval. By default every emission is queued; with coalescing on,
+ * only the latest pending emission is kept. Slots run without internal locks held,
+ * so they may emit the signal again. Do not destroy the signal from its own slot.
+ *
  * @tparam signal_type The signal type to throttle
  * @tparam Args Types of arguments the signal passes to slots
  */
@@ -1273,6 +1457,9 @@ template<template <typename...> typename signal_type, std::copyable... Args>
 requires std::derived_from<signal_type<Args...>, signal_base>
 class throttled_signal_base : public signal_type<Args...>
 {
+protected:
+    static inline std::chrono::milliseconds _default_throttle_ms { 10ms };
+
 public:
     using base_class = signal_type<Args...>;
 
@@ -1280,70 +1467,76 @@ public:
      * @brief Default constructor
      */
     throttled_signal_base() = default;
-    
-    /**
-     * @brief Constructor with a name and throttle duration
-     * @param name The name of the signal
-     * @param throttle_ms The throttling duration
-     */
-    template<typename Duration>
-    throttled_signal_base(const std::u8string &name, const Duration &throttle_ms = throttled_signal_base::_default_throttle_ms) : base_class{ name }, _throttle_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms) } {}
-    
+
     /**
      * @brief Constructor with a name
      * @param name The name of the signal
      */
     throttled_signal_base(const std::u8string &name) : base_class{ name } {}
-    
-    /**
-     * @brief Move constructor
-     * @param other The signal to move from
-     */
-    throttled_signal_base(throttled_signal_base &&other) noexcept = default;
-    
-    /**
-     * @brief Move assignment operator
-     * @param other The signal to move from
-     * @return Reference to this signal
-     */
-    throttled_signal_base &operator=(throttled_signal_base &&other) noexcept = default;
 
     /**
-     * @brief Destructor that optionally dispatches pending signals
+     * @brief Constructor with a name and throttle duration
+     * @param name The name of the signal
+     * @param throttle_ms The minimum interval between deliveries
+     */
+    template<typename Rep, typename Period>
+    throttled_signal_base(const std::u8string &name, const std::chrono::duration<Rep, Period> &throttle_ms) : base_class{ name }, _throttle_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(throttle_ms) } {}
+
+    throttled_signal_base(throttled_signal_base &&other) = delete;
+    throttled_signal_base &operator=(throttled_signal_base &&other) = delete;
+
+    /**
+     * @brief Destructor that stops the dispatcher and optionally delivers pending emissions
      */
     virtual ~throttled_signal_base() override
     {
+        if (_dispatcher_thread.joinable())
+        {
+            _dispatcher_thread.request_stop();
+            _dispatcher_thread.join();
+        }
+
         if (_dispatch_all_on_destroy)
         {
-            std::scoped_lock lock(_emit_lock);
-
-            while (!std::empty(_signal_queue))
+            for (;;)
             {
-                std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
+                std::optional<std::tuple<Args...>> next;
 
-                _signal_queue.pop_front();
+                {
+                    std::scoped_lock lock { _emit_lock };
+
+                    if (std::empty(_signal_queue)) break;
+
+                    next.emplace(std::move(_signal_queue.front()));
+                    _signal_queue.pop_front();
+                }
+
+                emit_tuple(*next);
             }
         }
     }
 
     /**
      * @brief Emits the signal with the given arguments
-     * 
+     *
      * Signal emissions are queued and delivered at a controlled rate.
-     * 
+     *
      * @param args Arguments to pass to the slots
      */
     void emit(const Args &... args)
     {
-        std::scoped_lock lock(_emit_lock);
+        std::scoped_lock lock { _emit_lock };
 
-        _signal_queue.push_back(std::make_tuple(args...));
+        if (_coalesce && !std::empty(_signal_queue)) _signal_queue.back() = std::tuple<Args...> { args... };
+        else _signal_queue.emplace_back(args...);
 
-        if (!_thread_running.exchange(true))
+        if (!_thread_running)
         {
-            if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
+            _thread_running = true;
 
-            _dispatcher_thread = std::jthread([this](std::stop_token cancelled){ queue_dispatcher(std::move(cancelled)); });
+            if (_dispatcher_thread.joinable()) _dispatcher_thread.join();    // it has already released the lock and is exiting
+
+            _dispatcher_thread = std::jthread([this](std::stop_token stop){ queue_dispatcher(std::move(stop)); });
         }
     }
 
@@ -1376,6 +1569,24 @@ public:
     }
 
     /**
+     * @brief Sets whether only the latest pending emission is kept
+     * @param coalesce true to replace a pending emission instead of queuing another one
+     */
+    void set_coalescing(bool coalesce) noexcept
+    {
+        _coalesce = coalesce;
+    }
+
+    /**
+     * @brief Checks whether only the latest pending emission is kept
+     * @return true if coalescing is on
+     */
+    bool get_coalescing() const noexcept
+    {
+        return _coalesce;
+    }
+
+    /**
      * @brief Sets whether all pending signals should be dispatched on destroy
      * @param do_dispatch true to dispatch all pending signals, false otherwise
      */
@@ -1394,37 +1605,49 @@ public:
     }
 
 protected:
-    static inline std::chrono::milliseconds _default_throttle_ms { 10ms };
+    mutable std::mutex _emit_lock {};
+    std::condition_variable_any _wake {};
     std::deque<std::tuple<Args...>> _signal_queue {};
-    std::mutex _emit_lock {};
     std::atomic<std::chrono::milliseconds> _throttle_ms { _default_throttle_ms };
-    std::jthread _dispatcher_thread {};
-    std::atomic_bool _thread_running { false }, _dispatch_all_on_destroy { true };
+    std::atomic_bool _thread_running { false }, _dispatch_all_on_destroy { true }, _coalesce { false };
+    std::jthread _dispatcher_thread {};    // declared last, so it is joined before the members it uses are destroyed
+
+    void emit_tuple(const std::tuple<Args...> &values)
+    {
+        std::apply([this](const Args&... a){ base_class::emit(a...); }, values);
+    }
 
     /**
      * @brief Thread function that dispatches queued signals
-     * @param cancelled Stop token for thread cancellation
+     *
+     * The running flag is only changed under the lock, together with the decision
+     * to exit, so an emission can never land between the two.
+     *
+     * @param stop Stop token for thread cancellation
      */
-    void queue_dispatcher(std::stop_token cancelled)
+    void queue_dispatcher(std::stop_token stop)
     {
-        while (!cancelled.stop_requested())
+        std::unique_lock lock { _emit_lock };
+
+        for (;;)
         {
+            if (stop.stop_requested() || std::empty(_signal_queue))
             {
-                std::scoped_lock lock(_emit_lock);
+                _thread_running = false;
 
-                if (cancelled.stop_requested() || std::empty(_signal_queue)) break;
-
-                std::apply([this](const Args&... a){ base_class::emit(a...); }, _signal_queue.front());
-
-                _signal_queue.pop_front();
-
-                if (std::empty(_signal_queue)) break;
+                return;
             }
 
-            std::this_thread::sleep_for(_throttle_ms.load());
-        }
+            auto next { std::move(_signal_queue.front()) };
 
-        _thread_running = false;
+            _signal_queue.pop_front();
+
+            lock.unlock();
+            emit_tuple(next);
+            lock.lock();
+
+            _wake.wait_for(lock, stop, _throttle_ms.load(), []{ return false; });    // interval between deliveries, also across bursts; wakes early on stop
+        }
     }
 };
 
@@ -1445,12 +1668,147 @@ template<typename... Args> using throttled_signal_ex = throttled_signal_base<sig
  */
 struct queued_signal_default_scope {};
 
+namespace detail
+{
+
+/**
+ * @brief The queue and dispatcher thread shared by all queued signals of one scope
+ *
+ * Emissions of every queued signal in the scope, whatever its argument types, are
+ * delivered one at a time, in emission order, on one background thread.
+ *
+ * @tparam scope The scope tag
+ */
+template<typename scope>
+class queued_dispatcher
+{
+public:
+    using task_type = std::function<void()>;
+
+    /**
+     * @brief Makes sure the shared state exists (so it outlives every queued signal)
+     */
+    static void touch()
+    {
+        state();
+    }
+
+    /**
+     * @brief Queues a task and starts the dispatcher thread if needed
+     * @param owner The signal the task belongs to
+     * @param task The delivery to run
+     */
+    static void post(const void *owner, task_type task)
+    {
+        auto &s { state() };
+
+        std::scoped_lock lock { s.lock };
+
+        s.queue.emplace_back(owner, std::move(task));
+
+        if (!s.running)
+        {
+            s.running = true;
+
+            if (s.thread.joinable()) s.thread.join();    // it has already released the lock and is exiting
+
+            s.thread = std::jthread(&queued_dispatcher::run);
+        }
+    }
+
+    /**
+     * @brief Removes an owner's pending tasks and waits until none of its tasks is running
+     * @param owner The signal being destroyed
+     * @return The removed tasks, in queue order
+     */
+    static std::vector<task_type> withdraw(const void *owner)
+    {
+        auto &s { state() };
+        std::vector<task_type> tasks;
+        std::unique_lock lock { s.lock };
+
+        for (auto it { std::begin(s.queue) }; it != std::end(s.queue);)
+        {
+            if (it->first == owner)
+            {
+                tasks.push_back(std::move(it->second));
+                it = s.queue.erase(it);
+            }
+            else ++it;
+        }
+
+        if (s.thread.get_id() != std::this_thread::get_id()) s.idle.wait(lock, [&s, owner]{ return s.in_flight != owner; });
+
+        return tasks;
+    }
+
+    static void delay(std::chrono::milliseconds duration) noexcept { state().delay = duration; }
+    static std::chrono::milliseconds delay() noexcept { return state().delay; }
+    static void use_delay(bool use) noexcept { state().use_delay = use; }
+    static bool use_delay() noexcept { return state().use_delay; }
+
+private:
+    struct state_type
+    {
+        std::mutex lock {};
+        std::condition_variable idle {};
+        std::condition_variable_any wake {};
+        std::deque<std::pair<const void*, task_type>> queue {};
+        const void *in_flight { nullptr };
+        bool running { false };
+        std::atomic<std::chrono::milliseconds> delay { 0ms };
+        std::atomic_bool use_delay { false };
+        std::jthread thread {};    // declared last: stopped and joined before the rest is destroyed
+    };
+
+    static state_type &state()
+    {
+        static state_type s;
+
+        return s;
+    }
+
+    static void run(std::stop_token stop)
+    {
+        auto &s { state() };
+        std::unique_lock lock { s.lock };
+
+        for (;;)
+        {
+            if (stop.stop_requested() || std::empty(s.queue))
+            {
+                s.running = false;
+
+                return;
+            }
+
+            auto [owner, task] { std::move(s.queue.front()) };
+
+            s.queue.pop_front();
+            s.in_flight = owner;
+
+            lock.unlock();
+            task();
+            lock.lock();
+
+            s.in_flight = nullptr;
+            s.idle.notify_all();
+
+            if (s.use_delay && !std::empty(s.queue)) s.wake.wait_for(lock, stop, s.delay.load(), []{ return false; });
+        }
+    }
+};
+
+}
+
 /**
  * @brief Base class for queued signals
- * 
- * A queued signal queues emissions in a static queue, shared by all signals of
- * the same scope.
- * 
+ *
+ * A queued signal delivers its emissions on a background thread through a queue
+ * shared by all queued signals of the same scope, whatever their argument types.
+ * Slots run without internal locks held, so they may emit queued signals again.
+ * A destroyed signal's pending emissions are delivered or dropped, never left behind.
+ *
  * @tparam scope The scope for grouping queued signals
  * @tparam signal_type The signal type to queue
  * @tparam Args Types of arguments the signal passes to slots
@@ -1461,95 +1819,66 @@ class queued_signal_base : public signal_type<Args...>
 {
 public:
     using base_class = signal_type<Args...>;
+    using dispatcher_type = detail::queued_dispatcher<scope>;
 
     /**
      * @brief Default constructor
      */
-    queued_signal_base() = default;
-    
-    /**
-     * @brief Constructor with a name and delay
-     * @param name The name of the signal
-     * @param delay_ms The delay between emissions
-     */
-    template<typename Duration>
-    queued_signal_base(const std::u8string& name, const Duration& delay_ms = 0ms) : base_class{ name } { _delay_ms = delay_ms; }
-    
+    queued_signal_base() { dispatcher_type::touch(); }
+
     /**
      * @brief Constructor with a name
      * @param name The name of the signal
      */
-    queued_signal_base(const std::u8string &name) : base_class{ name } {}
-    
+    queued_signal_base(const std::u8string &name) : base_class{ name } { dispatcher_type::touch(); }
+
     /**
-     * @brief Move constructor
-     * @param other The signal to move from
+     * @brief Constructor with a name and delay
+     *
+     * The delay belongs to the scope's shared queue: it applies to every queued signal of the scope.
+     *
+     * @param name The name of the signal
+     * @param delay_ms The delay between deliveries; a positive value also turns the delay on
      */
-    queued_signal_base(queued_signal_base &&other) noexcept = default;
-    
-    /**
-     * @brief Move assignment operator
-     * @param other The signal to move from
-     * @return Reference to this signal
-     */
-    queued_signal_base &operator=(queued_signal_base &&other) noexcept = default;
-    
+    template<typename Rep, typename Period>
+    queued_signal_base(const std::u8string& name, const std::chrono::duration<Rep, Period>& delay_ms) : base_class{ name }
+    {
+        queued_signal_base::delay_ms(delay_ms);
+        use_delay(delay_ms > std::chrono::duration<Rep, Period>::zero());
+    }
+
+    queued_signal_base(queued_signal_base &&other) = delete;
+    queued_signal_base &operator=(queued_signal_base &&other) = delete;
     queued_signal_base(const queued_signal_base &other) = delete;
     queued_signal_base &operator=(const queued_signal_base &other) = delete;
 
     /**
-     * @brief Destructor that optionally dispatches pending signals
+     * @brief Destructor that removes this signal's pending emissions and optionally delivers them
+     *
+     * Waits for a delivery of this signal that is running on the dispatcher thread.
      */
     virtual ~queued_signal_base() override
     {
-        std::scoped_lock lock_(_destruct_lock);
+        auto pending { dispatcher_type::withdraw(this) };
 
-        if (_dispatch_all_on_destroy)
-        {
-            std::scoped_lock lock(_emit_lock);
-
-            if (!std::empty(_signal_queue))
-            {
-                auto end{ std::end(_signal_queue) };
-
-                _signal_queue.erase(std::remove_if(std::begin(_signal_queue), end, [this](auto &value)
-                {
-                    auto &[this_, args] = value;
-
-                    if (this_ == this)
-                    {
-                        std::apply([this](const Args&... a){ base_class::emit(a...); }, args);
-
-                        return true;
-                    }
-
-                    return false;
-                }), end);
-            }
-        }
+        if (_dispatch_all_on_destroy) for (auto &task : pending) task();
     }
 
     /**
      * @brief Emits the signal with the given arguments
-     * 
+     *
      * Signal emissions are queued in a shared queue.
-	 * Parameters are copied and passed as a tuple to the queue.
-	 * Since parameters are copied, they should be copiable and should not be const, reference or rvalue.
-     * 
+     * Parameters are copied and passed as a tuple to the queue.
+     * Since parameters are copied, they should be copiable and should not be const, reference or rvalue.
+     *
      * @param args Arguments to pass to the slots
      */
     void emit(const Args &... args)
     {
-        std::scoped_lock lock(_emit_lock);
-
-        _signal_queue.push_back({ this, std::make_tuple(args...) });
-
-        if (!_thread_running.exchange(true))
+        dispatcher_type::post(this, [this, values = std::tuple<Args...> { args... }]
         {
-            if (_dispatcher_thread.joinable()) _dispatcher_thread.join();
-
-            _dispatcher_thread = std::jthread(&queue_dispatcher);
-        }
+            std::apply([this](const Args&... a){ base_class::emit(a...); }, values);
+        });
     }
 
     /**
@@ -1562,45 +1891,45 @@ public:
     }
 
     /**
-     * @brief Sets the delay between emissions
+     * @brief Sets the delay between deliveries of the scope's shared queue
      * @param duration The new delay
      */
     template<typename Duration>
     static void delay_ms(const Duration &duration) noexcept
     {
-        _delay_ms.store(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
+        dispatcher_type::delay(std::chrono::duration_cast<std::chrono::milliseconds>(duration));
     }
 
     /**
-     * @brief Gets the delay between emissions
+     * @brief Gets the delay between deliveries of the scope's shared queue
      * @return The delay in milliseconds
      */
     static std::chrono::milliseconds delay_ms() noexcept
     {
-        return _delay_ms.load();
+        return dispatcher_type::delay();
     }
 
     /**
-     * @brief Sets whether to use delay between emissions
+     * @brief Sets whether the scope's shared queue waits between deliveries
      * @param use true to use delay, false otherwise
      */
     static void use_delay(bool use) noexcept
     {
-        _use_delay = use;
+        dispatcher_type::use_delay(use);
     }
 
     /**
-     * @brief Checks if delay is used between emissions
+     * @brief Checks if the scope's shared queue waits between deliveries
      * @return true if delay is used, false otherwise
      */
     static bool use_delay() noexcept
     {
-        return _use_delay;
+        return dispatcher_type::use_delay();
     }
 
     /**
-     * @brief Sets whether all pending signals should be dispatched on destroy
-     * @param do_dispatch true to dispatch all pending signals, false otherwise
+     * @brief Sets whether this signal's pending emissions are delivered when it is destroyed
+     * @param do_dispatch true to dispatch them, false to drop them
      */
     void set_dispatch_all_on_destroy(bool do_dispatch) noexcept
     {
@@ -1608,8 +1937,8 @@ public:
     }
 
     /**
-     * @brief Checks if all pending signals will be dispatched on destroy
-     * @return true if all pending signals will be dispatched, false otherwise
+     * @brief Checks if this signal's pending emissions are delivered when it is destroyed
+     * @return true if they will be dispatched, false otherwise
      */
     bool get_dispatch_all_on_destroy() const noexcept
     {
@@ -1617,43 +1946,7 @@ public:
     }
 
 protected:
-    static inline std::deque<std::tuple<queued_signal_base*, std::tuple<Args...>>> _signal_queue {};
-    static inline std::mutex _emit_lock {}, _destruct_lock {};
-    static inline std::atomic<std::chrono::milliseconds> _delay_ms { 0ms };
-    static inline std::jthread _dispatcher_thread {};
-    static inline std::atomic_bool _use_delay { false }, _thread_running { false }, _dispatch_all_on_destroy { true };
-
-    /**
-     * @brief Thread function that dispatches queued signals
-     * @param cancelled Stop token for thread cancellation
-     */
-    static void queue_dispatcher(std::stop_token cancelled)
-    {
-        while (cancelled.stop_requested() == false)
-        {
-            {
-                std::scoped_lock lock(_emit_lock);
-
-                if (cancelled.stop_requested() || std::empty(_signal_queue)) break;
-
-                auto &[this_, args] = _signal_queue.front();
-
-                std::apply([&this_](const Args&... a){ this_->base_class::emit(a...); }, args);
-
-                _signal_queue.pop_front();
-
-                if (std::empty(_signal_queue))
-                {
-                    _thread_running = false;
-                    break;
-                }
-            }
-
-            if (_use_delay) std::this_thread::sleep_for(_delay_ms.load());
-        }
-
-        _thread_running = false;
-    }
+    std::atomic_bool _dispatch_all_on_destroy { true };
 };
 
 /**
@@ -1683,8 +1976,10 @@ template<typename scope, typename... Args> using queued_signal_scoped = queued_s
 template<typename scope, typename... Args> using queued_signal_ex_scoped = queued_signal_base<scope, signal_ex, Args...>;
 
 /**
- * @brief A signal that emits at regular intervals
- * 
+ * @brief A signal that emits at regular intervals on a background thread
+ *
+ * Do not destroy the signal from its own slot; stop_timer() is safe there.
+ *
  * @tparam Args Types of arguments the signal passes to slots
  */
 template<std::copyable... Args>
@@ -1697,27 +1992,23 @@ public:
      * @brief Default constructor
      */
     timer_signal() = default;
-    
+
+    /**
+     * @brief Constructor with a name; the interval defaults to one second
+     * @param name The name of the signal
+     */
+    timer_signal(const std::u8string &name) : base_class{ name } {}
+
     /**
      * @brief Constructor with a name and timer duration
      * @param name The name of the signal
      * @param timer_ms The timer interval
      */
-    template<typename Duration>
-    timer_signal(const std::u8string &name, const Duration &timer_ms = 1s) : base_class{ name }, _timer_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(timer_ms) } {}
-    
-    /**
-     * @brief Move constructor
-     * @param other The signal to move from
-     */
-    timer_signal(timer_signal &&other) noexcept = default;
-    
-    /**
-     * @brief Move assignment operator
-     * @param other The signal to move from
-     * @return Reference to this signal
-     */
-    timer_signal &operator=(timer_signal &&other) noexcept = default;
+    template<typename Rep, typename Period>
+    timer_signal(const std::u8string &name, const std::chrono::duration<Rep, Period> &timer_ms) : base_class{ name }, _timer_ms{ std::chrono::duration_cast<std::chrono::milliseconds>(timer_ms) } {}
+
+    timer_signal(timer_signal &&other) = delete;
+    timer_signal &operator=(timer_signal &&other) = delete;
 
     /**
      * @brief Destructor that stops the timer
@@ -1735,9 +2026,9 @@ public:
     {
         if (!_timer_enabled.exchange(true))
         {
-            _args = std::make_tuple(this, args...);
-
             if (_timer_thread.joinable()) _timer_thread.join();
+
+            _args = std::make_tuple(this, args...);
 
             _sleep.reset();
 
@@ -1746,13 +2037,13 @@ public:
     }
 
     /**
-     * @brief Stops the timer
+     * @brief Stops the timer; from inside a slot it only stops further ticks
      */
     void stop_timer()
     {
         _sleep.cancel_wait();
 
-        if (_timer_thread.joinable()) _timer_thread.join();
+        if (_timer_thread.joinable() && _timer_thread.get_id() != std::this_thread::get_id()) _timer_thread.join();
     }
 
     /**
@@ -1775,21 +2066,15 @@ public:
 
     /**
      * @brief Gets the timer interval
-     * @return The timer interval in microseconds
+     * @return The timer interval in milliseconds
      */
-    std::chrono::microseconds timer_ms() const noexcept
+    std::chrono::milliseconds timer_ms() const noexcept
     {
         return _timer_ms.load();
     }
 
 private:
 
-    std::atomic_bool _timer_enabled { false };
-    std::jthread _timer_thread {};
-    std::atomic<std::chrono::milliseconds> _timer_ms { 1s };
-    mutable std::mutex _emit_lock {};
-    std::tuple<timer_signal*, Args...> _args {};
-    
     /**
      * @brief Helper class for timer sleep with cancellation
      */
@@ -1805,15 +2090,19 @@ private:
         {
             std::unique_lock<std::mutex> lock { _m };
 
-            return !_cv.wait_for(lock, duration, [this]{ return _cancelled.load(); });
+            return !_cv.wait_for(lock, duration, [this]{ return _cancelled; });
         }
 
         /**
-         * @brief Cancels any ongoing wait
+         * @brief Cancels any ongoing wait; the flag is set under the mutex, so the wake-up cannot be missed
          */
         void cancel_wait()
         {
-            _cancelled = true;
+            {
+                std::scoped_lock lock { _m };
+
+                _cancelled = true;
+            }
 
             _cv.notify_all();
         }
@@ -1823,6 +2112,8 @@ private:
          */
         void reset()
         {
+            std::scoped_lock lock { _m };
+
             _cancelled = false;
         }
 
@@ -1830,9 +2121,13 @@ private:
 
         std::condition_variable _cv {};
         std::mutex _m {};
-        std::atomic_bool _cancelled { false };
+        bool _cancelled { false };
     } _sleep;
 
+    std::atomic_bool _timer_enabled { false };
+    std::atomic<std::chrono::milliseconds> _timer_ms { 1s };
+    std::tuple<timer_signal*, Args...> _args {};
+    std::jthread _timer_thread {};    // declared last, so it is joined before the members it uses are destroyed
 
     /**
      * @brief Timer procedure that emits the signal at regular intervals
@@ -1841,11 +2136,7 @@ private:
     {
         while (_sleep.wait_for(_timer_ms.load()))
         {
-            {
-                std::scoped_lock lock(_emit_lock);
-
-                std::apply([this](timer_signal *s, const Args&... a){ base_class::emit(s, a...); }, _args);
-            }
+            std::apply([this](timer_signal *s, const Args&... a){ base_class::emit(s, a...); }, _args);
         }
 
         _timer_enabled = false;
